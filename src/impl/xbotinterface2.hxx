@@ -20,12 +20,11 @@ class XBotInterface2::Impl
 
 public:
 
+    friend class XBotInterface2;
+
     Impl(urdf::ModelConstSharedPtr urdf,
          srdf::ModelConstSharedPtr srdf,
          XBotInterface2& api);
-
-    VecConstRef getJointPosition() const;
-    void setJointPosition(VecConstRef);
 
     Eigen::VectorXd getRobotState(std::string_view name) const;
 
@@ -41,6 +40,7 @@ public:
 
     void finalize();
 
+    friend StateInterface<XBotInterface2>;
 
 private:
 
@@ -63,16 +63,16 @@ private:
     detail::Command _cmd;
 
     // joint name -> joint id
-    std::map<std::string, int> _name_id_map;
+    std::map<std::string, int, std::less<>> _name_id_map;
 
     // joint id -> conf dim, tangent dim
-    std::vector<int> _id_to_nq, _id_to_nv;
+    std::vector<int> _joint_nq, _joint_nv;
 
     // joint id -> conf index, tangent index
-    std::vector<int> _id_to_iq, _id_to_iv;
+    std::vector<int> _joint_iq, _joint_iv;
 
     // joint id -> name
-    std::vector<std::string> _id_to_name;
+    std::vector<std::string> _joint_name;
 
     // joints
     std::vector<Joint::Ptr> _joints;

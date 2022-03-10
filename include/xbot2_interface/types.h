@@ -20,4 +20,10 @@ typedef Eigen::Ref<const Eigen::MatrixXd> MatConstRef;
 
 }
 
+namespace Eigen {
+
+typedef Eigen::Matrix<double, 6, 1> Vector6d;
+
+}
+
 #endif // TYPES_H

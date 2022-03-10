@@ -17,6 +17,12 @@ int main()
 
     std::cout << model->getRobotState("home").transpose() << std::endl;
 
+    model->setJointPosition(model->getRobotState("home"));
+
+    model->update();
+
+    std::cout << model->getJointPosition().transpose() << std::endl;
+
     std::cout << model->getPose("pelvis").matrix() << "\n\n";
 
     std::cout << model->getPose("arm1_7").matrix() << "\n\n";
@@ -24,4 +30,10 @@ int main()
     std::cout << model->getPose("contact_1").matrix() << "\n\n";
 
     std::cout << model->getJacobian("contact_1") << "\n\n";
+
+    std::cout << model->getJoint("reference")->getJointPosition().transpose() << std::endl;
+
+    std::cout << model->getJoint("j_wheel_2")->getJointPosition().transpose() << std::endl;
+
+    std::cout << model->getJoint("j_arm1_4")->getJointPosition().transpose() << std::endl;
 }

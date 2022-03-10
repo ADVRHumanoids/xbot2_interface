@@ -17,7 +17,6 @@ ModelInterface2Pin::ModelInterface2Pin(urdf::ModelConstSharedPtr urdf,
 
     _tmp.resize(_mdl.nq, _mdl.nv);
 
-    finalize();
 }
 
 void ModelInterface2Pin::update()

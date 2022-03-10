@@ -14,6 +14,7 @@ include_directories(include/
     ${srdfdom_INCLUDE_DIRS})
 
 add_library(xbot2_interface
+    src/state_interface.cpp
     src/xbotinterface2.cpp
     src/chain.cpp
     src/joint.cpp)

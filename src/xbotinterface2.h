@@ -4,11 +4,12 @@
 #include <urdf_model/model.h>
 #include <srdfdom/model.h>
 
-#include <xbot2_interface/types.h>
+#include <xbot2_interface/state_interface.h>
+#include "joint.h"
 
 namespace XBot {
 
-class XBotInterface2
+class XBotInterface2 : public StateInterface<XBotInterface2>
 {
 
 public:
@@ -21,13 +22,21 @@ public:
     static XBotInterface2::Ptr getModel(urdf::ModelConstSharedPtr urdf,
                                         srdf::ModelConstSharedPtr srdf);
 
+    int getNq() const;
+
+    int getNv() const;
+
     bool hasRobotState(std::string_view name) const;
 
     Eigen::VectorXd getRobotState(std::string_view name) const;
 
-    VecConstRef getJointPosition() const;
+    Joint::Ptr getJoint(std::string_view name);
 
-    void setJointPosition(VecConstRef);
+    Joint::Ptr getJoint(int i);
+
+    Joint::ConstPtr getJoint(std::string_view name) const;
+
+    Joint::ConstPtr getJoint(int i) const;
 
     virtual void update() = 0;
 
@@ -41,7 +50,11 @@ public:
 
     ~XBotInterface2();
 
+    friend StateInterface<XBotInterface2>;
+
 protected:
+
+    void finalize();
 
     struct JointParametrization
     {
@@ -54,7 +67,6 @@ protected:
         Eigen::VectorXd q0;
     };
 
-    void finalize();
 
     virtual JointParametrization get_joint_parametrization(std::string_view jname);
 

@@ -19,6 +19,16 @@ XBotInterface2::Ptr XBotInterface2::getModel(urdf::ModelConstSharedPtr urdf,
     return ret;
 }
 
+int XBotInterface2::getNq() const
+{
+    return impl->_state.qlink.size();
+}
+
+int XBotInterface2::getNv() const
+{
+    return impl->_state.vlink.size();
+}
+
 bool XBotInterface2::hasRobotState(std::string_view name) const
 {
     try
@@ -37,14 +47,25 @@ Eigen::VectorXd XBotInterface2::getRobotState(std::string_view name) const
     return impl->getRobotState(name);
 }
 
-VecConstRef XBotInterface2::getJointPosition() const
+Joint::Ptr XBotInterface2::getJoint(std::string_view name)
 {
-    return impl->getJointPosition();
+    return std::const_pointer_cast<Joint>(const_cast<const XBotInterface2&>(*this).getJoint(name));
 }
 
-void XBotInterface2::setJointPosition(VecConstRef q)
+Joint::Ptr XBotInterface2::getJoint(int i)
 {
-    return impl->setJointPosition(q);
+    return std::const_pointer_cast<Joint>(const_cast<const XBotInterface2&>(*this).getJoint(i));
+}
+
+Joint::ConstPtr XBotInterface2::getJoint(std::string_view name) const
+{
+    int i = impl->_name_id_map.find(name)->second;
+    return impl->_joints.at(i);
+}
+
+Joint::ConstPtr XBotInterface2::getJoint(int i) const
+{
+    return impl->_joints.at(i);
 }
 
 XBotInterface2::JointParametrization XBotInterface2::get_joint_parametrization(std::string_view jname)
@@ -66,21 +87,11 @@ XBotInterface2::~XBotInterface2()
 XBotInterface2::Impl::Impl(urdf::ModelConstSharedPtr urdf,
                            srdf::ModelConstSharedPtr srdf,
                            XBotInterface2& api):
+    _api(api),
     _urdf(urdf),
-    _srdf(srdf),
-    _api(api)
+    _srdf(srdf)
 {
 
-}
-
-VecConstRef XBotInterface2::Impl::getJointPosition() const
-{
-    return _state.qlink;
-}
-
-void XBotInterface2::Impl::setJointPosition(VecConstRef q)
-{
-    check_and_set(q, _state.qlink, __func__);
 }
 
 Eigen::VectorXd XBotInterface2::Impl::getRobotState(std::string_view name) const
@@ -103,13 +114,13 @@ Eigen::VectorXd XBotInterface2::Impl::getRobotState(std::string_view name) const
         {
             int id = _name_id_map.at(jname);
 
-            if(_id_to_nq[id] > 1 || jval.size() > 1)
+            if(_joint_nq[id] > 1 || jval.size() > 1)
             {
                 // ignore
                 continue;
             }
 
-            qrs[_id_to_iq[id]] = jval[0];
+            qrs[_joint_iq[id]] = jval[0];
         }
 
         return qrs;
@@ -148,40 +159,26 @@ void XBotInterface2::Impl::finalize()
         // get parametrization from implementation
         auto jparam = _api.get_joint_parametrization(jname);
 
-        // joint id
-        int id = jparam.id;
-
         // not found?
-        if(id < 0)
+        if(jparam.id < 0)
         {
             throw std::runtime_error("joint " + jname + " not found");
         }
 
         // save id, nq, nv, iq, iv, name, neutral config
-        _id_to_name.resize(std::max<int>(id+1, _id_to_name.size()));
-        _id_to_name[id] = jname;
+        _joint_name.push_back(jname);
 
-        _id_to_nq.resize(std::max<int>(id+1, _id_to_nq.size()));
-        _id_to_nq[id] = jparam.nq;
+        _joint_nq.push_back(jparam.nq);
 
-        _id_to_nv.resize(std::max<int>(id+1, _id_to_nv.size()));
-        _id_to_nv[id] = jparam.nv;
+        _joint_nv.push_back(jparam.nv);
 
-        _id_to_iq.resize(std::max<int>(id+1, _id_to_iq.size()));
-        _id_to_iq[id] = jparam.iq;
+        _joint_iq.push_back(jparam.iq);
 
-        _id_to_iv.resize(std::max<int>(id+1, _id_to_iv.size()));
-        _id_to_iv[id] = jparam.iv;
+        _joint_iv.push_back(jparam.iv);
 
-        _name_id_map[jname] = id;
+        _name_id_map[jname] = nj;
 
         qneutral[jname] = jparam.q0;
-
-        // create xbot's joint
-        auto sv = detail::createView(_state, jparam.iq, jparam.nq, jparam.iv, jparam.nv);
-        auto cv = detail::createView(_cmd, jparam.iq, jparam.nq, jparam.iv, jparam.nv);
-        auto j = std::make_shared<Joint>();
-        auto jimp = std::make_unique<Joint::Impl>();
 
         // increment global dimensions
         nq += jparam.nq;
@@ -198,11 +195,32 @@ void XBotInterface2::Impl::finalize()
     // set neutral config
     for(int i = 0; i < nj; i++)
     {
-        _qneutral.segment(_id_to_iq[i], _id_to_nq[i]) = qneutral[_id_to_name[i]];
+        _qneutral.segment(_joint_iq[i], _joint_nq[i]) = qneutral[_joint_name[i]];
     }
 
     // use it to initialize cmd and state
     _cmd.qcmd = _state.qref = _state.qmot = _state.qlink = _qneutral;
+
+    // construct internal joints
+    for(int i = 0; i < nj; i++)
+    {
+        auto jname = _joint_name[i];
+        auto jptr = _urdf->joints_.at(jname);
+
+        // create xbot's joint
+        auto sv = detail::createView(_state,
+                                     _joint_iq[i], _joint_nq[i],
+                                     _joint_iv[i], _joint_nv[i]);
+
+        auto cv = detail::createView(_cmd,
+                                     _joint_iq[i], _joint_nq[i],
+                                     _joint_iv[i], _joint_nv[i]);
+
+
+        Joint::Ptr j = Joint::create(std::make_unique<Joint::Impl>(sv, cv, jptr));
+        _joints.push_back(j);
+
+    }
 
     // trigger model update
     _api.update();
