@@ -17,8 +17,7 @@ class ModelInterface2Pin : public XBotInterface2
 
 public:
 
-    ModelInterface2Pin(urdf::ModelConstSharedPtr urdf,
-                       srdf::ModelConstSharedPtr srdf);
+    ModelInterface2Pin(const ConfigOptions& opt);
 
     virtual void update() override;
 

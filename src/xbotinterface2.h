@@ -16,11 +16,23 @@ public:
 
     XBOT_DECLARE_SMART_PTR(XBotInterface2);
 
+    struct ConfigOptions
+    {
+        urdf::ModelConstSharedPtr urdf;
+        srdf::ModelConstSharedPtr srdf;
+    };
+
+    explicit XBotInterface2(const ConfigOptions& opt);
+
     XBotInterface2(urdf::ModelConstSharedPtr urdf,
-                   srdf::ModelConstSharedPtr srdf);
+                   srdf::ModelConstSharedPtr srdf = nullptr);
 
     static XBotInterface2::Ptr getModel(urdf::ModelConstSharedPtr urdf,
-                                        srdf::ModelConstSharedPtr srdf);
+                                        srdf::ModelConstSharedPtr srdf,
+                                        std::string type);
+
+    urdf::ModelConstSharedPtr getUrdf() const;
+    srdf::ModelConstSharedPtr getSrdf() const;
 
     int getNq() const;
 

@@ -11,7 +11,7 @@ int main()
     auto srdf = std::make_shared<srdf::Model>();
     srdf->initFile(*urdf, srdf_path);
 
-    auto model = XBot::XBotInterface2::getModel(urdf, srdf);
+    auto model = XBot::XBotInterface2::getModel(urdf, srdf, "pin");
 
     std::cout << model->getJointPosition().transpose() << std::endl;
 
@@ -31,9 +31,9 @@ int main()
 
     std::cout << model->getJacobian("contact_1") << "\n\n";
 
-    std::cout << model->getJoint("reference")->getJointPosition().transpose() << std::endl;
+    std::cout << model->getJoint("reference")->getJointPosition().transpose() << "\n\n";
 
-    std::cout << model->getJoint("j_wheel_2")->getJointPosition().transpose() << std::endl;
+    std::cout << model->getJoint("j_wheel_2")->getJointPosition().transpose() << "\n\n";
 
-    std::cout << model->getJoint("j_arm1_4")->getJointPosition().transpose() << std::endl;
+    std::cout << model->getJoint("j_arm1_4")->getJointPosition().transpose() << "\n\n";
 }

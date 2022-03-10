@@ -1,22 +1,24 @@
 #include "modelinterface2_pin.h"
 
+#include <xbot2_interface/plugin.h>
+
 #include <pinocchio/algorithm/frames.hpp>
 #include <pinocchio/algorithm/jacobian.hpp>
 #include <pinocchio/algorithm/joint-configuration.hpp>
 
 using namespace XBot;
 
-ModelInterface2Pin::ModelInterface2Pin(urdf::ModelConstSharedPtr urdf,
-                                       srdf::ModelConstSharedPtr srdf):
-    XBotInterface2(urdf, srdf)
+ModelInterface2Pin::ModelInterface2Pin(const ConfigOptions& opt):
+    XBotInterface2(opt)
 {
-    pinocchio::urdf::buildModel(std::const_pointer_cast<urdf::Model>(urdf), _mdl);
+    pinocchio::urdf::buildModel(std::const_pointer_cast<urdf::Model>(getUrdf()), _mdl);
     _data = pinocchio::Data(_mdl);
 
     _qneutral = pinocchio::neutral(_mdl);
 
     _tmp.resize(_mdl.nq, _mdl.nv);
 
+    finalize();
 }
 
 void ModelInterface2Pin::update()
@@ -80,3 +82,5 @@ void ModelInterface2Pin::Temporaries::resize(int nq, int nv)
     J.setZero(6, nv);
     qsum.setZero(nq);
 }
+
+XBOT2_REGISTER_MODEL_PLUGIN(ModelInterface2Pin, pin);

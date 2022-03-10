@@ -1,10 +1,17 @@
-#include "modelinterface2_pin.h"
+#include <xbot2_interface/plugin.h>
 
 #include "impl/xbotinterface2.hxx"
 #include "impl/utils.h"
 #include "impl/joint.hxx"
+#include "impl/load_object.h"
 
 using namespace XBot;
+
+XBotInterface2::XBotInterface2(const XBotInterface2::ConfigOptions &opt):
+    XBotInterface2(opt.urdf, opt.srdf)
+{
+
+}
 
 XBotInterface2::XBotInterface2(urdf::ModelConstSharedPtr urdf,
                                srdf::ModelConstSharedPtr srdf)
@@ -13,10 +20,26 @@ XBotInterface2::XBotInterface2(urdf::ModelConstSharedPtr urdf,
 }
 
 XBotInterface2::Ptr XBotInterface2::getModel(urdf::ModelConstSharedPtr urdf,
-                                             srdf::ModelConstSharedPtr srdf)
+                                             srdf::ModelConstSharedPtr srdf,
+                                             std::string type)
 {
-    auto ret = std::make_shared<ModelInterface2Pin>(urdf, srdf);
-    return ret;
+    XBotInterface2::ConfigOptions opt { urdf, srdf };
+
+    auto mdl = CallFunction<XBotInterface2*>("libmodelinterface2_" + type + ".so",
+                 "xbot2_create_model_plugin_" + type,
+                 opt);
+
+    return Ptr(mdl);
+}
+
+urdf::ModelConstSharedPtr XBotInterface2::getUrdf() const
+{
+    return impl->_urdf;
+}
+
+srdf::ModelConstSharedPtr XBotInterface2::getSrdf() const
+{
+    return impl->_srdf;
 }
 
 int XBotInterface2::getNq() const
@@ -147,13 +170,15 @@ void XBotInterface2::Impl::finalize()
 
     std::map<std::string, Eigen::VectorXd> qneutral;
 
-    for(auto [jname, jptr] : _urdf->joints_)
+    auto handle_joint = [&](urdf::JointConstSharedPtr jptr)
     {
         auto jtype = jptr->type;
 
+        auto jname = jptr->name;
+
         if(jtype == urdf::Joint::FIXED)
         {
-            continue;
+            return;
         }
 
         // get parametrization from implementation
@@ -162,7 +187,7 @@ void XBotInterface2::Impl::finalize()
         // not found?
         if(jparam.id < 0)
         {
-            throw std::runtime_error("joint " + jname + " not found");
+            throw std::runtime_error("joint " + jname + " not found in implementation");
         }
 
         // save id, nq, nv, iq, iv, name, neutral config
@@ -184,8 +209,21 @@ void XBotInterface2::Impl::finalize()
         nq += jparam.nq;
         nv += jparam.nv;
         nj += 1;
+    };
 
-    }
+    std::function<void(urdf::LinkConstSharedPtr)> pre_order_traversal =
+            [&](urdf::LinkConstSharedPtr root)
+    {
+        for(auto j : root->child_joints)
+        {
+            handle_joint(j);
+            pre_order_traversal(_urdf->getLink(j->child_link_name));
+        }
+
+    };
+
+    // recursivley traverse urdf tree (depth-first)
+    pre_order_traversal(_urdf->root_link_);
 
     // resize state and cmd
     detail::resize(_state, nq, nv);
