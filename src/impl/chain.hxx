@@ -3,7 +3,7 @@
 
 #include <Eigen/Dense>
 
-#include <xbot2_interface/types.h>
+#include <xbot2_interface/common/types.h>
 #include "state.hxx"
 
 

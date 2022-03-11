@@ -1,7 +1,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#include <xbot2_interface/types.h>
+#include <xbot2_interface/common/types.h>
 #include <string>
 
 namespace XBot {

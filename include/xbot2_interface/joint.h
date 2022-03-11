@@ -3,8 +3,8 @@
 
 #include <urdf_model/joint.h>
 
-#include <xbot2_interface/types.h>
-#include <xbot2_interface/state_interface.h>
+#include "common/types.h"
+#include "common/state_interface.h"
 
 namespace XBot {
 
@@ -29,6 +29,8 @@ public:
 
 
     void setJointPosition(double q);
+    void setJointVelocity(double v);
+    void setJointEffort(double tau);
 
     void setTransform(const Eigen::Affine3d& b_T_c);
     void setVelocity(const Eigen::Vector6d& b_vc);

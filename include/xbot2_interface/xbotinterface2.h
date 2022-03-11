@@ -4,10 +4,11 @@
 #include <urdf_model/model.h>
 #include <srdfdom/model.h>
 
-#include <xbot2_interface/state_interface.h>
 #include "joint.h"
 
 namespace XBot {
+
+class RobotInterface2;
 
 class XBotInterface2 : public StateInterface<XBotInterface2>
 {
@@ -27,16 +28,15 @@ public:
     XBotInterface2(urdf::ModelConstSharedPtr urdf,
                    srdf::ModelConstSharedPtr srdf = nullptr);
 
-    static XBotInterface2::Ptr getModel(urdf::ModelConstSharedPtr urdf,
-                                        srdf::ModelConstSharedPtr srdf,
-                                        std::string type);
+    XBotInterface2(XBotInterface2&&) = default;
+
+    static UniquePtr getModel(urdf::ModelConstSharedPtr urdf,
+                              srdf::ModelConstSharedPtr srdf,
+                              std::string type);
 
     urdf::ModelConstSharedPtr getUrdf() const;
     srdf::ModelConstSharedPtr getSrdf() const;
 
-    int getNq() const;
-
-    int getNv() const;
 
     bool hasRobotState(std::string_view name) const;
 
@@ -63,6 +63,8 @@ public:
     ~XBotInterface2();
 
     friend StateInterface<XBotInterface2>;
+
+    friend RobotInterface2;
 
 protected:
 

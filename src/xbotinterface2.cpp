@@ -1,4 +1,4 @@
-#include <xbot2_interface/plugin.h>
+#include <xbot2_interface/common/plugin.h>
 
 #include "impl/xbotinterface2.hxx"
 #include "impl/utils.h"
@@ -19,17 +19,17 @@ XBotInterface2::XBotInterface2(urdf::ModelConstSharedPtr urdf,
     impl = std::make_unique<Impl>(urdf, srdf, *this);
 }
 
-XBotInterface2::Ptr XBotInterface2::getModel(urdf::ModelConstSharedPtr urdf,
-                                             srdf::ModelConstSharedPtr srdf,
-                                             std::string type)
+XBotInterface2::UniquePtr XBotInterface2::getModel(urdf::ModelConstSharedPtr urdf,
+                                                   srdf::ModelConstSharedPtr srdf,
+                                                   std::string type)
 {
     XBotInterface2::ConfigOptions opt { urdf, srdf };
 
     auto mdl = CallFunction<XBotInterface2*>("libmodelinterface2_" + type + ".so",
-                 "xbot2_create_model_plugin_" + type,
-                 opt);
+                                             "xbot2_create_model_plugin_" + type,
+                                             opt);
 
-    return Ptr(mdl);
+    return UniquePtr(mdl);
 }
 
 urdf::ModelConstSharedPtr XBotInterface2::getUrdf() const
@@ -40,16 +40,6 @@ urdf::ModelConstSharedPtr XBotInterface2::getUrdf() const
 srdf::ModelConstSharedPtr XBotInterface2::getSrdf() const
 {
     return impl->_srdf;
-}
-
-int XBotInterface2::getNq() const
-{
-    return impl->_state.qlink.size();
-}
-
-int XBotInterface2::getNv() const
-{
-    return impl->_state.vlink.size();
 }
 
 bool XBotInterface2::hasRobotState(std::string_view name) const
@@ -82,7 +72,14 @@ Joint::Ptr XBotInterface2::getJoint(int i)
 
 Joint::ConstPtr XBotInterface2::getJoint(std::string_view name) const
 {
-    int i = impl->_name_id_map.find(name)->second;
+    auto it = impl->_name_id_map.find(name);
+
+    if(it == impl->_name_id_map.end())
+    {
+        return nullptr;
+    }
+
+    int i = it->second;
     return impl->_joints.at(i);
 }
 
@@ -224,6 +221,20 @@ void XBotInterface2::Impl::finalize()
 
     // recursivley traverse urdf tree (depth-first)
     pre_order_traversal(_urdf->root_link_);
+
+    // consistency checks
+    for(int i = 0; i < nj; i++)
+    {
+        if(_joint_iq[i] + _joint_nq[i] > nq)
+        {
+            throw std::runtime_error("joint q index consistency check failed");
+        }
+
+        if(_joint_iv[i] + _joint_nv[i] > nv)
+        {
+            throw std::runtime_error("joint v index consistency check failed");
+        }
+    }
 
     // resize state and cmd
     detail::resize(_state, nq, nv);

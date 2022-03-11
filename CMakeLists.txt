@@ -6,12 +6,11 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_INSTALL_RPATH $ORIGIN)
-set(CMAKE_BUILD_RPATH $ORIGIN)
+set(CMAKE_BUILD_RPATH "$ORIGIN;$ORIGIN/pinocchio;$ORIGIN/rbdl;$ORIGIN/ros")
 
 find_package(urdf REQUIRED)
 find_package(srdfdom REQUIRED)
 find_package(Eigen3 REQUIRED)
-find_package(pinocchio REQUIRED)
 
 include_directories(include/
     ${srdfdom_INCLUDE_DIRS})
@@ -19,6 +18,7 @@ include_directories(include/
 add_library(xbot2_interface SHARED
     src/state_interface.cpp
     src/xbotinterface2.cpp
+    src/robotinterface2.cpp
     src/chain.cpp
     src/joint.cpp)
 
@@ -28,14 +28,22 @@ target_link_libraries(xbot2_interface
     ${srdfdom_LIBRARIES}
     Eigen3::Eigen)
 
-add_library(modelinterface2_pin SHARED
-    src/modelinterface2_pin.cpp)
 
-target_link_libraries(modelinterface2_pin
-    PUBLIC
-    pinocchio::pinocchio
-    xbot2_interface)
 
+find_package(pinocchio QUIET)
+if(${pinocchio_FOUND})
+    add_subdirectory(pinocchio/)
+endif()
+
+find_package(RBDL QUIET)
+if(${RBDL_FOUND})
+    add_subdirectory(rbdl/)
+endif()
+
+find_package(roscpp QUIET)
+if(${roscpp_FOUND})
+    add_subdirectory(ros/)
+endif()
 
 add_executable(test_main main.cpp)
 target_link_libraries(test_main xbot2_interface)

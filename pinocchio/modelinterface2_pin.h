@@ -6,7 +6,7 @@
 #include <pinocchio/multibody/data.hpp>
 #include <pinocchio/parsers/urdf.hpp>
 
-#include "impl/xbotinterface2.hxx"
+#include <xbot2_interface/xbotinterface2.h>
 
 
 

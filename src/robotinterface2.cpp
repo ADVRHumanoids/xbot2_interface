@@ -1,0 +1,77 @@
+#include "impl/xbotinterface2.hxx"
+#include "impl/robotinterface2.hxx"
+
+#include "impl/load_object.h"
+
+using namespace XBot;
+
+RobotInterface2::UniquePtr RobotInterface2::getRobot(urdf::ModelConstSharedPtr urdf,
+                                              srdf::ModelConstSharedPtr srdf,
+                                              std::string robot_type,
+                                              std::string model_type)
+{
+    XBotInterface2::ConfigOptions opt { urdf, srdf };
+
+    auto mdl = getModel(urdf, srdf, model_type);
+
+    auto rob = CallFunction<RobotInterface2*>(
+                "librobotinterface2_" + robot_type + ".so",
+                "xbot2_create_robot_plugin_" + robot_type,
+                std::move(mdl)
+                );
+
+    return UniquePtr(rob);
+}
+
+RobotInterface2::~RobotInterface2()
+{
+
+}
+
+RobotInterface2::RobotInterface2(std::unique_ptr<XBotInterface2> model):
+    XBotInterface2(model->getUrdf(), model->getSrdf())
+{
+    impl = std::make_unique<Impl>(*this, std::move(model));
+    finalize();
+}
+
+
+void XBot::RobotInterface2::update()
+{
+    return impl->_model->update();
+}
+
+MatConstRef XBot::RobotInterface2::getJacobian(std::string_view link_name) const
+{
+    return impl->_model->getJacobian(link_name);
+}
+
+Eigen::Affine3d XBot::RobotInterface2::getPose(std::string_view link_name) const
+{
+    return impl->_model->getPose(link_name);
+}
+
+VecConstRef XBot::RobotInterface2::sum(VecConstRef q0, VecConstRef v) const
+{
+    return impl->_model->sum(q0, v);
+}
+
+VecConstRef XBot::RobotInterface2::difference(VecConstRef q1, VecConstRef q0) const
+{
+    return impl->_model->difference(q1, q0);
+}
+
+XBotInterface2::JointParametrization XBot::RobotInterface2::get_joint_parametrization(std::string_view jname)
+{
+    return impl->_model->get_joint_parametrization(jname);
+}
+
+// impl
+
+RobotInterface2::Impl::Impl(RobotInterface2 &api,
+                            std::unique_ptr<XBotInterface2> model):
+    _api(api),
+    _model(std::move(model))
+{
+
+}

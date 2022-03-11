@@ -1,9 +1,21 @@
-#include <xbot2_interface/state_interface.h>
+#include <xbot2_interface/common/state_interface.h>
 #include "impl/joint.hxx"
 #include "impl/xbotinterface2.hxx"
 #include "impl/utils.h"
 
 using namespace XBot;
+
+template <class Derived>
+int StateInterface<Derived>::getNq() const
+{
+    return derived().impl->_state.qlink.size();
+}
+
+template <class Derived>
+int StateInterface<Derived>::getNv() const
+{
+    return derived().impl->_state.vlink.size();
+}
 
 template <class Derived>
 VecConstRef StateInterface<Derived>::getJointPosition() const

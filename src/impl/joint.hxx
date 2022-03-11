@@ -1,11 +1,10 @@
 #ifndef JOINT_HXX
 #define JOINT_HXX
 
-#include <xbot2_interface/types.h>
+#include <xbot2_interface/common/types.h>
+#include <xbot2_interface/joint.h>
 
-#include "../joint.h"
 #include "state.hxx"
-
 
 
 namespace XBot {

@@ -27,4 +27,24 @@
         *patch = XBOT2IFC_VERSION_PATCH; \
     }
 
+#define XBOT2_ROBOT_PLUGIN_FACTORY(Name) xbot2_create_robot_plugin_##Name
+#define XBOT2_ROBOT_PLUGIN_GETABI(Name) xbot2_get_robot_plugin_abi_version_##Name
+
+#define XBOT2_REGISTER_ROBOT_PLUGIN(Class, Type) \
+    extern "C" XBOT2_HELPER_DLL_EXPORT \
+    XBOT2_API ::XBot::RobotInterface2 * XBOT2_ROBOT_PLUGIN_FACTORY(Type)( \
+                            ::std::unique_ptr<::XBot::XBotInterface2> model \
+                            ) \
+    { \
+       return new Class(std::move(model)); \
+    } \
+    \
+    extern "C" XBOT2_HELPER_DLL_EXPORT \
+    void XBOT2_ROBOT_PLUGIN_GETABI(Type)(int* major, int* minor, int* patch) \
+    { \
+        *major = XBOT2IFC_VERSION_MAJOR; \
+        *minor = XBOT2IFC_VERSION_MINOR; \
+        *patch = XBOT2IFC_VERSION_PATCH; \
+    }
+
 #endif // PLUGIN_H

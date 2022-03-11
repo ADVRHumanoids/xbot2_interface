@@ -1,6 +1,6 @@
 #include "modelinterface2_pin.h"
 
-#include <xbot2_interface/plugin.h>
+#include <xbot2_interface/common/plugin.h>
 
 #include <pinocchio/algorithm/frames.hpp>
 #include <pinocchio/algorithm/jacobian.hpp>

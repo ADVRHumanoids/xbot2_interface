@@ -28,6 +28,21 @@ urdf::JointConstSharedPtr Joint::getUrdfJoint() const
     return impl->_urdf_joint;
 }
 
+void Joint::setJointPosition(double q)
+{
+    impl->_state.qlink[0] = q;
+}
+
+void Joint::setJointVelocity(double v)
+{
+    impl->_state.vlink[0] = v;
+}
+
+void Joint::setJointEffort(double tau)
+{
+    impl->_state.tau[0] = tau;
+}
+
 Joint::UniquePtr Joint::create(std::unique_ptr<Impl> impl)
 {
     auto ret = std::make_unique<Joint>();

@@ -10,6 +10,9 @@ struct StateInterface
 {
     friend Derived;
 
+    int getNq() const;
+    int getNv() const;
+
     VecConstRef getJointPosition() const;
     void setJointPosition(VecConstRef q);
 
@@ -21,6 +24,8 @@ struct StateInterface
 
     VecConstRef getJointEffort() const;
     void setJointEffort(VecConstRef tau);
+
+
 
 private:
 

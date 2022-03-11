@@ -5,9 +5,7 @@
 #include <string>
 #include <string_view>
 
-
-
-#include "../xbotinterface2.h"
+#include <xbot2_interface/xbotinterface2.h>
 #include "state.hxx"
 #include "chain.hxx"
 #include "joint.hxx"
