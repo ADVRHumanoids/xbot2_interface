@@ -10,7 +10,8 @@ namespace XBot {
 
 class XBotInterface2;
 
-class Joint : public StateInterface<Joint>
+class Joint : public ReadStateInterface<Joint>,
+              public WriteStateInterface<Joint>
 {
 
 public:
@@ -37,7 +38,8 @@ public:
     void setLocalVelocity(const Eigen::Vector6d& c_vc);
 
     friend class XBotInterface2;
-    friend StateInterface<Joint>;
+    friend ReadStateInterface<Joint>;
+    friend WriteStateInterface<Joint>;
 
 private:
 

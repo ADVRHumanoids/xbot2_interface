@@ -22,7 +22,8 @@ public:
          detail::CommandView cv,
          urdf::JointConstSharedPtr urdf_joint);
 
-    friend StateInterface<Joint>;
+    friend ReadStateInterface<Joint>;
+    friend WriteStateInterface<Joint>;
 
 private:
 

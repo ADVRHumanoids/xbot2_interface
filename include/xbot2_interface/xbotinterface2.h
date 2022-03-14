@@ -10,7 +10,8 @@ namespace XBot {
 
 class RobotInterface2;
 
-class XBotInterface2 : public StateInterface<XBotInterface2>
+class XBotInterface2 : public ReadStateInterface<XBotInterface2>,
+                       public WriteStateInterface<XBotInterface2>
 {
 
 public:
@@ -62,7 +63,9 @@ public:
 
     ~XBotInterface2();
 
-    friend StateInterface<XBotInterface2>;
+    friend ReadStateInterface<XBotInterface2>;
+
+    friend WriteStateInterface<XBotInterface2>;
 
     friend RobotInterface2;
 
@@ -84,11 +87,14 @@ protected:
 
     virtual JointParametrization get_joint_parametrization(std::string_view jname);
 
-private:
+
+protected:
 
     class Impl;
 
-    std::unique_ptr<Impl> impl;
+    XBotInterface2(std::shared_ptr<Impl> impl);
+
+    std::shared_ptr<Impl> impl;
 
 };
 

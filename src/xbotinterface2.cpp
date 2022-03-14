@@ -16,7 +16,13 @@ XBotInterface2::XBotInterface2(const XBotInterface2::ConfigOptions &opt):
 XBotInterface2::XBotInterface2(urdf::ModelConstSharedPtr urdf,
                                srdf::ModelConstSharedPtr srdf)
 {
-    impl = std::make_unique<Impl>(urdf, srdf, *this);
+    impl = std::make_shared<Impl>(urdf, srdf, *this);
+}
+
+XBotInterface2::XBotInterface2(std::shared_ptr<Impl> _impl):
+    impl(_impl)
+{
+
 }
 
 XBotInterface2::UniquePtr XBotInterface2::getModel(urdf::ModelConstSharedPtr urdf,
@@ -92,6 +98,7 @@ XBotInterface2::JointParametrization XBotInterface2::get_joint_parametrization(s
 {
     return impl->get_joint_parametrization(jname);
 }
+
 
 void XBotInterface2::finalize()
 {

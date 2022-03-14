@@ -48,11 +48,13 @@ int main(int argc, char **argv)
             continue;
         }
 
-        std::cout << robot->getJointPosition().transpose() << "\n\n";
+        robot->update();
 
-        std::cout << robot->getJointVelocity().transpose() << "\n\n";
+        std::cout << "pos " << robot->getJointPosition().transpose() << "\n\n";
 
-        std::cout << robot->getJointEffort().transpose() << "\n\n";
+        std::cout << "vel " << robot->getJointVelocity().transpose() << "\n\n";
+
+        std::cout << "ee " << robot->getPose("arm1_8").translation().transpose() << "\n\n";
 
         usleep(10000);
 

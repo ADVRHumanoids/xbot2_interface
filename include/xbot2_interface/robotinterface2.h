@@ -5,7 +5,9 @@
 
 namespace XBot {
 
-class RobotInterface2 : public XBotInterface2
+class RobotInterface2 : public XBotInterface2,
+                        public ReadCmdInterface<RobotInterface2>,
+                        protected WriteCmdInterface<RobotInterface2>
 {
 
 public:
@@ -23,6 +25,9 @@ public:
 
     ~RobotInterface2();
 
+    friend ReadCmdInterface<RobotInterface2>;
+    friend WriteCmdInterface<RobotInterface2>;
+
 protected:
 
     class Impl;
@@ -30,6 +35,12 @@ protected:
     std::unique_ptr<Impl> impl;
 
     RobotInterface2(std::unique_ptr<XBotInterface2> model);
+
+    // hide unwanted
+    using WriteStateInterface<XBotInterface2>::setJointPosition;
+    using WriteStateInterface<XBotInterface2>::setJointVelocity;
+    using WriteStateInterface<XBotInterface2>::setJointAcceleration;
+    using WriteStateInterface<XBotInterface2>::setJointEffort;
 
 
     // XBotInterface2 interface

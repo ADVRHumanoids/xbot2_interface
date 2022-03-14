@@ -37,8 +37,9 @@ public:
     JointParametrization get_joint_parametrization(std::string_view jname);
 
     void finalize();
-
-    friend StateInterface<XBotInterface2>;
+;
+    friend ReadStateInterface<XBotInterface2>;
+    friend WriteStateInterface<XBotInterface2>;
 
 private:
 

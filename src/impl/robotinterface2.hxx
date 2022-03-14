@@ -7,6 +7,7 @@
 
 #include <xbot2_interface/robotinterface2.h>
 
+#include "state.hxx"
 
 namespace XBot {
 
@@ -27,7 +28,6 @@ private:
 
     // model
     std::unique_ptr<XBotInterface2> _model;
-
 
 };
 

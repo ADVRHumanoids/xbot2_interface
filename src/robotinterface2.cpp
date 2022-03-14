@@ -29,7 +29,7 @@ RobotInterface2::~RobotInterface2()
 }
 
 RobotInterface2::RobotInterface2(std::unique_ptr<XBotInterface2> model):
-    XBotInterface2(model->getUrdf(), model->getSrdf())
+    XBotInterface2(model->impl)
 {
     impl = std::make_unique<Impl>(*this, std::move(model));
     finalize();
