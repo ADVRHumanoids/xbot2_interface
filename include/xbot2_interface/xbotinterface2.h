@@ -79,6 +79,10 @@ protected:
         int nv = -1;
 
         Eigen::VectorXd q0;
+
+        std::function<void(VecConstRef, VecRef)> fn_minimal_to_q;
+
+        std::function<void(const Eigen::Affine3d&, VecRef)> fn_maximal_to_q;
     };
 
 

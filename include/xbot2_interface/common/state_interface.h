@@ -34,6 +34,31 @@ private:
 
 };
 
+template <class Derived>
+struct CommandInterface
+{
+    friend Derived;
+
+    VecConstRef getCmdPosition() const;
+    VecConstRef getPositionReference() const;
+    void setPositionReference(VecConstRef q);
+
+    VecConstRef getStiffness() const;
+    void setStiffness(VecConstRef k);
+    VecConstRef getCmdStiffness() const;
+
+protected:
+
+    void setCmdPosition(VecConstRef q);
+    void setCmdStiffness(VecConstRef k);
+
+private:
+
+    Derived& derived();
+    const Derived& derived() const;
+
+};
+
 }
 
 #endif // STATE_INTERFACE_H

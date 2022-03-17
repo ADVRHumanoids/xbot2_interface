@@ -32,7 +32,9 @@ public:
     void setJointVelocity(double v);
     void setJointEffort(double tau);
 
-    void setTransform(const Eigen::Affine3d& b_T_c);
+    void setJointPositionMinimal(VecConstRef q);
+    void setJointPositionMinimal(double q);
+    void setJointPositionMaximal(const Eigen::Affine3d& b_T_c);
     void setVelocity(const Eigen::Vector6d& b_vc);
     void setLocalVelocity(const Eigen::Vector6d& c_vc);
 

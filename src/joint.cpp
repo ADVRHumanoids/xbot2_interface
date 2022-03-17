@@ -43,6 +43,24 @@ void Joint::setJointEffort(double tau)
     impl->_state.tau[0] = tau;
 }
 
+void Joint::setJointPositionMinimal(VecConstRef q)
+{
+    if(impl->fn_minimal_to_q)
+    {
+        impl->fn_minimal_to_q(q, impl->_state.qlink);
+        return;
+    }
+
+    StateInterface<Joint>::setJointPosition(q);
+
+}
+
+void Joint::setJointPositionMinimal(double q)
+{
+    Eigen::Matrix<double, 1, 1> _q(q);
+    setJointPositionMinimal(_q);
+}
+
 Joint::UniquePtr Joint::create(std::unique_ptr<Impl> impl)
 {
     auto ret = std::make_unique<Joint>();
