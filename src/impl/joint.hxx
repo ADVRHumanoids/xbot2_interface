@@ -14,7 +14,6 @@ class Joint::Impl
 
 public:
 
-    friend class Joint;
 
     XBOT_DECLARE_SMART_PTR(Joint)
 
@@ -26,9 +25,19 @@ public:
 
     std::function<void(VecConstRef, VecRef)> fn_minimal_to_q;
 
+    friend Joint;
+
+    friend ModelJoint;
+
+    friend RobotJoint;
+
     friend ReadStateInterface<Joint>;
 
-    friend WriteStateInterface<Joint>;
+    friend WriteStateInterface<ModelJoint>;
+
+    friend ReadCmdInterface<RobotJoint>;
+
+    friend WriteCmdInterface<RobotJoint>;
 
 private:
 
@@ -39,7 +48,6 @@ private:
     detail::CommandView _cmd;
 
     std::function<VecConstRef(const Eigen::Vector6d&)> _set_local_vel_fn;
-
 
 };
 

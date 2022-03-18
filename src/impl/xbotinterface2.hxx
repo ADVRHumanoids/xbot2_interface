@@ -19,27 +19,25 @@ class XBotInterface2::Impl
 public:
 
     friend class XBotInterface2;
+    friend class ModelInterface2;
+    friend ReadStateInterface<XBotInterface2>;
+    friend WriteStateInterface<ModelInterface2>;
 
     Impl(urdf::ModelConstSharedPtr urdf,
          srdf::ModelConstSharedPtr srdf,
          XBotInterface2& api);
 
-    Eigen::VectorXd getRobotState(std::string_view name) const;
+    Eigen::VectorXd getRobotState(string_const_ref name) const;
 
-    int getJointId(std::string_view jname) const;
+    UniversalJoint::Ptr getJoint(string_const_ref name) const;
 
-    int getJointNq(int id) const;
-    int getJointNq(std::string_view jname) const;
+    UniversalJoint::Ptr getJoint(int i) const;
 
-    int getJointNv(int id) const;
-    int getJointNv(std::string_view jname) const;
-
-    JointParametrization get_joint_parametrization(std::string_view jname);
+    JointParametrization get_joint_parametrization(string_const_ref jname);
 
     void finalize();
-;
-    friend ReadStateInterface<XBotInterface2>;
-    friend WriteStateInterface<XBotInterface2>;
+
+
 
 private:
 
@@ -74,7 +72,7 @@ private:
     std::vector<std::string> _joint_name;
 
     // joints
-    std::vector<Joint::Ptr> _joints;
+    std::vector<UniversalJoint::Ptr> _joints;
 
     // chains
     std::map<std::string, Chain::Ptr> _chain_map;

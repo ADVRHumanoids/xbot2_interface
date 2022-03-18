@@ -25,17 +25,25 @@ XBotInterface2::XBotInterface2(std::shared_ptr<Impl> _impl):
 
 }
 
-XBotInterface2::UniquePtr XBotInterface2::getModel(urdf::ModelConstSharedPtr urdf,
-                                                   srdf::ModelConstSharedPtr srdf,
-                                                   std::string type)
+ModelInterface2::UniquePtr ModelInterface2::getModel(urdf::ModelConstSharedPtr urdf,
+                                                     srdf::ModelConstSharedPtr srdf,
+                                                     std::string type)
 {
     XBotInterface2::ConfigOptions opt { urdf, srdf };
 
-    auto mdl = CallFunction<XBotInterface2*>("libmodelinterface2_" + type + ".so",
-                                             "xbot2_create_model_plugin_" + type,
-                                             opt);
+    auto mdl = CallFunction<ModelInterface2*>("libmodelinterface2_" + type + ".so",
+                                              "xbot2_create_model_plugin_" + type,
+                                              opt);
 
     return UniquePtr(mdl);
+}
+
+void ModelInterface2::syncFrom(const XBotInterface2 &other)
+{
+    setJointPosition(other.getJointPosition());
+    setJointVelocity(other.getJointVelocity());
+    setJointEffort(other.getJointEffort());
+    setJointAcceleration(other.getJointAcceleration());
 }
 
 urdf::ModelConstSharedPtr XBotInterface2::getUrdf() const
@@ -48,7 +56,7 @@ srdf::ModelConstSharedPtr XBotInterface2::getSrdf() const
     return impl->_srdf;
 }
 
-bool XBotInterface2::hasRobotState(std::string_view name) const
+bool XBotInterface2::hasRobotState(string_const_ref name) const
 {
     try
     {
@@ -61,42 +69,56 @@ bool XBotInterface2::hasRobotState(std::string_view name) const
     }
 }
 
-Eigen::VectorXd XBotInterface2::getRobotState(std::string_view name) const
+Eigen::VectorXd XBotInterface2::getRobotState(string_const_ref name) const
 {
     return impl->getRobotState(name);
 }
 
-Joint::Ptr XBotInterface2::getJoint(std::string_view name)
+ModelJoint::Ptr ModelInterface2::getJoint(string_const_ref name)
 {
-    return std::const_pointer_cast<Joint>(const_cast<const XBotInterface2&>(*this).getJoint(name));
+    return impl->getJoint(name);
 }
 
-Joint::Ptr XBotInterface2::getJoint(int i)
+ModelJoint::Ptr ModelInterface2::getJoint(int i)
 {
-    return std::const_pointer_cast<Joint>(const_cast<const XBotInterface2&>(*this).getJoint(i));
+    return impl->getJoint(i);
 }
 
-Joint::ConstPtr XBotInterface2::getJoint(std::string_view name) const
+Joint::ConstPtr XBotInterface2::getJoint(string_const_ref name) const
 {
-    auto it = impl->_name_id_map.find(name);
-
-    if(it == impl->_name_id_map.end())
-    {
-        return nullptr;
-    }
-
-    int i = it->second;
-    return impl->_joints.at(i);
+    return impl->getJoint(name);
 }
 
 Joint::ConstPtr XBotInterface2::getJoint(int i) const
 {
-    return impl->_joints.at(i);
+    return impl->getJoint(i);
 }
 
-XBotInterface2::JointParametrization XBotInterface2::get_joint_parametrization(std::string_view jname)
+void XBotInterface2::getJacobian(string_const_ref link_name, MatRef J) const
+{
+    J.noalias() = getJacobian(link_name);
+}
+
+Eigen::Vector6d XBotInterface2::getVelocityTwist(string_const_ref link_name) const
+{
+    Eigen::Vector6d ret;
+    ret.noalias() = getJacobian(link_name) * getJointVelocity();
+    return ret;
+}
+
+XBotInterface2::JointParametrization XBotInterface2::get_joint_parametrization(string_const_ref jname)
 {
     return impl->get_joint_parametrization(jname);
+}
+
+UniversalJoint::Ptr XBotInterface2::getUniversalJoint(string_const_ref name)
+{
+    return impl->getJoint(name);
+}
+
+UniversalJoint::Ptr XBotInterface2::getUniversalJoint(int i)
+{
+    return impl->getJoint(i);
 }
 
 
@@ -121,7 +143,7 @@ XBotInterface2::Impl::Impl(urdf::ModelConstSharedPtr urdf,
 
 }
 
-Eigen::VectorXd XBotInterface2::Impl::getRobotState(std::string_view name) const
+Eigen::VectorXd XBotInterface2::Impl::getRobotState(string_const_ref name) const
 {
     if(!_srdf)
     {
@@ -157,7 +179,26 @@ Eigen::VectorXd XBotInterface2::Impl::getRobotState(std::string_view name) const
     throw std::out_of_range("cannot retrieve robot state: no such state");
 }
 
-XBotInterface2::JointParametrization XBotInterface2::Impl::get_joint_parametrization(std::string_view jname)
+UniversalJoint::Ptr XBotInterface2::Impl::getJoint(string_const_ref name) const
+{
+    auto it = _name_id_map.find(name);
+
+    if(it == _name_id_map.end())
+    {
+        return nullptr;
+    }
+
+    int i = it->second;
+    return _joints.at(i);
+}
+
+UniversalJoint::Ptr XBotInterface2::Impl::getJoint(int i) const
+{
+    return _joints.at(i);
+}
+
+XBotInterface2::JointParametrization
+XBotInterface2::Impl::get_joint_parametrization(string_const_ref jname)
 {
     JointParametrization ret;
 
@@ -283,7 +324,7 @@ void XBotInterface2::Impl::finalize()
         jimpl->fn_maximal_to_q = jparam_map.at(jname).fn_maximal_to_q;
 
         // create and save joint
-        Joint::Ptr j =  Joint::create(std::move(jimpl));
+        auto j =  std::make_shared<UniversalJoint>(std::move(jimpl));
         _joints.push_back(j);
 
     }

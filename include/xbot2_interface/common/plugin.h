@@ -12,7 +12,7 @@
 
 #define XBOT2_REGISTER_MODEL_PLUGIN(Class, Type) \
     extern "C" XBOT2_HELPER_DLL_EXPORT \
-    XBOT2_API ::XBot::XBotInterface2 * XBOT2_MODEL_PLUGIN_FACTORY(Type)( \
+    XBOT2_API ::XBot::ModelInterface2 * XBOT2_MODEL_PLUGIN_FACTORY(Type)( \
                             const ::XBot::XBotInterface2::ConfigOptions& opt \
                             ) \
     { \

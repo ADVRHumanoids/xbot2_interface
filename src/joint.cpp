@@ -3,17 +3,17 @@
 
 using namespace XBot;
 
-std::string_view Joint::getName() const
+string_const_ref Joint::getName() const
 {
     return getUrdfJoint()->name;
 }
 
-std::string_view Joint::getParentLink() const
+string_const_ref Joint::getParentLink() const
 {
     return getUrdfJoint()->parent_link_name;
 }
 
-std::string_view Joint::getChildLink() const
+string_const_ref Joint::getChildLink() const
 {
     return getUrdfJoint()->child_link_name;
 }
@@ -28,45 +28,57 @@ urdf::JointConstSharedPtr Joint::getUrdfJoint() const
     return impl->_urdf_joint;
 }
 
-void Joint::setJointPosition(double q)
+void Joint::minimalToPosition(VecConstRef q_minimal, VecRef q) const
 {
-    impl->_state.qlink[0] = q;
-}
-
-void Joint::setJointVelocity(double v)
-{
-    impl->_state.vlink[0] = v;
-}
-
-void Joint::setJointEffort(double tau)
-{
-    impl->_state.tau[0] = tau;
-}
-
-void Joint::setJointPositionMinimal(VecConstRef q)
-{
+    // if any mapping needs to be done, invoke handler
     if(impl->fn_minimal_to_q)
     {
-        impl->fn_minimal_to_q(q, impl->_state.qlink);
+        impl->fn_minimal_to_q(q_minimal, q);
         return;
     }
 
-    StateInterface<Joint>::setJointPosition(q);
+    // otherwise just fill the buffer
+    q = q_minimal;
+}
+
+void Joint::minimalToPosition(double q_minimal, VecRef q) const
+{
+    Eigen::Matrix<double, 1, 1> _q_minimal(q_minimal);
+    minimalToPosition(_q_minimal, q);
+}
+
+Joint::Joint(std::unique_ptr<Joint::Impl> _impl):
+    impl(std::move(_impl))
+{
 
 }
 
-void Joint::setJointPositionMinimal(double q)
+//void ModelJoint::setJointPosition(double q)
+//{
+//    impl->_state.qlink[0] = q;
+//}
+
+//void ModelJoint::setJointVelocity(double v)
+//{
+//    impl->_state.vlink[0] = v;
+//}
+
+//void ModelJoint::setJointEffort(double tau)
+//{
+//    impl->_state.tau[0] = tau;
+//}
+
+void ModelJoint::setJointPositionMinimal(VecConstRef q)
+{
+    minimalToPosition(q, impl->_state.qlink);
+}
+
+void ModelJoint::setJointPositionMinimal(double q)
 {
     Eigen::Matrix<double, 1, 1> _q(q);
     setJointPositionMinimal(_q);
 }
 
-Joint::UniquePtr Joint::create(std::unique_ptr<Impl> impl)
-{
-    auto ret = std::make_unique<Joint>();
-    ret->impl = std::move(impl);
-    return ret;
-}
 
 Joint::Impl::Impl(detail::StateView sv,
                   detail::CommandView cv,
@@ -78,4 +90,12 @@ Joint::Impl::Impl(detail::StateView sv,
     std::cout << "joint " << urdf_joint->name << "\n"
          << sv.qlink.transpose() << "\n"
          << sv.vlink.transpose() << "\n";
+}
+
+UniversalJoint::UniversalJoint(std::unique_ptr<Joint::Impl> impl):
+    Joint(std::move(impl)),
+    RobotJoint(nullptr),
+    ModelJoint(nullptr)
+{
+
 }

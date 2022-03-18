@@ -92,9 +92,14 @@ const Derived& WriteStateInterface<Derived>::derived() const
 namespace XBot {
 
 template struct ReadStateInterface<Joint>;
-template struct WriteStateInterface<Joint>;
+template struct WriteStateInterface<ModelJoint>;
+template struct ReadCmdInterface<RobotJoint>;
+template struct WriteCmdInterface<RobotJoint>;
 
 template struct ReadStateInterface<XBotInterface2>;
-template struct WriteStateInterface<XBotInterface2>;
+template struct WriteStateInterface<ModelInterface2>;
+template struct ReadCmdInterface<RobotInterface2>;
+template struct WriteCmdInterface<RobotInterface2>;
+
 
 }

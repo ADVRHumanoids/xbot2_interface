@@ -10,8 +10,9 @@ namespace XBot {
 
 class RobotInterface2;
 
-class XBotInterface2 : public ReadStateInterface<XBotInterface2>,
-                       public WriteStateInterface<XBotInterface2>
+class ModelInterface2;
+
+class XBotInterface2 : public ReadStateInterface<XBotInterface2>
 {
 
 public:
@@ -31,31 +32,27 @@ public:
 
     XBotInterface2(XBotInterface2&&) = default;
 
-    static UniquePtr getModel(urdf::ModelConstSharedPtr urdf,
-                              srdf::ModelConstSharedPtr srdf,
-                              std::string type);
-
     urdf::ModelConstSharedPtr getUrdf() const;
+
     srdf::ModelConstSharedPtr getSrdf() const;
 
+    bool hasRobotState(string_const_ref name) const;
 
-    bool hasRobotState(std::string_view name) const;
+    Eigen::VectorXd getRobotState(string_const_ref name) const;
 
-    Eigen::VectorXd getRobotState(std::string_view name) const;
-
-    Joint::Ptr getJoint(std::string_view name);
-
-    Joint::Ptr getJoint(int i);
-
-    Joint::ConstPtr getJoint(std::string_view name) const;
+    Joint::ConstPtr getJoint(string_const_ref name) const;
 
     Joint::ConstPtr getJoint(int i) const;
 
     virtual void update() = 0;
 
-    virtual MatConstRef getJacobian(std::string_view link_name) const = 0;
+    virtual MatConstRef getJacobian(string_const_ref link_name) const = 0;
 
-    virtual Eigen::Affine3d getPose(std::string_view link_name) const = 0;
+    void getJacobian(string_const_ref link_name, MatRef J) const;
+
+    virtual Eigen::Affine3d getPose(string_const_ref link_name) const = 0;
+
+    virtual Eigen::Vector6d getVelocityTwist(string_const_ref link_name) const;
 
     virtual VecConstRef sum(VecConstRef q0, VecConstRef v) const = 0;
 
@@ -65,7 +62,7 @@ public:
 
     friend ReadStateInterface<XBotInterface2>;
 
-    friend WriteStateInterface<XBotInterface2>;
+    friend WriteStateInterface<ModelInterface2>;
 
     friend RobotInterface2;
 
@@ -89,16 +86,42 @@ protected:
     };
 
 
-    virtual JointParametrization get_joint_parametrization(std::string_view jname);
+    virtual JointParametrization get_joint_parametrization(string_const_ref jname);
 
 
 protected:
+
+    UniversalJoint::Ptr getUniversalJoint(string_const_ref name);
+
+    UniversalJoint::Ptr getUniversalJoint(int i);
 
     class Impl;
 
     XBotInterface2(std::shared_ptr<Impl> impl);
 
     std::shared_ptr<Impl> impl;
+
+};
+
+class ModelInterface2 : public XBotInterface2,
+                        public WriteStateInterface<ModelInterface2>
+{
+
+public:
+
+    XBOT_DECLARE_SMART_PTR(ModelInterface2);
+
+    using XBotInterface2::XBotInterface2;
+
+    static UniquePtr getModel(urdf::ModelConstSharedPtr urdf,
+                              srdf::ModelConstSharedPtr srdf,
+                              std::string type);
+
+    void syncFrom(const XBotInterface2& other);
+
+    ModelJoint::Ptr getJoint(string_const_ref name);
+
+    ModelJoint::Ptr getJoint(int i);
 
 };
 

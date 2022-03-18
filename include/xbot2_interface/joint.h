@@ -10,47 +10,93 @@ namespace XBot {
 
 class XBotInterface2;
 
-class Joint : public ReadStateInterface<Joint>,
-              public WriteStateInterface<Joint>
+class Joint : public ReadStateInterface<Joint>
 {
 
 public:
 
     XBOT_DECLARE_SMART_PTR(Joint);
 
-    std::string_view getName() const;
+    string_const_ref getName() const;
 
-    std::string_view getParentLink() const;
+    string_const_ref getParentLink() const;
 
-    std::string_view getChildLink() const;
+    string_const_ref getChildLink() const;
 
     int getType() const;
 
     urdf::JointConstSharedPtr getUrdfJoint() const;
 
+    void minimalToPosition(VecConstRef q_minimal,
+                           VecRef q) const;
 
-    void setJointPosition(double q);
-    void setJointVelocity(double v);
-    void setJointEffort(double tau);
+    void minimalToPosition(double q_minimal,
+                           VecRef q) const;
 
-    void setJointPositionMinimal(VecConstRef q);
-    void setJointPositionMinimal(double q);
-    void setJointPositionMaximal(const Eigen::Affine3d& b_T_c);
-    void setVelocity(const Eigen::Vector6d& b_vc);
-    void setLocalVelocity(const Eigen::Vector6d& c_vc);
+    void maximalToPosition(const Eigen::Affine3d& p_T_c,
+                           VecRef q) const;
 
     friend class XBotInterface2;
     friend ReadStateInterface<Joint>;
-    friend WriteStateInterface<Joint>;
 
-private:
+protected:
 
     class Impl;
 
     std::unique_ptr<Impl> impl;
 
-    static UniquePtr create(std::unique_ptr<Impl>);
+    Joint(std::unique_ptr<Impl>);
 
+};
+
+class ModelJoint : public virtual Joint,
+        public WriteStateInterface<ModelJoint>
+{
+
+public:
+
+    XBOT_DECLARE_SMART_PTR(ModelJoint);
+
+    void setJointPositionMinimal(VecConstRef q);
+    void setJointPositionMinimal(double q);
+    void setJointPositionMaximal(const Eigen::Affine3d& b_T_c);
+//    void setVelocity(const Eigen::Vector6d& b_vc);
+//    void setLocalVelocity(const Eigen::Vector6d& c_vc);
+
+    friend WriteStateInterface<ModelJoint>;
+
+protected:
+
+    using Joint::Joint;
+
+};
+
+class RobotJoint : public virtual Joint,
+        public ReadCmdInterface<RobotJoint>
+{
+
+public:
+
+    XBOT_DECLARE_SMART_PTR(RobotJoint);
+
+    friend class RobotInterface2;
+
+protected:
+
+    using Joint::Joint;
+
+};
+
+class UniversalJoint : public RobotJoint,
+                       public ModelJoint,
+                       public WriteCmdInterface<UniversalJoint>
+{
+
+public:
+
+    XBOT_DECLARE_SMART_PTR(UniversalJoint);
+
+    UniversalJoint(std::unique_ptr<Joint::Impl> impl);
 };
 
 }

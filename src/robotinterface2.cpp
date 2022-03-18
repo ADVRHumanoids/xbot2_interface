@@ -12,7 +12,7 @@ RobotInterface2::UniquePtr RobotInterface2::getRobot(urdf::ModelConstSharedPtr u
 {
     XBotInterface2::ConfigOptions opt { urdf, srdf };
 
-    auto mdl = getModel(urdf, srdf, model_type);
+    auto mdl = ModelInterface2::getModel(urdf, srdf, model_type);
 
     auto rob = CallFunction<RobotInterface2*>(
                 "librobotinterface2_" + robot_type + ".so",
@@ -41,12 +41,12 @@ void XBot::RobotInterface2::update()
     return impl->_model->update();
 }
 
-MatConstRef XBot::RobotInterface2::getJacobian(std::string_view link_name) const
+MatConstRef XBot::RobotInterface2::getJacobian(string_const_ref link_name) const
 {
     return impl->_model->getJacobian(link_name);
 }
 
-Eigen::Affine3d XBot::RobotInterface2::getPose(std::string_view link_name) const
+Eigen::Affine3d XBot::RobotInterface2::getPose(string_const_ref link_name) const
 {
     return impl->_model->getPose(link_name);
 }
@@ -61,7 +61,7 @@ VecConstRef XBot::RobotInterface2::difference(VecConstRef q1, VecConstRef q0) co
     return impl->_model->difference(q1, q0);
 }
 
-XBotInterface2::JointParametrization XBot::RobotInterface2::get_joint_parametrization(std::string_view jname)
+XBotInterface2::JointParametrization XBot::RobotInterface2::get_joint_parametrization(string_const_ref jname)
 {
     return impl->_model->get_joint_parametrization(jname);
 }

@@ -9,7 +9,7 @@
 using namespace XBot;
 
 ModelInterface2Pin::ModelInterface2Pin(const ConfigOptions& opt):
-    XBotInterface2(opt)
+    ModelInterface2(opt)
 {
     pinocchio::urdf::buildModel(std::const_pointer_cast<urdf::Model>(getUrdf()), _mdl);
     _data = pinocchio::Data(_mdl);
@@ -27,7 +27,7 @@ void ModelInterface2Pin::update()
     pinocchio::computeJointJacobians(_mdl, _data, getJointPosition());
 }
 
-Eigen::Affine3d ModelInterface2Pin::getPose(std::string_view link_name) const
+Eigen::Affine3d ModelInterface2Pin::getPose(string_const_ref link_name) const
 {
     Eigen::Affine3d ret;
     auto frame_idx = _mdl.getFrameId(std::string(link_name));
@@ -36,7 +36,7 @@ Eigen::Affine3d ModelInterface2Pin::getPose(std::string_view link_name) const
     return ret;
 }
 
-MatConstRef ModelInterface2Pin::getJacobian(std::string_view link_name) const
+MatConstRef ModelInterface2Pin::getJacobian(string_const_ref link_name) const
 {
     auto frame_idx = _mdl.getFrameId(std::string(link_name));
     pinocchio::getFrameJacobian(_mdl, _data, frame_idx, pinocchio::ReferenceFrame::LOCAL_WORLD_ALIGNED, _tmp.J);
@@ -54,7 +54,7 @@ VecConstRef ModelInterface2Pin::difference(VecConstRef q1, VecConstRef q0) const
     return pinocchio::difference(_mdl, q0, q1);
 }
 
-XBotInterface2::JointParametrization ModelInterface2Pin::get_joint_parametrization(std::string_view jname)
+XBotInterface2::JointParametrization ModelInterface2Pin::get_joint_parametrization(string_const_ref jname)
 {
     JointParametrization ret;
 

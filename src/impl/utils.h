@@ -7,7 +7,7 @@
 namespace XBot {
 
 template <typename T1, typename T2>
-inline void check_and_set(const T1& from, T2& to, std::string_view name)
+inline void check_and_set(const T1& from, T2& to, string_const_ref name)
 {
     if(from.size() == to.size())
     {

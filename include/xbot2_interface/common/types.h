@@ -18,6 +18,9 @@ typedef Eigen::Ref<const Eigen::VectorXd> VecConstRef;
 typedef Eigen::Ref<Eigen::MatrixXd> MatRef;
 typedef Eigen::Ref<const Eigen::MatrixXd> MatConstRef;
 
+typedef std::string& string_ref;
+typedef const std::string& string_const_ref;
+
 }
 
 namespace Eigen {

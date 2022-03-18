@@ -48,7 +48,7 @@ void RobotInterface2Ros::on_js_recv(xbot_msgs::JointStateConstPtr msg)
 
     for(size_t i = 0; i < msg->name.size(); i++)
     {
-        auto j = getJoint(msg->name[i]);
+        auto j = getUniversalJoint(msg->name[i]);
 
         if(!j)
         {
@@ -62,16 +62,21 @@ void RobotInterface2Ros::on_js_recv(xbot_msgs::JointStateConstPtr msg)
 
         if(j->getNq() > 1)
         {
-            j->setJointPositionMinimal(msg->link_position[i]);
+            Eigen::VectorXd q;
+            j->minimalToPosition(msg->link_position[i], q);
+            j->setJointPosition(q);
         }
         else
         {
-            j->setJointPosition(msg->link_position[i]);
+            auto q = Eigen::Matrix<double, 1, 1>(msg->link_position[i]);
+            j->setJointPosition(q);
         }
 
-        j->setJointVelocity(msg->link_velocity[i]);
+        auto v = Eigen::Matrix<double, 1, 1>(msg->link_velocity[i]);
+        j->setJointVelocity(v);
 
-        j->setJointEffort(msg->effort[i]);
+        auto tau = Eigen::Matrix<double, 1, 1>(msg->effort[i]);
+        j->setJointEffort(tau);
     }
 }
 

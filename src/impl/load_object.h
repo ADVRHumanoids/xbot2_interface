@@ -100,7 +100,7 @@ RetType CallFunction(std::string lib_name,
     /* Not able to open so, report error */
     if(!lib_name.empty() && !lib_handle)
     {
-        throw std::runtime_error("lib '" + lib_name + "' not found");
+        throw std::runtime_error("lib '" + lib_name + "' not found: " + std::string(dlerror()));
     }
 
     /* Typedef for the factory type */

@@ -7,7 +7,7 @@
 using namespace XBot;
 
 ModelInterface2Rbdl::ModelInterface2Rbdl(const XBotInterface2::ConfigOptions &opt):
-    XBotInterface2(opt)
+    ModelInterface2(opt)
 {
     // convert urdf dom -> string
     auto tixml = urdf::exportURDF(const_cast<urdf::Model&>(*getUrdf()));
@@ -38,7 +38,7 @@ void ModelInterface2Rbdl::update()
     RigidBodyDynamics::UpdateKinematics(_mdl, getJointPosition(), getJointVelocity(), getJointAcceleration());
 }
 
-MatConstRef ModelInterface2Rbdl::getJacobian(std::string_view link_name) const
+MatConstRef ModelInterface2Rbdl::getJacobian(string_const_ref link_name) const
 {
     auto body_id = _mdl.GetBodyId(std::string(link_name).c_str());
     _tmp.J.setZero(6, getNv());
@@ -54,7 +54,7 @@ MatConstRef ModelInterface2Rbdl::getJacobian(std::string_view link_name) const
     return _tmp.Jaux;
 }
 
-Eigen::Affine3d ModelInterface2Rbdl::getPose(std::string_view link_name) const
+Eigen::Affine3d ModelInterface2Rbdl::getPose(string_const_ref link_name) const
 {
     int body_id = _mdl.GetBodyId(std::string(link_name).c_str());
 
@@ -88,7 +88,7 @@ VecConstRef ModelInterface2Rbdl::difference(VecConstRef q1, VecConstRef q0) cons
     return _tmp.vdiff;
 }
 
-XBotInterface2::JointParametrization ModelInterface2Rbdl::get_joint_parametrization(std::string_view jname)
+XBotInterface2::JointParametrization ModelInterface2Rbdl::get_joint_parametrization(string_const_ref jname)
 {
     JointParametrization ret;
 

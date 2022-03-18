@@ -55,9 +55,12 @@ struct ReadCmdInterface
 
     VecConstRef getPositionReferenceCmd() const;  // from this interface
     VecConstRef getPositionReference() const;  // real posref from robot
+    void setPositionReference(VecConstRef q);  // sets cmd to this interface
 
     VecConstRef getStiffnessCmd() const;  // from this interface
     VecConstRef getStiffness() const;  // real gain from robot
+    void setStiffness(VecConstRef q);  // sets cmd to this interface
+
 
 private:
 
@@ -72,10 +75,8 @@ struct WriteCmdInterface
 {
     friend Derived;
 
-    void setPositionReference(VecConstRef q);  // sets cmd to this interface
     void setPositionReferenceCmd(VecConstRef q);  // real posref from robot
 
-    void setStiffness(VecConstRef q);  // sets cmd to this interface
     void setStiffnessActual(VecConstRef k);  // real gain from robot
 
 private:

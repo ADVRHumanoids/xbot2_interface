@@ -13,7 +13,7 @@ int main(int argc, char **argv)
     auto srdf = std::make_shared<srdf::Model>();
     srdf->initFile(*urdf, srdf_path);
 
-    auto model = XBot::XBotInterface2::getModel(urdf, srdf, argv[1]);
+    auto model = XBot::ModelInterface2::getModel(urdf, srdf, argv[1]);
 
     std::cout << model->getJointPosition().transpose() << "\n\n";
 

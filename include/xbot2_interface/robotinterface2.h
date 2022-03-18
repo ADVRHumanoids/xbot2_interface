@@ -7,7 +7,8 @@ namespace XBot {
 
 class RobotInterface2 : public XBotInterface2,
                         public ReadCmdInterface<RobotInterface2>,
-                        protected WriteCmdInterface<RobotInterface2>
+                        protected WriteCmdInterface<RobotInterface2>,
+                        protected WriteStateInterface<RobotInterface2>
 {
 
 public:
@@ -23,6 +24,10 @@ public:
                               std::string robot_type,
                               std::string model_type);
 
+    RobotJoint::Ptr getJoint(string_const_ref name);
+
+    RobotJoint::Ptr getJoint(int i);
+
     ~RobotInterface2();
 
     friend ReadCmdInterface<RobotInterface2>;
@@ -36,23 +41,16 @@ protected:
 
     RobotInterface2(std::unique_ptr<XBotInterface2> model);
 
-    // hide unwanted
-    using WriteStateInterface<XBotInterface2>::setJointPosition;
-    using WriteStateInterface<XBotInterface2>::setJointVelocity;
-    using WriteStateInterface<XBotInterface2>::setJointAcceleration;
-    using WriteStateInterface<XBotInterface2>::setJointEffort;
-
-
     // XBotInterface2 interface
 public:
     void update() override;
-    MatConstRef getJacobian(std::string_view link_name) const override;
-    Eigen::Affine3d getPose(std::string_view link_name) const override;
+    MatConstRef getJacobian(string_const_ref link_name) const override;
+    Eigen::Affine3d getPose(string_const_ref link_name) const override;
     VecConstRef sum(VecConstRef q0, VecConstRef v) const override;
     VecConstRef difference(VecConstRef q1, VecConstRef q0) const override;
 
 protected:
-    JointParametrization get_joint_parametrization(std::string_view jname) override;
+    JointParametrization get_joint_parametrization(string_const_ref jname) override;
 };
 
 }
