@@ -22,7 +22,12 @@ public:
          detail::CommandView cv,
          urdf::JointConstSharedPtr urdf_joint);
 
+    std::function<void(const Eigen::Affine3d&, VecRef)> fn_maximal_to_q;
+
+    std::function<void(VecConstRef, VecRef)> fn_minimal_to_q;
+
     friend ReadStateInterface<Joint>;
+
     friend WriteStateInterface<Joint>;
 
 private:
@@ -32,8 +37,6 @@ private:
     detail::StateView _state;
 
     detail::CommandView _cmd;
-
-    std::function<VecConstRef(const Eigen::Affine3d&)> _set_transform_fn;
 
     std::function<VecConstRef(const Eigen::Vector6d&)> _set_local_vel_fn;
 

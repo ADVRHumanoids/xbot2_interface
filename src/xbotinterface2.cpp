@@ -172,7 +172,7 @@ void XBotInterface2::Impl::finalize()
     int nq = 0;
     int nv = 0;
 
-    std::map<std::string, Eigen::VectorXd> qneutral;
+    std::map<std::string, JointParametrization> jparam_map;
 
     auto handle_joint = [&](urdf::JointConstSharedPtr jptr)
     {
@@ -194,7 +194,7 @@ void XBotInterface2::Impl::finalize()
             throw std::runtime_error("joint " + jname + " not found in implementation");
         }
 
-        // save id, nq, nv, iq, iv, name, neutral config
+        // save id, nq, nv, iq, iv, name, whole param
         _joint_name.push_back(jname);
 
         _joint_nq.push_back(jparam.nq);
@@ -207,7 +207,7 @@ void XBotInterface2::Impl::finalize()
 
         _name_id_map[jname] = nj;
 
-        qneutral[jname] = jparam.q0;
+        jparam_map[jname] = jparam;
 
         // increment global dimensions
         nq += jparam.nq;
@@ -251,7 +251,7 @@ void XBotInterface2::Impl::finalize()
     // set neutral config
     for(int i = 0; i < nj; i++)
     {
-        _qneutral.segment(_joint_iq[i], _joint_nq[i]) = qneutral[_joint_name[i]];
+        _qneutral.segment(_joint_iq[i], _joint_nq[i]) = jparam_map[_joint_name[i]].q0;
     }
 
     // use it to initialize cmd and state
@@ -264,6 +264,8 @@ void XBotInterface2::Impl::finalize()
         auto jptr = _urdf->joints_.at(jname);
 
         // create xbot's joint
+
+        // get views on relevant states and control
         auto sv = detail::createView(_state,
                                      _joint_iq[i], _joint_nq[i],
                                      _joint_iv[i], _joint_nv[i]);
@@ -272,8 +274,16 @@ void XBotInterface2::Impl::finalize()
                                      _joint_iq[i], _joint_nq[i],
                                      _joint_iv[i], _joint_nv[i]);
 
+        // create private implementation of joint
+        auto jimpl = std::make_unique<Joint::Impl>(sv, cv, jptr);
 
-        Joint::Ptr j = Joint::create(std::make_unique<Joint::Impl>(sv, cv, jptr));
+        // inject mappings
+        jimpl->fn_minimal_to_q = jparam_map.at(jname).fn_minimal_to_q;
+
+        jimpl->fn_maximal_to_q = jparam_map.at(jname).fn_maximal_to_q;
+
+        // create and save joint
+        Joint::Ptr j =  Joint::create(std::move(jimpl));
         _joints.push_back(j);
 
     }

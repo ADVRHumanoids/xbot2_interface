@@ -50,14 +50,27 @@ void RobotInterface2Ros::on_js_recv(xbot_msgs::JointStateConstPtr msg)
     {
         auto j = getJoint(msg->name[i]);
 
-        if(!j || j->getNq() > 1)
+        if(!j)
         {
-            // TBD continuous joints
             continue;
         }
 
-        j->setJointPosition(msg->link_position[i]);
+        if(j->getNv() > 1)
+        {
+            continue;
+        }
+
+        if(j->getNq() > 1)
+        {
+            j->setJointPositionMinimal(msg->link_position[i]);
+        }
+        else
+        {
+            j->setJointPosition(msg->link_position[i]);
+        }
+
         j->setJointVelocity(msg->link_velocity[i]);
+
         j->setJointEffort(msg->effort[i]);
     }
 }

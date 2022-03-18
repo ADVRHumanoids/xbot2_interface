@@ -63,14 +63,66 @@ XBotInterface2::JointParametrization ModelInterface2Pin::get_joint_parametrizati
         return ret;
     }
 
+    // get id of this joint inside pin model
     size_t pin_id = _mdl.getJointId(std::string(jname));
 
+    // fill required info
     ret.id = pin_id;
     ret.iq = _mdl.idx_qs[pin_id];
     ret.nq = _mdl.nqs[pin_id];
     ret.iv = _mdl.idx_vs[pin_id];
     ret.nv = _mdl.nvs[pin_id];
     ret.q0 = _qneutral.segment(ret.iq, ret.nq);
+
+    // urdf joint
+    auto jptr = getUrdf()->joints_.at(std::string(jname));
+
+    // tell base class about how to set q from its minimal
+    // representation
+
+    // so(2)
+    if(jptr->type == urdf::Joint::CONTINUOUS &&
+            ret.nq == 2)
+    {
+        ret.fn_minimal_to_q = [](VecConstRef qminimal, VecRef q)
+        {
+            q[0] = std::cos(qminimal[0]);
+            q[1] = std::sin(qminimal[0]);
+        };
+    }
+
+    // se(3)
+    if(jptr->type == urdf::Joint::FLOATING &&
+            ret.nq == 7)
+    {
+        ret.fn_minimal_to_q = [](VecConstRef qminimal, VecRef q)
+        {
+            q.head<3>() = qminimal.head<3>();
+
+            Eigen::AngleAxisd rollAngle(qminimal[3], Eigen::Vector3d::UnitX());
+            Eigen::AngleAxisd pitchAngle(qminimal[4], Eigen::Vector3d::UnitY());
+            Eigen::AngleAxisd yawAngle(qminimal[5], Eigen::Vector3d::UnitZ());
+
+            Eigen::Quaterniond rot_q = yawAngle * pitchAngle * rollAngle;
+
+            q.tail<4>() = rot_q.coeffs();
+
+        };
+    }
+
+    // tell base class about how to set q from its maximal
+    // representation
+
+    // se(3)
+    if(jptr->type == urdf::Joint::FLOATING &&
+            ret.nq == 7)
+    {
+        ret.fn_maximal_to_q = [](const Eigen::Affine3d& T, VecRef q)
+        {
+            q.head<3>() = T.translation();
+            q.tail<4>() = Eigen::Quaterniond(T.linear()).coeffs();
+        };
+    }
 
     return ret;
 
