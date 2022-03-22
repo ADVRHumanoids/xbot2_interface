@@ -1,6 +1,7 @@
 #include <xbot2_interface/common/state_interface.h>
 #include "impl/joint.hxx"
 #include "impl/xbotinterface2.hxx"
+#include "impl/robotinterface2.hxx"
 #include "impl/utils.h"
 
 using namespace XBot;
@@ -66,6 +67,12 @@ void WriteStateInterface<Derived>::setJointEffort(VecConstRef tau)
 }
 
 template<class Derived>
+void ReadCmdInterface<Derived>::setPositionReference(VecConstRef q)
+{
+    check_and_set(q, derived().impl->_cmd.qcmd, __func__);
+}
+
+template<class Derived>
 Derived& ReadStateInterface<Derived>::derived()
 {
     return static_cast<Derived&>(*this);
@@ -85,6 +92,18 @@ Derived& WriteStateInterface<Derived>::derived()
 
 template<class Derived>
 const Derived& WriteStateInterface<Derived>::derived() const
+{
+    return static_cast<const Derived&>(*this);
+}
+
+template<class Derived>
+Derived& ReadCmdInterface<Derived>::derived()
+{
+    return static_cast<Derived&>(*this);
+}
+
+template<class Derived>
+const Derived& ReadCmdInterface<Derived>::derived() const
 {
     return static_cast<const Derived&>(*this);
 }

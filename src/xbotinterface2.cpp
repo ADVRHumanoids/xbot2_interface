@@ -96,6 +96,13 @@ Joint::ConstPtr XBotInterface2::getJoint(int i) const
 
 void XBotInterface2::getJacobian(string_const_ref link_name, MatRef J) const
 {
+    auto res = getJacobian(link_name);
+    check_mat_size(J, res, __func__);
+    J.noalias() = res;
+}
+
+void XBotInterface2::getJacobian(string_const_ref link_name, Eigen::MatrixXd &J) const
+{
     J.noalias() = getJacobian(link_name);
 }
 

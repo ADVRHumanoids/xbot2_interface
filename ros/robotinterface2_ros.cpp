@@ -62,7 +62,7 @@ void RobotInterface2Ros::on_js_recv(xbot_msgs::JointStateConstPtr msg)
 
         if(j->getNq() > 1)
         {
-            Eigen::VectorXd q;
+            Eigen::VectorXd q(j->getNq());
             j->minimalToPosition(msg->link_position[i], q);
             j->setJointPosition(q);
         }

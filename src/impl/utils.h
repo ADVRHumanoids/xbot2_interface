@@ -15,7 +15,19 @@ inline void check_and_set(const T1& from, T2& to, string_const_ref name)
         return;
     }
 
-    throw std::out_of_range("size mismatch: ");
+    throw std::out_of_range("size mismatch: " + name);
+}
+
+template <typename T1, typename T2>
+inline void check_mat_size(const T1& from, T2& to, string_const_ref name)
+{
+    if(from.rows() == to.rows() &&
+            from.cols() == to.cols())
+    {
+        return;
+    }
+
+    throw std::out_of_range("mat size mismatch: " + name);
 }
 
 }

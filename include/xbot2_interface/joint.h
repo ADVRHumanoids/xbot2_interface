@@ -10,6 +10,10 @@ namespace XBot {
 
 class XBotInterface2;
 
+class ModelJoint;
+
+class RobotJoint;
+
 class Joint : public ReadStateInterface<Joint>
 {
 
@@ -38,6 +42,7 @@ public:
 
     friend class XBotInterface2;
     friend ReadStateInterface<Joint>;
+    friend ReadCmdInterface<RobotJoint>;
 
 protected:
 
@@ -80,6 +85,9 @@ public:
     XBOT_DECLARE_SMART_PTR(RobotJoint);
 
     friend class RobotInterface2;
+
+    using ReadCmdInterface<RobotJoint>::setPositionReference;
+    void setPositionReference(double qref);
 
 protected:
 

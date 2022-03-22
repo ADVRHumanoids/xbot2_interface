@@ -50,6 +50,8 @@ public:
 
     void getJacobian(string_const_ref link_name, MatRef J) const;
 
+    void getJacobian(string_const_ref link_name, Eigen::MatrixXd& J) const;
+
     virtual Eigen::Affine3d getPose(string_const_ref link_name) const = 0;
 
     virtual Eigen::Vector6d getVelocityTwist(string_const_ref link_name) const;

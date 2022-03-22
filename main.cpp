@@ -41,6 +41,12 @@ int main(int argc, char **argv)
 
     auto robot = XBot::RobotInterface2::getRobot(urdf, srdf, "ros", argv[1]);
 
+    robot->getJoint("j_wheel_2")->setPositionReference(1.0);
+
+    Eigen::VectorXd q;
+
+    robot->getJoint("j_wheel_2")->setPositionReference(q);
+
     while(true)
     {
         if(!robot->sense())

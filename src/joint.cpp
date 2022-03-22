@@ -1,4 +1,6 @@
 #include "impl/joint.hxx"
+#include "impl/utils.h"
+
 #include <iostream>
 
 using namespace XBot;
@@ -30,14 +32,18 @@ urdf::JointConstSharedPtr Joint::getUrdfJoint() const
 
 void Joint::minimalToPosition(VecConstRef q_minimal, VecRef q) const
 {
+
+
     // if any mapping needs to be done, invoke handler
     if(impl->fn_minimal_to_q)
     {
+        check_vec_size(q_minimal, getNv(), __func__);
         impl->fn_minimal_to_q(q_minimal, q);
         return;
     }
 
     // otherwise just fill the buffer
+    check_mat_size(q_minimal, q, __func__);
     q = q_minimal;
 }
 
@@ -52,21 +58,6 @@ Joint::Joint(std::unique_ptr<Joint::Impl> _impl):
 {
 
 }
-
-//void ModelJoint::setJointPosition(double q)
-//{
-//    impl->_state.qlink[0] = q;
-//}
-
-//void ModelJoint::setJointVelocity(double v)
-//{
-//    impl->_state.vlink[0] = v;
-//}
-
-//void ModelJoint::setJointEffort(double tau)
-//{
-//    impl->_state.tau[0] = tau;
-//}
 
 void ModelJoint::setJointPositionMinimal(VecConstRef q)
 {
@@ -98,4 +89,10 @@ UniversalJoint::UniversalJoint(std::unique_ptr<Joint::Impl> impl):
     ModelJoint(nullptr)
 {
 
+}
+
+void RobotJoint::setPositionReference(double qref)
+{
+    Eigen::Matrix<double, 1, 1> _qref(qref);
+    setPositionReference(_qref);
 }

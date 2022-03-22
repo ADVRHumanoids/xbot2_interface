@@ -37,7 +37,7 @@ protected:
 
     class Impl;
 
-    std::unique_ptr<Impl> impl;
+    std::unique_ptr<Impl> r_impl;
 
     RobotInterface2(std::unique_ptr<XBotInterface2> model);
 
