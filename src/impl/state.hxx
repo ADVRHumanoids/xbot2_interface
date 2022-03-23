@@ -1,7 +1,7 @@
 #ifndef STATE_HXX
 #define STATE_HXX
 
-#include <Eigen/Dense>
+#include <xbot2_interface/common/types.h>
 
 namespace XBot { namespace detail {
 
@@ -20,24 +20,29 @@ struct StateTemplate
 
     const std::vector<Vec*> qs = {&qmot, &qlink, &qref};
     const std::vector<Vec*> vs = {&vmot, &vlink, &a, &tau, &k, &d, &vref, &tauref};
+    const std::vector<Vec*> js = {};
 
 };
 
-template <typename Vec>
+template <typename Vec, typename VecInt>
 struct CommandTemplate
 {
     typedef Eigen::Ref<Vec> ViewType;
-    typedef CommandTemplate<ViewType> ViewContainer;
+    typedef Eigen::Ref<VecInt> ViewTypeInt;
+    typedef CommandTemplate<ViewType, ViewTypeInt> ViewContainer;
 
     Vec qcmd, vcmd, taucmd, kcmd, dcmd;
+    VecInt ctrlmode;
+    VecInt ctrlset;
 
     const std::vector<Vec*> qs = {&qcmd};
     const std::vector<Vec*> vs = {&vcmd, &taucmd, &kcmd, &dcmd};
+    const std::vector<VecInt*> js = {&ctrlmode, &ctrlset};
 };
 
 
 template <typename T>
-void resize(T& cnt, int nq, int nv)
+void resize(T& cnt, int nq, int nv, int nj)
 {
     for(int i = 0; i < cnt.qs.size(); i++)
     {
@@ -48,10 +53,17 @@ void resize(T& cnt, int nq, int nv)
     {
         cnt.vs[i]->setZero(nv);
     }
+
+    for(int i = 0; i < cnt.js.size(); i++)
+    {
+        cnt.js[i]->setZero(nj);
+    }
 }
 
 template <typename Vec>
-typename StateTemplate<Vec>::ViewContainer createView(StateTemplate<Vec>& cnt, int iq, int nq, int iv, int nv)
+typename StateTemplate<Vec>::ViewContainer createView(StateTemplate<Vec>& cnt,
+                                                      int iq, int nq,
+                                                      int iv, int nv)
 {
     typename StateTemplate<Vec>::ViewContainer ret {
         cnt.qmot.segment(iq, nq),
@@ -70,25 +82,30 @@ typename StateTemplate<Vec>::ViewContainer createView(StateTemplate<Vec>& cnt, i
     return ret;
 }
 
-template <typename Vec>
-typename CommandTemplate<Vec>::ViewContainer createView(CommandTemplate<Vec>& cnt, int iq, int nq, int iv, int nv)
+template <typename Vec, typename VecInt>
+typename CommandTemplate<Vec, VecInt>::ViewContainer createView(CommandTemplate<Vec, VecInt>& cnt,
+                                                                int iq, int nq,
+                                                                int iv, int nv,
+                                                                int ij, int nj)
 {
-    typename CommandTemplate<Vec>::ViewContainer ret {
+    typename CommandTemplate<Vec, VecInt>::ViewContainer ret {
         cnt.qcmd.segment(iq, nq),
         cnt.vcmd.segment(iv, nv),
         cnt.taucmd.segment(iv, nv),
         cnt.kcmd.segment(iv, nv),
-        cnt.dcmd.segment(iv, nv)
+        cnt.dcmd.segment(iv, nv),
+        cnt.ctrlmode.segment(ij, nj),
+        cnt.ctrlset.segment(ij, nj)
     };
 
     return ret;
 }
 
 typedef StateTemplate<Eigen::VectorXd> State;
-typedef CommandTemplate<Eigen::VectorXd> Command;
+typedef CommandTemplate<Eigen::VectorXd, Eigen::CtrlModeVector> Command;
 
 typedef StateTemplate<State::ViewType> StateView;
-typedef CommandTemplate<Command::ViewType> CommandView;
+typedef CommandTemplate<Command::ViewType, Command::ViewTypeInt> CommandView;
 
 } }
 

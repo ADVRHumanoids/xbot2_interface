@@ -1,5 +1,6 @@
 find_package(roscpp REQUIRED)
 find_package(xbot_msgs REQUIRED)
+find_package(eigen_conversions REQUIRED)
 
 include_directories(
     ${roscpp_INCLUDE_DIRS}
@@ -12,4 +13,5 @@ add_library(robotinterface2_ros SHARED
 target_link_libraries(robotinterface2_ros
     PUBLIC
     ${roscpp_LIBRARIES}
+    ${eigen_conversions_LIBRARIES}
     xbot2_interface)

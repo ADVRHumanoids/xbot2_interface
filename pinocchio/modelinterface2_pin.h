@@ -25,6 +25,8 @@ public:
 
     MatConstRef getJacobian(string_const_ref link_name) const override;
 
+    VecConstRef computeInverseDynamics() const override;
+
     VecConstRef sum(VecConstRef q0, VecConstRef v) const override;
 
     VecConstRef difference(VecConstRef q1, VecConstRef q0) const override;
@@ -38,15 +40,26 @@ private:
     pinocchio::Model _mdl;
     mutable pinocchio::Data _data;
 
+    enum ComputationType
+    {
+        None = 0,
+        Kinematics = 1,
+        Jacobians = 2,
+        Rnea = 4
+    };
+
+    mutable uint16_t _cached_computation;
+
     struct Temporaries
     {
         Eigen::MatrixXd J;
         Eigen::VectorXd qsum;
+        Eigen::VectorXd rnea;
 
         void resize(int nq, int nv);
     };
 
-    Temporaries _tmp;
+    mutable Temporaries _tmp;
     Eigen::VectorXd _qneutral;
 
 

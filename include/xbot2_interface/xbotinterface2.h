@@ -40,6 +40,8 @@ public:
 
     Eigen::VectorXd getRobotState(string_const_ref name) const;
 
+    int getJointNum() const;
+
     Joint::ConstPtr getJoint(string_const_ref name) const;
 
     Joint::ConstPtr getJoint(int i) const;
@@ -56,11 +58,13 @@ public:
 
     virtual Eigen::Vector6d getVelocityTwist(string_const_ref link_name) const;
 
+    virtual VecConstRef computeInverseDynamics() const = 0;
+
     virtual VecConstRef sum(VecConstRef q0, VecConstRef v) const = 0;
 
     virtual VecConstRef difference(VecConstRef q1, VecConstRef q0) const = 0;
 
-    ~XBotInterface2();
+    virtual ~XBotInterface2();
 
     friend ReadStateInterface<XBotInterface2>;
 
@@ -84,7 +88,18 @@ protected:
 
         std::function<void(VecConstRef, VecRef)> fn_minimal_to_q;
 
-        std::function<void(const Eigen::Affine3d&, VecRef)> fn_maximal_to_q;
+        std::function<void(VecConstRef, VecRef)> fn_q_to_minimal;
+
+        std::function<void(VecConstRef,
+                           VecConstRef,
+                           Eigen::Affine3d*,
+                           Eigen::Vector6d*)> fn_fwd_kin;
+
+        std::function<void(const Eigen::Affine3d& p_T_c,
+                           const Eigen::Vector6d& c_vc,
+                           VecRef q,
+                           VecRef v)> fn_inv_kin;
+
     };
 
 
@@ -124,6 +139,8 @@ public:
     ModelJoint::Ptr getJoint(string_const_ref name);
 
     ModelJoint::Ptr getJoint(int i);
+
+    virtual ~ModelInterface2();
 
 };
 

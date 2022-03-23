@@ -74,6 +74,11 @@ Eigen::VectorXd XBotInterface2::getRobotState(string_const_ref name) const
     return impl->getRobotState(name);
 }
 
+int XBotInterface2::getJointNum() const
+{
+    return impl->_joints.size();
+}
+
 ModelJoint::Ptr ModelInterface2::getJoint(string_const_ref name)
 {
     return impl->getJoint(name);
@@ -82,6 +87,11 @@ ModelJoint::Ptr ModelInterface2::getJoint(string_const_ref name)
 ModelJoint::Ptr ModelInterface2::getJoint(int i)
 {
     return impl->getJoint(i);
+}
+
+ModelInterface2::~ModelInterface2()
+{
+
 }
 
 Joint::ConstPtr XBotInterface2::getJoint(string_const_ref name) const
@@ -209,8 +219,6 @@ XBotInterface2::Impl::get_joint_parametrization(string_const_ref jname)
 {
     JointParametrization ret;
 
-    // tbd
-
     return ret;
 }
 
@@ -282,18 +290,29 @@ void XBotInterface2::Impl::finalize()
     {
         if(_joint_iq[i] + _joint_nq[i] > nq)
         {
-            throw std::runtime_error("joint q index consistency check failed");
+            throw std::runtime_error("joint q index consistency check failed (out of range)");
+        }
+
+        if(i < nj - 1 && _joint_iq[i] + _joint_nq[i] != _joint_iq[i+1])
+        {
+            throw std::runtime_error("joint q index consistency check failed (not consecutive)");
         }
 
         if(_joint_iv[i] + _joint_nv[i] > nv)
         {
-            throw std::runtime_error("joint v index consistency check failed");
+            throw std::runtime_error("joint v index consistency check failed (out of range)");
+        }
+
+        if(i < nj - 1 && _joint_iv[i] + _joint_nv[i] != _joint_iv[i+1])
+        {
+            throw std::runtime_error("joint v index consistency check failed (not consecutive)");
         }
     }
 
     // resize state and cmd
-    detail::resize(_state, nq, nv);
-    detail::resize(_cmd, nq, nv);
+    detail::resize(_state, nq, nv, nj);
+    detail::resize(_cmd, nq, nv, nj);
+    _cmd.ctrlmode.setConstant(~0);
     _qneutral.setZero(nq);
 
     // set neutral config
@@ -320,15 +339,37 @@ void XBotInterface2::Impl::finalize()
 
         auto cv = detail::createView(_cmd,
                                      _joint_iq[i], _joint_nq[i],
-                                     _joint_iv[i], _joint_nv[i]);
+                                     _joint_iv[i], _joint_nv[i],
+                                     i, 1);
 
         // create private implementation of joint
         auto jimpl = std::make_unique<Joint::Impl>(sv, cv, jptr);
 
         // inject mappings
-        jimpl->fn_minimal_to_q = jparam_map.at(jname).fn_minimal_to_q;
+        auto& jparam = jparam_map.at(jname);
+        jimpl->fn_minimal_to_q = jparam.fn_minimal_to_q;
+        jimpl->fn_q_to_minimal = jparam.fn_q_to_minimal;
+        jimpl->fn_fwd_kin = jparam.fn_fwd_kin;
 
-        jimpl->fn_maximal_to_q = jparam_map.at(jname).fn_maximal_to_q;
+        // check we got all info we need
+        if(_joint_nq[i] != _joint_nv[i] &&
+                !jimpl->fn_minimal_to_q)
+        {
+            throw std::runtime_error("fn_minimal_to_q not provided for non-euclidean joint " + jname);
+        }
+
+        if(_joint_nq[i] != _joint_nv[i] &&
+                !jimpl->fn_q_to_minimal)
+        {
+            throw std::runtime_error("fn_q_to_minimal not provided for non-euclidean joint " + jname);
+        }
+
+        if(jptr->type == urdf::Joint::FLOATING &&
+                _joint_nq[i] != _joint_nv[i] &&
+                !jimpl->fn_fwd_kin)
+        {
+            throw std::runtime_error("fn_fwd_kin not provided for non-euclidean floating joint " + jname);
+        }
 
         // create and save joint
         auto j =  std::make_shared<UniversalJoint>(std::move(jimpl));

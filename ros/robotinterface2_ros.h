@@ -6,6 +6,7 @@
 #include <ros/ros.h>
 #include <ros/callback_queue.h>
 #include <xbot_msgs/JointState.h>
+#include <xbot_msgs/JointCommand.h>
 #include <geometry_msgs/PointStamped.h>
 #include <geometry_msgs/TwistStamped.h>
 #include <nav_msgs/Odometry.h>

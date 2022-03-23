@@ -1,6 +1,7 @@
 #include <xbot2_interface/xbotinterface2.h>
 #include <xbot2_interface/robotinterface2.h>
 
+using namespace XBot;
 
 int main(int argc, char **argv)
 {
@@ -39,13 +40,12 @@ int main(int argc, char **argv)
 
     std::cout << model->getJoint("j_arm1_4")->getJointPosition().transpose() << "\n\n";
 
+    std::cout << model->getJoint("j_arm1_4")->getJointPositionMinimal() << "\n\n";
+
     auto robot = XBot::RobotInterface2::getRobot(urdf, srdf, "ros", argv[1]);
 
-    robot->getJoint("j_wheel_2")->setPositionReference(1.0);
+    robot->getJoint("j_wheel_2")->setPositionReferenceMinimal(from_value(1.0));
 
-    Eigen::VectorXd q;
-
-    robot->getJoint("j_wheel_2")->setPositionReference(q);
 
     while(true)
     {
@@ -61,6 +61,12 @@ int main(int argc, char **argv)
         std::cout << "vel " << robot->getJointVelocity().transpose() << "\n\n";
 
         std::cout << "ee " << robot->getPose("arm1_8").translation().transpose() << "\n\n";
+
+        robot->getJoint("j_wheel_2")->setPositionReferenceMinimal(from_value(1.0));
+
+        robot->getJoint(0)->setVelocityReference(Eigen::Vector6d::Ones());
+
+        robot->move();
 
         usleep(10000);
 

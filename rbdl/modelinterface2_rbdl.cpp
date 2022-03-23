@@ -1,6 +1,7 @@
 #include "modelinterface2_rbdl.h"
 
 #include <xbot2_interface/common/plugin.h>
+#include <xbot2_interface/common/utils.h>
 #include <urdf_parser/urdf_parser.h>
 #include <rbdl/Kinematics.h>
 
@@ -76,6 +77,17 @@ Eigen::Affine3d ModelInterface2Rbdl::getPose(string_const_ref link_name) const
     return T;
 }
 
+VecConstRef ModelInterface2Rbdl::computeInverseDynamics() const
+{
+    RigidBodyDynamics::InverseDynamics(_mdl,
+                                       getJointPosition(),
+                                       getJointVelocity(),
+                                       getJointAcceleration(),
+                                       _tmp.rnea);
+
+    return _tmp.rnea;
+}
+
 VecConstRef ModelInterface2Rbdl::sum(VecConstRef q0, VecConstRef v) const
 {
     _tmp.qsum = q0 + v;
@@ -111,6 +123,40 @@ XBotInterface2::JointParametrization ModelInterface2Rbdl::get_joint_parametrizat
         ret.nq = ret.nv = 6;
         ret.iq -= 3;
         ret.iv -= 3;
+
+        ret.fn_fwd_kin =  [](VecConstRef q, VecConstRef v,
+                             Eigen::Affine3d* p_T_c, Eigen::Vector6d* c_vc)
+        {
+            Eigen::Matrix3d p_R_c  = Utils::rpyToRotationMatrix(q.tail<3>());
+
+            if(p_T_c)
+            {
+                p_T_c->translation() = q.head<3>();
+                p_T_c->linear() = p_R_c;
+            }
+
+            if(c_vc)
+            {
+                c_vc->head<3>() = p_R_c.transpose() * v.head<3>();
+
+                Eigen::Matrix3d om_J_v = Utils::rpyJacobian(q.tail<3>());
+
+                c_vc->tail<3>() = p_R_c.transpose() * om_J_v * v.tail<3>();
+            }
+        };
+
+        ret.fn_inv_kin =  [](const Eigen::Affine3d& p_T_c, const Eigen::Vector6d& c_vc,
+                              VecRef q, VecRef v)
+        {
+            q.head<3>() = p_T_c.translation();
+            q.tail<3>() = Utils::rotationMatrixToRpy(p_T_c.linear());
+
+            v.head<3>() = p_T_c.linear() * c_vc.head<3>();
+
+            Eigen::Matrix3d c_om_J = p_T_c.linear().transpose() * Utils::rpyJacobian(q.tail<3>());
+            v.tail<3>() = c_om_J.lu().solve(c_vc.tail<3>());
+
+        };
     }
 
     ret.q0.setZero(ret.nq);
@@ -126,6 +172,7 @@ void ModelInterface2Rbdl::Temporaries::resize(int nq, int nv)
     Jaux.setZero(6, nv);
     vdiff.setZero(nv);
     qsum.setZero(nq);
+    rnea.setZero(nv);
 }
 
 XBOT2_REGISTER_MODEL_PLUGIN(ModelInterface2Rbdl, rbdl);

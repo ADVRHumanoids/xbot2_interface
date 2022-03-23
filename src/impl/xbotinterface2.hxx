@@ -22,6 +22,7 @@ public:
     friend class ModelInterface2;
     friend ReadStateInterface<XBotInterface2>;
     friend ReadCmdInterface<RobotInterface2>;
+    friend WriteCmdInterface<RobotInterface2>;
     friend WriteStateInterface<ModelInterface2>;
 
     Impl(urdf::ModelConstSharedPtr urdf,

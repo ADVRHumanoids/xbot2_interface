@@ -30,6 +30,18 @@ inline void check_mat_size(const T1& from, T2& to, string_const_ref name)
     throw std::out_of_range("mat size mismatch: " + name);
 }
 
+template <typename T1>
+inline void check_mat_size(const T1& mat, int rows, int cols, string_const_ref name)
+{
+    if(mat.rows() == rows &&
+            mat.cols() == cols)
+    {
+        return;
+    }
+
+    throw std::out_of_range("mat size mismatch: " + name);
+}
+
 }
 
 #endif // UTILS_H

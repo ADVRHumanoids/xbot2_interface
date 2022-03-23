@@ -85,3 +85,13 @@ RobotInterface2::Impl::Impl(RobotInterface2 &api,
 {
 
 }
+
+Eigen::Vector6d XBot::RobotInterface2::getVelocityTwist(string_const_ref link_name) const
+{
+    return r_impl->_model->getVelocityTwist(link_name);
+}
+
+VecConstRef XBot::RobotInterface2::computeInverseDynamics() const
+{
+    return r_impl->_model->computeInverseDynamics();
+}

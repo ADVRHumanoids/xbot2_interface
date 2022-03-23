@@ -28,10 +28,11 @@ public:
 
     RobotJoint::Ptr getJoint(int i);
 
-    ~RobotInterface2();
+    virtual ~RobotInterface2();
 
     friend ReadCmdInterface<RobotInterface2>;
     friend WriteCmdInterface<RobotInterface2>;
+    friend WriteStateInterface<RobotInterface2>;
 
 protected:
 
@@ -48,9 +49,13 @@ public:
     Eigen::Affine3d getPose(string_const_ref link_name) const override;
     VecConstRef sum(VecConstRef q0, VecConstRef v) const override;
     VecConstRef difference(VecConstRef q1, VecConstRef q0) const override;
+    Eigen::Vector6d getVelocityTwist(string_const_ref link_name) const override;
+    VecConstRef computeInverseDynamics() const override;
 
 protected:
+
     JointParametrization get_joint_parametrization(string_const_ref jname) override;
+
 };
 
 }

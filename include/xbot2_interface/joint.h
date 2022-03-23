@@ -31,14 +31,35 @@ public:
 
     urdf::JointConstSharedPtr getUrdfJoint() const;
 
+    VecRef getJointPositionMinimal() const;
+
     void minimalToPosition(VecConstRef q_minimal,
                            VecRef q) const;
 
     void minimalToPosition(double q_minimal,
                            VecRef q) const;
 
-    void maximalToPosition(const Eigen::Affine3d& p_T_c,
-                           VecRef q) const;
+    void minimalToPosition(double q_minimal,
+                           Eigen::VectorXd& q) const;
+
+    void positionToMinimal(VecConstRef q,
+                           VecRef q_minimal) const;
+
+    void positionToMinimal(VecConstRef q,
+                           Eigen::VectorXd& q_minimal) const;
+
+    void positionToMinimal(VecConstRef q,
+                           double& q_minimal) const;
+
+    void forwardKinematics(VecConstRef q,
+                           VecConstRef v,
+                           Eigen::Affine3d& p_T_c,
+                           Eigen::Vector6d& c_vc) const;
+
+    void inverseKinematics(const Eigen::Affine3d& p_T_c,
+                           const Eigen::Vector6d& c_vc,
+                           Eigen::VectorXd& q,
+                           Eigen::VectorXd& v) const;
 
     friend class XBotInterface2;
     friend ReadStateInterface<Joint>;
@@ -63,10 +84,6 @@ public:
     XBOT_DECLARE_SMART_PTR(ModelJoint);
 
     void setJointPositionMinimal(VecConstRef q);
-    void setJointPositionMinimal(double q);
-    void setJointPositionMaximal(const Eigen::Affine3d& b_T_c);
-//    void setVelocity(const Eigen::Vector6d& b_vc);
-//    void setLocalVelocity(const Eigen::Vector6d& c_vc);
 
     friend WriteStateInterface<ModelJoint>;
 
@@ -84,10 +101,12 @@ public:
 
     XBOT_DECLARE_SMART_PTR(RobotJoint);
 
-    friend class RobotInterface2;
+    void setPositionReferenceMinimal(VecConstRef q);
+    VecConstRef getPositionReferenceMinimal() const;
+    VecConstRef getPositionReferenceFeedbackMinimal() const;
 
-    using ReadCmdInterface<RobotJoint>::setPositionReference;
-    void setPositionReference(double qref);
+    friend class RobotInterface2;
+    friend ReadCmdInterface<RobotJoint>;
 
 protected:
 
@@ -105,6 +124,10 @@ public:
     XBOT_DECLARE_SMART_PTR(UniversalJoint);
 
     UniversalJoint(std::unique_ptr<Joint::Impl> impl);
+
+    void setPositionReferenceFeedbackMinimal(VecConstRef q);
+
+    friend WriteCmdInterface<UniversalJoint>;
 };
 
 }

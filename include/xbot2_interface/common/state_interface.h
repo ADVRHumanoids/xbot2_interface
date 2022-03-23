@@ -53,13 +53,22 @@ struct ReadCmdInterface
 {
     friend Derived;
 
-    VecConstRef getPositionReferenceCmd() const;  // from this interface
-    VecConstRef getPositionReference() const;  // real posref from robot
+    VecConstRef getPositionReference() const;  // from this interface
+    VecConstRef getPositionReferenceFeedback() const;  // real posref from robot
     void setPositionReference(VecConstRef q);  // sets cmd to this interface
 
+    VecConstRef getVelocityReference() const;  // from this interface
+    VecConstRef getVelocityReferenceFeedback() const;  // real posref from robot
+    void setVelocityReference(VecConstRef q);  // sets cmd to this interface
+
     VecConstRef getStiffnessCmd() const;  // from this interface
-    VecConstRef getStiffness() const;  // real gain from robot
+    VecConstRef getStiffnessFeedback() const;  // real gain from robot
     void setStiffness(VecConstRef q);  // sets cmd to this interface
+
+    CtrlModeVectorConstRef getControlMode() const;
+    void setControlMode(CtrlModeVectorConstRef ctrl);
+    CtrlModeVectorConstRef getValidCommandMask() const;
+    void clearCommandMask();
 
 
 private:
@@ -75,9 +84,10 @@ struct WriteCmdInterface
 {
     friend Derived;
 
-    void setPositionReferenceCmd(VecConstRef q);  // real posref from robot
+    void setPositionReferenceFeedback(VecConstRef q);  // real posref from robot
+    void setVelocityReferenceFeedback(VecConstRef q);  // real posref from robot
 
-    void setStiffnessActual(VecConstRef k);  // real gain from robot
+    void setStiffnessFeedback(VecConstRef k);  // real gain from robot
 
 private:
 
@@ -85,31 +95,6 @@ private:
 
     Derived& derived();
     const Derived& derived() const;
-};
-
-template <class Derived>
-struct CommandInterface
-{
-    friend Derived;
-
-    VecConstRef getCmdPosition() const;
-    VecConstRef getPositionReference() const;
-    void setPositionReference(VecConstRef q);
-
-    VecConstRef getStiffness() const;
-    void setStiffness(VecConstRef k);
-    VecConstRef getCmdStiffness() const;
-
-protected:
-
-    void setCmdPosition(VecConstRef q);
-    void setCmdStiffness(VecConstRef k);
-
-private:
-
-    Derived& derived();
-    const Derived& derived() const;
-
 };
 
 }

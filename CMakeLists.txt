@@ -20,7 +20,9 @@ add_library(xbot2_interface SHARED
     src/xbotinterface2.cpp
     src/robotinterface2.cpp
     src/chain.cpp
-    src/joint.cpp)
+    src/joint.cpp
+    src/types.cpp
+    src/utils.cpp)
 
 target_link_libraries(xbot2_interface
     PUBLIC
