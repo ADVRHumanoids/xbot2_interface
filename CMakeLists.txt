@@ -43,9 +43,11 @@ if(${RBDL_FOUND})
 endif()
 
 find_package(roscpp QUIET)
-if(${roscpp_FOUND})
+if(googletest${roscpp_FOUND})
     add_subdirectory(ros/)
 endif()
 
 add_executable(test_main main.cpp)
 target_link_libraries(test_main xbot2_interface)
+
+add_subdirectory(test)
