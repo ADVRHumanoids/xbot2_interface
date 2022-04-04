@@ -36,6 +36,9 @@ public:
     void minimalToPosition(VecConstRef q_minimal,
                            VecRef q) const;
 
+    void minimalToPosition(VecConstRef q_minimal,
+                           Eigen::VectorXd& q) const;
+
     void minimalToPosition(double q_minimal,
                            VecRef q) const;
 

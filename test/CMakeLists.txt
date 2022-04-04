@@ -32,13 +32,19 @@ set(TestLibs
 
 # function to ease adding tests with correct options
 function(compile_test_executable name)
-    add_executable(${name} ${ARGN})
+    add_executable(${name} src/${name}.cpp)
     if(DEFINED GTEST_DEPENDS)
         add_dependencies(${name} ${GTEST_DEPENDS})
     endif()
     target_link_libraries(${name} PRIVATE ${TestLibs})
 endfunction()
 
+function(add_test_executable name)
+    compile_test_executable(${name})
+    add_test(NAME ${name} COMMAND ${name})
+endfunction()
+
 ## test suite
-compile_test_executable(test_parser src/test_parser.cpp)
-add_test(NAME test_parser COMMAND test_parser)
+add_test_executable(test_parser)
+add_test_executable(test_parametrization)
+add_test_executable(test_kinematics)

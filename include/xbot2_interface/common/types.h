@@ -46,6 +46,17 @@ namespace ControlMode {
     };
 }
 
+struct JointInfo
+{
+    int id;
+    int iq;
+    int iv;
+    int nq;
+    int nv;
+
+    JointInfo();
+};
+
 }
 
 

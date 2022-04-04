@@ -40,6 +40,7 @@ void Joint::minimalToPosition(VecConstRef q_minimal, VecRef q) const
 {
     // output size check
     check_mat_size(q_minimal, getNv(), 1, __func__);
+    check_mat_size(q, getNq(), 1, __func__);
 
     // if any mapping needs to be done, invoke handler
     if(impl->fn_minimal_to_q)
@@ -50,6 +51,12 @@ void Joint::minimalToPosition(VecConstRef q_minimal, VecRef q) const
 
     // otherwise just fill the buffer
     check_and_set(q_minimal, q, __func__);
+}
+
+void Joint::minimalToPosition(VecConstRef q_minimal, Eigen::VectorXd &q) const
+{
+    q.resize(getNq());
+    return minimalToPosition(q_minimal, VecRef(q));
 }
 
 void Joint::minimalToPosition(double q_minimal, VecRef q) const
@@ -68,6 +75,7 @@ void Joint::positionToMinimal(VecConstRef q, VecRef q_minimal) const
 {
     // output size check
     check_mat_size(q_minimal, getNv(), 1, __func__);
+    check_mat_size(q, getNq(), 1, __func__);
 
     // if any mapping needs to be done, invoke handler
     if(impl->fn_q_to_minimal)

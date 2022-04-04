@@ -48,6 +48,7 @@ MatConstRef ModelInterface2Pin::getJacobian(string_const_ref link_name) const
     }
 
     auto frame_idx = _mdl.getFrameId(std::string(link_name));
+    _tmp.J.setZero(6, getNv());
     pinocchio::getFrameJacobian(_mdl, _data, frame_idx, pinocchio::ReferenceFrame::LOCAL_WORLD_ALIGNED, _tmp.J);
     return _tmp.J;
 }
@@ -77,7 +78,8 @@ VecConstRef ModelInterface2Pin::sum(VecConstRef q0, VecConstRef v) const
 
 VecConstRef ModelInterface2Pin::difference(VecConstRef q1, VecConstRef q0) const
 {
-    return pinocchio::difference(_mdl, q0, q1);
+    _tmp.qdiff = pinocchio::difference(_mdl, q0, q1);
+    return _tmp.qdiff;
 }
 
 XBotInterface2::JointParametrization ModelInterface2Pin::get_joint_parametrization(string_const_ref jname)
@@ -93,12 +95,12 @@ XBotInterface2::JointParametrization ModelInterface2Pin::get_joint_parametrizati
     size_t pin_id = _mdl.getJointId(std::string(jname));
 
     // fill required info
-    ret.id = pin_id;
-    ret.iq = _mdl.idx_qs[pin_id];
-    ret.nq = _mdl.nqs[pin_id];
-    ret.iv = _mdl.idx_vs[pin_id];
-    ret.nv = _mdl.nvs[pin_id];
-    ret.q0 = _qneutral.segment(ret.iq, ret.nq);
+    ret.info.id = pin_id;
+    ret.info.iq = _mdl.idx_qs[pin_id];
+    ret.info.nq = _mdl.nqs[pin_id];
+    ret.info.iv = _mdl.idx_vs[pin_id];
+    ret.info.nv = _mdl.nvs[pin_id];
+    ret.q0 = _qneutral.segment(ret.info.iq, ret.info.nq);
 
     // urdf joint
     auto jptr = getUrdf()->joints_.at(std::string(jname));
@@ -108,7 +110,7 @@ XBotInterface2::JointParametrization ModelInterface2Pin::get_joint_parametrizati
 
     // so(2)
     if(jptr->type == urdf::Joint::CONTINUOUS &&
-            ret.nq == 2)
+            ret.info.nq == 2)
     {
         ret.fn_minimal_to_q = [](VecConstRef qminimal, VecRef q)
         {
@@ -124,7 +126,7 @@ XBotInterface2::JointParametrization ModelInterface2Pin::get_joint_parametrizati
 
     // se(3)
     if(jptr->type == urdf::Joint::FLOATING &&
-            ret.nq == 7)
+            ret.info.nq == 7)
     {
         // minimal orientation repr (RPY) to pin's q vector
         ret.fn_minimal_to_q = [](VecConstRef qminimal, VecRef q)
@@ -185,6 +187,7 @@ void ModelInterface2Pin::Temporaries::resize(int nq, int nv)
     J.setZero(6, nv);
     qsum.setZero(nq);
     rnea.setZero(nv);
+    qdiff.setZero(nv);
 }
 
 XBOT2_REGISTER_MODEL_PLUGIN(ModelInterface2Pin, pin);

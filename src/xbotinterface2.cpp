@@ -79,6 +79,11 @@ int XBotInterface2::getJointNum() const
     return impl->_joints.size();
 }
 
+bool XBotInterface2::hasJoint(string_const_ref name) const
+{
+    return static_cast<bool>(getJoint(name));
+}
+
 ModelJoint::Ptr ModelInterface2::getJoint(string_const_ref name)
 {
     return impl->getJoint(name);
@@ -102,6 +107,41 @@ Joint::ConstPtr XBotInterface2::getJoint(string_const_ref name) const
 Joint::ConstPtr XBotInterface2::getJoint(int i) const
 {
     return impl->getJoint(i);
+}
+
+JointInfo XBotInterface2::getJointInfo(string_const_ref name) const
+{
+    int jid = getJointId(name);
+
+    if(jid < 0)
+    {
+        throw std::out_of_range("joint '" + name + "' not found");
+    }
+
+    return impl->_joint_info[jid];
+
+}
+
+JointInfo XBotInterface2::getJointInfo(int i) const
+{
+    if(i >= getJointNum())
+    {
+        throw std::out_of_range("joint #'" + std::to_string(i) + "' does not exist");
+    }
+
+    return impl->_joint_info[i];
+}
+
+int XBotInterface2::getJointId(string_const_ref name) const
+{
+    try
+    {
+        return impl->_name_id_map.at(name);
+    }
+    catch(std::out_of_range&)
+    {
+        return -1;
+    }
 }
 
 void XBotInterface2::getJacobian(string_const_ref link_name, MatRef J) const
@@ -180,13 +220,13 @@ Eigen::VectorXd XBotInterface2::Impl::getRobotState(string_const_ref name) const
         {
             int id = _name_id_map.at(jname);
 
-            if(_joint_nq[id] > 1 || jval.size() > 1)
+            if(_joint_info[id].nq > 1 || jval.size() > 1)
             {
                 // ignore
                 continue;
             }
 
-            qrs[_joint_iq[id]] = jval[0];
+            qrs[_joint_info[id].iq] = jval[0];
         }
 
         return qrs;
@@ -215,9 +255,11 @@ UniversalJoint::Ptr XBotInterface2::Impl::getJoint(int i) const
 }
 
 XBotInterface2::JointParametrization
-XBotInterface2::Impl::get_joint_parametrization(string_const_ref jname)
+XBotInterface2::Impl::get_joint_parametrization(string_const_ref)
 {
     JointParametrization ret;
+
+    throw std::runtime_error(std::string(__func__) + " not impl");
 
     return ret;
 }
@@ -245,29 +287,26 @@ void XBotInterface2::Impl::finalize()
         auto jparam = _api.get_joint_parametrization(jname);
 
         // not found?
-        if(jparam.id < 0)
+        if(jparam.info.id < 0)
         {
             throw std::runtime_error("joint " + jname + " not found in implementation");
         }
 
+        // change impl id to our own id
+        jparam.info.id = nj;
+
         // save id, nq, nv, iq, iv, name, whole param
         _joint_name.push_back(jname);
 
-        _joint_nq.push_back(jparam.nq);
-
-        _joint_nv.push_back(jparam.nv);
-
-        _joint_iq.push_back(jparam.iq);
-
-        _joint_iv.push_back(jparam.iv);
+        _joint_info.push_back(jparam.info);
 
         _name_id_map[jname] = nj;
 
         jparam_map[jname] = jparam;
 
         // increment global dimensions
-        nq += jparam.nq;
-        nv += jparam.nv;
+        nq += jparam.info.nq;
+        nv += jparam.info.nv;
         nj += 1;
     };
 
@@ -288,22 +327,24 @@ void XBotInterface2::Impl::finalize()
     // consistency checks
     for(int i = 0; i < nj; i++)
     {
-        if(_joint_iq[i] + _joint_nq[i] > nq)
+        auto [jid, jiq, jiv, jnq, jnv] = _joint_info[i];
+
+        if(jiq + jnq > nq)
         {
             throw std::runtime_error("joint q index consistency check failed (out of range)");
         }
 
-        if(i < nj - 1 && _joint_iq[i] + _joint_nq[i] != _joint_iq[i+1])
+        if(i < nj - 1 && jiq + jnq != _joint_info[i+1].iq)
         {
             throw std::runtime_error("joint q index consistency check failed (not consecutive)");
         }
 
-        if(_joint_iv[i] + _joint_nv[i] > nv)
+        if(jiv + jnv > nv)
         {
             throw std::runtime_error("joint v index consistency check failed (out of range)");
         }
 
-        if(i < nj - 1 && _joint_iv[i] + _joint_nv[i] != _joint_iv[i+1])
+        if(i < nj - 1 && jiv + jnv != _joint_info[i+1].iv)
         {
             throw std::runtime_error("joint v index consistency check failed (not consecutive)");
         }
@@ -318,7 +359,8 @@ void XBotInterface2::Impl::finalize()
     // set neutral config
     for(int i = 0; i < nj; i++)
     {
-        _qneutral.segment(_joint_iq[i], _joint_nq[i]) = jparam_map[_joint_name[i]].q0;
+        _qneutral.segment(_joint_info[i].iq,
+                          _joint_info[i].nq) = jparam_map[_joint_name[i]].q0;
     }
 
     // use it to initialize cmd and state
@@ -330,16 +372,18 @@ void XBotInterface2::Impl::finalize()
         auto jname = _joint_name[i];
         auto jptr = _urdf->joints_.at(jname);
 
+        auto [id, iq, iv, nq, nv] = _joint_info[i];
+
         // create xbot's joint
 
         // get views on relevant states and control
         auto sv = detail::createView(_state,
-                                     _joint_iq[i], _joint_nq[i],
-                                     _joint_iv[i], _joint_nv[i]);
+                                     iq, nq,
+                                     iv, nv);
 
         auto cv = detail::createView(_cmd,
-                                     _joint_iq[i], _joint_nq[i],
-                                     _joint_iv[i], _joint_nv[i],
+                                     iq, nq,
+                                     iv, nv,
                                      i, 1);
 
         // create private implementation of joint
@@ -350,25 +394,33 @@ void XBotInterface2::Impl::finalize()
         jimpl->fn_minimal_to_q = jparam.fn_minimal_to_q;
         jimpl->fn_q_to_minimal = jparam.fn_q_to_minimal;
         jimpl->fn_fwd_kin = jparam.fn_fwd_kin;
+        jimpl->fn_inv_kin = jparam.fn_inv_kin;
 
         // check we got all info we need
-        if(_joint_nq[i] != _joint_nv[i] &&
+        if(nq != nv &&
                 !jimpl->fn_minimal_to_q)
         {
             throw std::runtime_error("fn_minimal_to_q not provided for non-euclidean joint " + jname);
         }
 
-        if(_joint_nq[i] != _joint_nv[i] &&
+        if(nq != nv &&
                 !jimpl->fn_q_to_minimal)
         {
             throw std::runtime_error("fn_q_to_minimal not provided for non-euclidean joint " + jname);
         }
 
         if(jptr->type == urdf::Joint::FLOATING &&
-                _joint_nq[i] != _joint_nv[i] &&
+                nq != nv &&
                 !jimpl->fn_fwd_kin)
         {
             throw std::runtime_error("fn_fwd_kin not provided for non-euclidean floating joint " + jname);
+        }
+
+        if(jptr->type == urdf::Joint::FLOATING &&
+                nq != nv &&
+                !jimpl->fn_inv_kin)
+        {
+            throw std::runtime_error("fn_inv_kin not provided for non-euclidean floating joint " + jname);
         }
 
         // create and save joint

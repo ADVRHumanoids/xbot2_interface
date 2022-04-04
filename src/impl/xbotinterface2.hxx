@@ -39,8 +39,6 @@ public:
 
     void finalize();
 
-
-
 private:
 
     // api
@@ -65,10 +63,7 @@ private:
     std::map<std::string, int, std::less<>> _name_id_map;
 
     // joint id -> conf dim, tangent dim
-    std::vector<int> _joint_nq, _joint_nv;
-
-    // joint id -> conf index, tangent index
-    std::vector<int> _joint_iq, _joint_iv;
+    std::vector<JointInfo> _joint_info;
 
     // joint id -> name
     std::vector<std::string> _joint_name;

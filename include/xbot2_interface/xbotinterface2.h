@@ -42,9 +42,17 @@ public:
 
     int getJointNum() const;
 
+    bool hasJoint(string_const_ref name) const;
+
     Joint::ConstPtr getJoint(string_const_ref name) const;
 
     Joint::ConstPtr getJoint(int i) const;
+
+    JointInfo getJointInfo(string_const_ref name) const;
+
+    JointInfo getJointInfo(int i) const;
+
+    int getJointId(string_const_ref name) const;
 
     virtual void update() = 0;
 
@@ -78,11 +86,7 @@ protected:
 
     struct JointParametrization
     {
-        int id = -1;
-        int iq = -1;
-        int iv = -1;
-        int nq = -1;
-        int nv = -1;
+        JointInfo info;
 
         Eigen::VectorXd q0;
 

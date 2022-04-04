@@ -112,17 +112,17 @@ XBotInterface2::JointParametrization ModelInterface2Rbdl::get_joint_parametrizat
 
     auto& joint_rbd = _mdl.mJoints.at(body_id);
 
-    ret.iq = joint_rbd.q_index;
-    ret.iv = ret.iq;
-    ret.nq = joint_rbd.mDoFCount;
-    ret.nv = ret.nq;
-    ret.id = body_id;
+    ret.info.iq = joint_rbd.q_index;
+    ret.info.iv = ret.info.iq;
+    ret.info.nq = joint_rbd.mDoFCount;
+    ret.info.nv = ret.info.nq;
+    ret.info.id = body_id;
 
     if(joint_urdf->type == urdf::Joint::FLOATING)
     {
-        ret.nq = ret.nv = 6;
-        ret.iq -= 3;
-        ret.iv -= 3;
+        ret.info.nq = ret.info.nv = 6;
+        ret.info.iq -= 3;
+        ret.info.iv -= 3;
 
         ret.fn_fwd_kin =  [](VecConstRef q, VecConstRef v,
                              Eigen::Affine3d* p_T_c, Eigen::Vector6d* c_vc)
@@ -159,7 +159,7 @@ XBotInterface2::JointParametrization ModelInterface2Rbdl::get_joint_parametrizat
         };
     }
 
-    ret.q0.setZero(ret.nq);
+    ret.q0.setZero(ret.info.nq);
 
     return ret;
 

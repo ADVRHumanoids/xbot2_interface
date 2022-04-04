@@ -54,6 +54,7 @@ private:
     {
         Eigen::MatrixXd J;
         Eigen::VectorXd qsum;
+        Eigen::VectorXd qdiff;
         Eigen::VectorXd rnea;
 
         void resize(int nq, int nv);
