@@ -1,5 +1,5 @@
-#ifndef UTILS_H
-#define UTILS_H
+#ifndef IMPL_UTILS_H
+#define IMPL_UTILS_H
 
 #include <xbot2_interface/common/types.h>
 #include <string>

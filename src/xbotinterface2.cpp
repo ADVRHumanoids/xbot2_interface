@@ -1,4 +1,5 @@
 #include <xbot2_interface/common/plugin.h>
+#include <xbot2_interface/common/utils.h>
 
 #include "impl/xbotinterface2.hxx"
 #include "impl/utils.h"
@@ -144,6 +145,27 @@ int XBotInterface2::getJointId(string_const_ref name) const
     }
 }
 
+MatConstRef XBotInterface2::getRelativeJacobian(string_const_ref distal_name,
+                                                string_const_ref base_name) const
+{
+    // initialize Jrel with Jbase
+    Eigen::MatrixXd Jrel = getJacobian(base_name);
+
+    // shift ref point to p_d
+    Eigen::Affine3d w_T_b = getPose(base_name);
+    Eigen::Affine3d w_T_d = getPose(distal_name);
+    Eigen::Vector3d r = w_T_d.translation() - w_T_b.translation();
+    Utils::changeRefPoint(Jrel, r);
+
+    // now Jrel = Jd - Jb_shifted
+    Jrel = getJacobian(distal_name) - Jrel;
+
+    // rotate to base
+    Utils::rotate(Jrel, w_T_b.linear().transpose());
+
+    return Jrel;
+}
+
 void XBotInterface2::getJacobian(string_const_ref link_name, MatRef J) const
 {
     auto res = getJacobian(link_name);
@@ -161,6 +183,62 @@ Eigen::Vector6d XBotInterface2::getVelocityTwist(string_const_ref link_name) con
     Eigen::Vector6d ret;
     ret.noalias() = getJacobian(link_name) * getJointVelocity();
     return ret;
+}
+
+Eigen::Vector6d XBotInterface2::getRelativeVelocityTwist(string_const_ref distal_name,
+                                                         string_const_ref base_name) const
+{
+    // initialize vrel with Jbase
+    Eigen::MatrixXd vrel = getVelocityTwist(base_name);
+
+    // shift ref point to p_d
+    Eigen::Affine3d w_T_b = getPose(base_name);
+    Eigen::Affine3d w_T_d = getPose(distal_name);
+    Eigen::Vector3d r = w_T_d.translation() - w_T_b.translation();
+    Utils::changeRefPoint(vrel, r);
+
+    // now Jrel = Jd - Jb_shifted
+    vrel = getVelocityTwist(distal_name) - vrel;
+
+    // rotate to base
+    Utils::rotate(vrel, w_T_b.linear().transpose());
+
+    return vrel;
+}
+
+Eigen::Vector6d XBotInterface2::getJdotTimesV(string_const_ref link_name) const
+{
+    throw std::runtime_error(__func__ + std::string(" not implemented"));
+}
+
+Eigen::Vector6d XBotInterface2::getRelativeJdotTimesV(string_const_ref distal_name,
+                                                      string_const_ref base_name) const
+{
+    Eigen::Vector6d v_base = getVelocityTwist(base_name);
+    Eigen::Vector6d v_distal = getVelocityTwist(distal_name);
+
+    Eigen::Vector6d v_rel = getRelativeVelocityTwist(distal_name, base_name);
+
+    Eigen::Affine3d w_T_b = getPose(base_name);
+    Eigen::Affine3d w_T_d = getPose(distal_name);
+
+    Eigen::Vector6d a0_d = getJdotTimesV(distal_name);
+    Eigen::Vector6d a0_b = getJdotTimesV(base_name);
+
+    const Eigen::Matrix3d& w_R_b = w_T_b.linear();
+    Eigen::Vector3d r = w_T_d.translation() - w_T_b.translation();
+    Eigen::Vector3d b_om_base = w_R_b.transpose() * v_base.tail<3>();
+    Eigen::Vector3d rdot = (v_distal - v_base).head<3>();
+
+    Utils::rotate(v_rel, Utils::skew(b_om_base));
+    Utils::changeRefPoint(a0_b, r);
+
+    Eigen::Vector6d rdot_cross_om;
+    rdot_cross_om << rdot.cross(v_base.tail<3>());
+
+    Eigen::Vector6d aux = a0_d - a0_b - rdot_cross_om;
+
+    return v_rel + Utils::rotate(aux, w_R_b.transpose());
 }
 
 XBotInterface2::JointParametrization XBotInterface2::get_joint_parametrization(string_const_ref jname)

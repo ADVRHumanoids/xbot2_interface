@@ -25,5 +25,14 @@ Eigen::Matrix3d XBot::Utils::rpyJacobian(Eigen::Ref<const Eigen::Vector3d> rpy)
 
 Eigen::Vector3d XBot::Utils::rotationMatrixToRpy(const Eigen::Matrix3d &R)
 {
+    return R.eulerAngles(0, 1, 2);
+}
 
+Eigen::Matrix3d XBot::Utils::skew(const Eigen::Vector3d &r)
+{
+    Eigen::Matrix3d S;
+    S <<        0, -r[2],  r[1],
+             r[2],     0, -r[0],
+            -r[1],  r[0],     0;
+    return S;
 }

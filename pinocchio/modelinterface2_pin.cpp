@@ -12,21 +12,31 @@ using namespace XBot;
 
 ModelInterface2Pin::ModelInterface2Pin(const ConfigOptions& opt):
     ModelInterface2(opt),
-    _cached_computation(None)
+    _cached_computation(None),
+    _world_aligned(pinocchio::ReferenceFrame::LOCAL_WORLD_ALIGNED)
 {
     pinocchio::urdf::buildModel(std::const_pointer_cast<urdf::Model>(getUrdf()), _mdl);
     _data = pinocchio::Data(_mdl);
+    _data_no_acc = pinocchio::Data(_mdl);
 
     _qneutral = pinocchio::neutral(_mdl);
 
     _tmp.resize(_mdl.nq, _mdl.nv);
+
+    _vzero.setZero(_mdl.nv);
 
     finalize();
 }
 
 void ModelInterface2Pin::update()
 {
-    pinocchio::framesForwardKinematics(_mdl, _data, getJointPosition());
+    pinocchio::forwardKinematics(_mdl, _data,
+                                 getJointPosition(),
+                                 getJointVelocity(),
+                                 getJointAcceleration());
+
+    pinocchio::updateFramePlacements(_mdl, _data);
+
     _cached_computation = Kinematics;
 }
 
@@ -49,7 +59,7 @@ MatConstRef ModelInterface2Pin::getJacobian(string_const_ref link_name) const
 
     auto frame_idx = _mdl.getFrameId(std::string(link_name));
     _tmp.J.setZero(6, getNv());
-    pinocchio::getFrameJacobian(_mdl, _data, frame_idx, pinocchio::ReferenceFrame::LOCAL_WORLD_ALIGNED, _tmp.J);
+    pinocchio::getFrameJacobian(_mdl, _data, frame_idx, _world_aligned, _tmp.J);
     return _tmp.J;
 }
 
@@ -188,6 +198,25 @@ void ModelInterface2Pin::Temporaries::resize(int nq, int nv)
     qsum.setZero(nq);
     rnea.setZero(nv);
     qdiff.setZero(nv);
+}
+
+Eigen::Vector6d XBot::ModelInterface2Pin::getVelocityTwist(string_const_ref link_name) const
+{
+    auto frame_idx = _mdl.getFrameId(std::string(link_name));
+    auto v = pinocchio::getFrameVelocity(_mdl, _data, frame_idx, _world_aligned);
+    return v;
+}
+
+Eigen::Vector6d ModelInterface2Pin::getJdotTimesV(string_const_ref link_name) const
+{
+    if(!(_cached_computation & KinematicsNoAcc))
+    {
+        pinocchio::forwardKinematics(_mdl, _data_no_acc, getJointPosition(), getJointVelocity(), _vzero);
+        _cached_computation |= KinematicsNoAcc;
+    }
+
+    auto frame_idx = _mdl.getFrameId(std::string(link_name));
+    return pinocchio::getFrameClassicalAcceleration(_mdl, _data_no_acc, frame_idx, _world_aligned);
 }
 
 XBOT2_REGISTER_MODEL_PLUGIN(ModelInterface2Pin, pin);

@@ -1,6 +1,8 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#include <chrono>
+
 #include <gtest/gtest.h>
 
 #include <xbot2_interface/xbotinterface2.h>
@@ -10,6 +12,11 @@ std::string model_type = "pin",
 robot_type = "ros",
 urdf_path = XBOT2_TEST_RESOURCE_DIR "centauro_capsule.urdf",
 srdf_path = XBOT2_TEST_RESOURCE_DIR "centauro_capsule.srdf";
+
+#define TIC(name) auto tic_##name = std::chrono::high_resolution_clock::now()
+#define TOC(name) std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - tic_##name).count()
+
+
 
 class TestCommon : public testing::Test
 {

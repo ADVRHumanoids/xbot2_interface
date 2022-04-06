@@ -25,6 +25,10 @@ public:
 
     MatConstRef getJacobian(string_const_ref link_name) const override;
 
+    Eigen::Vector6d getVelocityTwist(string_const_ref link_name) const override;
+
+    Eigen::Vector6d getJdotTimesV(string_const_ref link_name) const override;
+
     VecConstRef computeInverseDynamics() const override;
 
     VecConstRef sum(VecConstRef q0, VecConstRef v) const override;
@@ -39,13 +43,17 @@ private:
 
     pinocchio::Model _mdl;
     mutable pinocchio::Data _data;
+    mutable pinocchio::Data _data_no_acc;
+
+    pinocchio::ReferenceFrame _world_aligned;
 
     enum ComputationType
     {
         None = 0,
         Kinematics = 1,
-        Jacobians = 2,
-        Rnea = 4
+        KinematicsNoAcc = 2,
+        Jacobians = 4,
+        Rnea = 8
     };
 
     mutable uint16_t _cached_computation;
@@ -63,6 +71,7 @@ private:
     mutable Temporaries _tmp;
     Eigen::VectorXd _qneutral;
 
+    Eigen::VectorXd _vzero;
 
 };
 
