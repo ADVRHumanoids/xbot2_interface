@@ -74,6 +74,15 @@ private:
     // chains
     std::map<std::string, Chain::Ptr> _chain_map;
 
+    struct Temporaries
+    {
+        Eigen::MatrixXd Jrel;
+
+        void setZero(int nq, int nv);
+    };
+
+    Temporaries _tmp;
+
 
 
 

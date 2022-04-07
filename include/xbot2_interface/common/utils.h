@@ -20,7 +20,7 @@ void changeRefPoint(Eigen::MatrixBase<Mat>& J_or_vel,
 {
     // v(P) = v(0) + om x (P - O)
     Eigen::Matrix3d S = skew(p);
-    J_or_vel.template topRows<3>().noalias() += S * J_or_vel.template bottomRows<3>();
+    J_or_vel.template topRows<3>().noalias() -= S * J_or_vel.template bottomRows<3>();
 }
 
 template <typename Mat>
