@@ -169,13 +169,6 @@ MatConstRef XBotInterface2::getRelativeJacobian(string_const_ref distal_name,
     return Jrel;
 }
 
-void XBotInterface2::getJacobian(string_const_ref link_name, MatRef J) const
-{
-    auto res = getJacobian(link_name);
-    check_mat_size(J, res, __func__);
-    J.noalias() = res;
-}
-
 void XBotInterface2::getJacobian(string_const_ref link_name, Eigen::MatrixXd &J) const
 {
     J.noalias() = getJacobian(link_name);
@@ -186,6 +179,11 @@ Eigen::Vector6d XBotInterface2::getVelocityTwist(string_const_ref link_name) con
     Eigen::Vector6d ret;
     ret.noalias() = getJacobian(link_name) * getJointVelocity();
     return ret;
+}
+
+Eigen::Vector6d XBotInterface2::getAccelerationTwist(string_const_ref link_name) const
+{
+    return getJacobian(link_name)*getJointAcceleration() + getJdotTimesV(link_name);
 }
 
 Eigen::Vector6d XBotInterface2::getRelativeVelocityTwist(string_const_ref distal_name,
@@ -207,6 +205,36 @@ Eigen::Vector6d XBotInterface2::getRelativeVelocityTwist(string_const_ref distal
     Utils::rotate(vrel, w_T_b.linear().transpose());
 
     return vrel;
+}
+
+Eigen::Vector6d XBotInterface2::getRelativeAccelerationTwist(string_const_ref distal_name,
+                                                             string_const_ref base_name) const
+{
+    Eigen::Vector6d v_base = getVelocityTwist(base_name);
+    Eigen::Vector6d v_distal = getVelocityTwist(distal_name);
+
+    Eigen::Vector6d v_rel = getRelativeVelocityTwist(distal_name, base_name);
+
+    Eigen::Affine3d w_T_b = getPose(base_name);
+    Eigen::Affine3d w_T_d = getPose(distal_name);
+
+    Eigen::Vector6d a_d = getAccelerationTwist(distal_name);
+    Eigen::Vector6d a_b = getAccelerationTwist(base_name);
+
+    const Eigen::Matrix3d& w_R_b = w_T_b.linear();
+    Eigen::Vector3d r = w_T_d.translation() - w_T_b.translation();
+    Eigen::Vector3d b_om_base = w_R_b.transpose() * v_base.tail<3>();
+    Eigen::Vector3d rdot = (v_distal - v_base).head<3>();
+
+    Utils::rotate(v_rel, Utils::skew(b_om_base));
+    Utils::changeRefPoint(a_b, r);
+
+    Eigen::Vector6d rdot_cross_om;
+    rdot_cross_om << rdot.cross(v_base.tail<3>()), 0, 0, 0;
+
+    Eigen::Vector6d aux = a_d - a_b + rdot_cross_om;
+
+    return -v_rel + Utils::rotate(aux, w_R_b.transpose());
 }
 
 Eigen::Vector6d XBotInterface2::getJdotTimesV(string_const_ref link_name) const

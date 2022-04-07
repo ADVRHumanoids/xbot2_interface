@@ -7,6 +7,7 @@
 
 #include <xbot2_interface/xbotinterface2.h>
 #include <xbot2_interface/robotinterface2.h>
+#include <xbot2_interface/common/utils.h>
 
 std::string model_type = "pin",
 robot_type = "ros",

@@ -27,6 +27,8 @@ public:
 
     Eigen::Vector6d getVelocityTwist(string_const_ref link_name) const override;
 
+    Eigen::Vector6d getAccelerationTwist(string_const_ref link_name) const override;
+
     Eigen::Vector6d getJdotTimesV(string_const_ref link_name) const override;
 
     VecConstRef computeInverseDynamics() const override;
@@ -41,9 +43,13 @@ protected:
 
 private:
 
+    pinocchio::Index get_frame_id(string_const_ref name) const;
+
     pinocchio::Model _mdl;
     mutable pinocchio::Data _data;
     mutable pinocchio::Data _data_no_acc;
+
+    std::unordered_map<std::string, pinocchio::Index> _frame_idx;
 
     pinocchio::ReferenceFrame _world_aligned;
 

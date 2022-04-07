@@ -2,6 +2,64 @@
 
 using TestKinematics = TestWithModel;
 
+TEST_F(TestKinematics, checkJointFk)
+{
+    double dt = 0;
+    int count = 0;
+
+    for(int iter = 0; iter < 100; iter++)
+    {
+        Eigen::VectorXd q0 = model->getJointPosition();
+        Eigen::VectorXd v = Eigen::VectorXd::Random(model->getNv());
+        Eigen::VectorXd q = model->sum(q0, v);
+
+        model->setJointPosition(q);
+        model->setJointVelocity(v);
+        model->update();
+
+        for(int i = 0; i < model->getJointNum(); i++)
+        {
+            auto j = model->getJoint(i);
+
+            if(j->getType() != urdf::Joint::FLOATING)
+            {
+                continue;
+            }
+
+            auto qj = q.segment(model->getJointInfo(i).iq,
+                                j->getNq());
+
+            auto vj = v.segment(model->getJointInfo(i).iv,
+                                j->getNv());
+
+
+            Eigen::Affine3d T_j;
+            Eigen::Vector6d v_fk_j;
+            TIC();
+            j->forwardKinematics(qj, vj, T_j, v_fk_j);
+            dt += TOC();
+            count++;
+
+            auto T = model->getPose(j->getParentLink()).inverse()*
+                    model->getPose(j->getChildLink());
+
+            auto v_fk = model->getRelativeVelocityTwist(j->getChildLink(), j->getParentLink());
+            XBot::Utils::rotate(v_fk, T.linear().transpose());
+
+            EXPECT_TRUE( T.isApprox(T_j) )
+                    << j->getName() << "\n" <<
+                       "T  = \n" << T.matrix().format(3) << "\n" <<
+                       "Tj = \n" << T_j.matrix().format(3) << "\n";
+
+            EXPECT_TRUE( v_fk.isApprox(v_fk_j) )
+                    << j->getName() << "\n" <<
+                       "v_fk  = \n" << v_fk.transpose().format(3) << "\n" <<
+                       "v_fkj = \n" << v_fk_j.transpose().format(3) << "\n";
+        }
+    }
+
+    std::cout << "forwardKinematics requires " << dt/count*1e6 << " us \n";
+}
 
 TEST_F(TestKinematics, checkJacobianNumerical)
 {
@@ -347,6 +405,138 @@ TEST_F(TestKinematics, checkRelativeJdotTimesV)
 
     std::cout << "getRelativeJdotTimesV requires " << dt/count*1e6 << " us \n";
 }
+
+TEST_F(TestKinematics, checkAcceleration)
+{
+    int count = 0;
+    double dt = 0;
+
+    auto check_acc = [this, &count, &dt](std::string lname,
+            Eigen::VectorXd q0, Eigen::VectorXd v, Eigen::VectorXd a)
+    {
+        model->setJointPosition(q0);
+        model->setJointVelocity(v);
+        model->setJointAcceleration(a);
+        model->update();
+
+        TIC();
+        auto acc = model->getAccelerationTwist(lname);
+        dt += TOC();
+        count += 1;
+
+        Eigen::Vector6d acc_J = model->getJacobian(lname)*model->getJointAcceleration() +
+                model->getJdotTimesV(lname);
+
+        const double h = 1e-4;
+
+        Eigen::VectorXd qjplus = model->sum(q0, v*h/2 + a*h*h/8);
+        Eigen::VectorXd vjplus = v + a*h/2;
+        Eigen::VectorXd qjminus = model->sum(q0, -v*h/2 - a*h*h/8);
+        Eigen::VectorXd vjminus = v - a*h/2;
+
+        model->setJointPosition(qjplus);
+        model->setJointVelocity(vjplus);
+        model->update();
+        auto vplus = model->getVelocityTwist(lname);
+
+        model->setJointPosition(qjminus);
+        model->setJointVelocity(vjminus);
+        model->update();
+        auto vminus = model->getVelocityTwist(lname);
+
+        Eigen::Vector6d acc_hat = (vplus - vminus)/h;
+
+        EXPECT_LT((acc_hat - acc).lpNorm<Eigen::Infinity>(), 1e-3);
+
+        EXPECT_LT((acc_J - acc).lpNorm<Eigen::Infinity>(), 1e-6);
+
+
+    };
+
+    for(int i = 0; i < 100; i++)
+    {
+        Eigen::VectorXd q0 = model->getJointPosition();
+        Eigen::VectorXd v = Eigen::VectorXd::Random(model->getNv());
+        Eigen::VectorXd q = model->sum(q0, v);
+        Eigen::VectorXd a = Eigen::VectorXd::Random(model->getNv());
+
+        for(auto [lname, lptr] : model->getUrdf()->links_)
+        {
+            check_acc(lname, q, v, a);
+        }
+    }
+
+    std::cout << "getAccelerationTwist requires " << dt/count*1e6 << " us \n";
+}
+
+
+TEST_F(TestKinematics, checkRelativeAcceleration)
+{
+    int count = 0;
+    double dt = 0;
+
+    auto check_acc = [this, &count, &dt](std::string lname, std::string bname,
+            Eigen::VectorXd q0, Eigen::VectorXd v, Eigen::VectorXd a)
+    {
+        model->setJointPosition(q0);
+        model->setJointVelocity(v);
+        model->setJointAcceleration(a);
+        model->update();
+
+        TIC();
+        auto acc = model->getRelativeAccelerationTwist(lname, bname);
+        dt += TOC();
+        count += 1;
+
+        Eigen::Vector6d acc_J = model->getRelativeJacobian(lname, bname) *
+                model->getJointAcceleration() +
+                model->getRelativeJdotTimesV(lname, bname);
+
+        const double h = 1e-4;
+
+        Eigen::VectorXd qjplus = model->sum(q0, v*h/2 + a*h*h/8);
+        Eigen::VectorXd vjplus = v + a*h/2;
+        Eigen::VectorXd qjminus = model->sum(q0, -v*h/2 - a*h*h/8);
+        Eigen::VectorXd vjminus = v - a*h/2;
+
+        model->setJointPosition(qjplus);
+        model->setJointVelocity(vjplus);
+        model->update();
+        auto vplus = model->getRelativeVelocityTwist(lname, bname);
+
+        model->setJointPosition(qjminus);
+        model->setJointVelocity(vjminus);
+        model->update();
+        auto vminus = model->getRelativeVelocityTwist(lname, bname);
+
+        Eigen::Vector6d acc_hat = (vplus - vminus)/h;
+
+        EXPECT_LT((acc_hat - acc).lpNorm<Eigen::Infinity>(), 1e-3);
+
+        EXPECT_LT((acc_J - acc).lpNorm<Eigen::Infinity>(), 1e-6);
+
+
+    };
+
+    for(int i = 0; i < 3; i++)
+    {
+        Eigen::VectorXd q0 = model->getJointPosition();
+        Eigen::VectorXd v = Eigen::VectorXd::Random(model->getNv());
+        Eigen::VectorXd q = model->sum(q0, v);
+        Eigen::VectorXd a = Eigen::VectorXd::Random(model->getNv());
+
+        for(auto [lname, lptr] : model->getUrdf()->links_)
+        {
+            for(auto [bname, bptr] : model->getUrdf()->links_)
+            {
+                check_acc(lname, bname, q, v, a);
+            }
+        }
+    }
+
+    std::cout << "getRelativeAccelerationTwist requires " << dt/count*1e6 << " us \n";
+}
+
 
 int main(int argc, char ** argv)
 {

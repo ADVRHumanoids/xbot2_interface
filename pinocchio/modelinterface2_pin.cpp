@@ -25,6 +25,11 @@ ModelInterface2Pin::ModelInterface2Pin(const ConfigOptions& opt):
 
     _vzero.setZero(_mdl.nv);
 
+    for(auto& f : _mdl.frames)
+    {
+        _frame_idx[f.name] = _mdl.getFrameId(f.name);
+    }
+
     finalize();
 }
 
@@ -43,7 +48,7 @@ void ModelInterface2Pin::update()
 Eigen::Affine3d ModelInterface2Pin::getPose(string_const_ref link_name) const
 {
     Eigen::Affine3d ret;
-    auto frame_idx = _mdl.getFrameId(std::string(link_name));
+    auto frame_idx = get_frame_id(link_name);
     ret.translation() = _data.oMf.at(frame_idx).translation();
     ret.linear() = _data.oMf.at(frame_idx).rotation();
     return ret;
@@ -57,7 +62,7 @@ MatConstRef ModelInterface2Pin::getJacobian(string_const_ref link_name) const
         _cached_computation |= Jacobians;
     }
 
-    auto frame_idx = _mdl.getFrameId(std::string(link_name));
+    auto frame_idx = get_frame_id(link_name);
     _tmp.J.setZero(6, getNv());
     pinocchio::getFrameJacobian(_mdl, _data, frame_idx, _world_aligned, _tmp.J);
     return _tmp.J;
@@ -192,6 +197,11 @@ XBotInterface2::JointParametrization ModelInterface2Pin::get_joint_parametrizati
 
 }
 
+pinocchio::Index ModelInterface2Pin::get_frame_id(string_const_ref name) const
+{
+    return _frame_idx.at(name);
+}
+
 void ModelInterface2Pin::Temporaries::resize(int nq, int nv)
 {
     J.setZero(6, nv);
@@ -202,9 +212,15 @@ void ModelInterface2Pin::Temporaries::resize(int nq, int nv)
 
 Eigen::Vector6d XBot::ModelInterface2Pin::getVelocityTwist(string_const_ref link_name) const
 {
-    auto frame_idx = _mdl.getFrameId(std::string(link_name));
+    auto frame_idx = get_frame_id(link_name);
     auto v = pinocchio::getFrameVelocity(_mdl, _data, frame_idx, _world_aligned);
     return v;
+}
+
+Eigen::Vector6d ModelInterface2Pin::getAccelerationTwist(string_const_ref link_name) const
+{
+    auto frame_idx = get_frame_id(link_name);
+    return pinocchio::getFrameClassicalAcceleration(_mdl, _data, frame_idx, _world_aligned);
 }
 
 Eigen::Vector6d ModelInterface2Pin::getJdotTimesV(string_const_ref link_name) const
@@ -215,7 +231,7 @@ Eigen::Vector6d ModelInterface2Pin::getJdotTimesV(string_const_ref link_name) co
         _cached_computation |= KinematicsNoAcc;
     }
 
-    auto frame_idx = _mdl.getFrameId(std::string(link_name));
+    auto frame_idx = get_frame_id(link_name);
     return pinocchio::getFrameClassicalAcceleration(_mdl, _data_no_acc, frame_idx, _world_aligned);
 }
 
