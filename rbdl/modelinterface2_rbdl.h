@@ -9,7 +9,7 @@
 namespace XBot {
 
 
-class ModelInterface2Rbdl : public ModelInterface2
+class ModelInterface2Rbdl : public ModelInterface
 {
 
 public:

@@ -54,13 +54,13 @@ class TestWithModel : public TestCommon
 
 protected:
 
-    XBot::ModelInterface2::Ptr model;
+    XBot::ModelInterface::Ptr model;
 
     virtual void SetUp()
     {
         TestCommon::SetUp();
 
-        model = XBot::ModelInterface2::getModel(urdf, srdf, model_type);
+        model = XBot::ModelInterface::getModel(urdf, srdf, model_type);
     }
 
 };

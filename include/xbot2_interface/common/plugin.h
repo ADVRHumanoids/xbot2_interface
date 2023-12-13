@@ -12,8 +12,8 @@
 
 #define XBOT2_REGISTER_MODEL_PLUGIN(Class, Type) \
     extern "C" XBOT2IFC_HELPER_DLL_EXPORT \
-    XBOT2IFC_API ::XBot::ModelInterface2 * XBOT2_MODEL_PLUGIN_FACTORY(Type)( \
-                            const ::XBot::XBotInterface2::ConfigOptions& opt \
+    XBOT2IFC_API ::XBot::ModelInterface * XBOT2_MODEL_PLUGIN_FACTORY(Type)( \
+                            const ::XBot::XBotInterface::ConfigOptions& opt \
                             ) \
     { \
        return new Class(opt); \
@@ -32,8 +32,8 @@
 
 #define XBOT2_REGISTER_ROBOT_PLUGIN(Class, Type) \
     extern "C" XBOT2IFC_HELPER_DLL_EXPORT \
-    XBOT2IFC_API ::XBot::RobotInterface2 * XBOT2_ROBOT_PLUGIN_FACTORY(Type)( \
-                            ::std::unique_ptr<::XBot::XBotInterface2> model \
+    XBOT2IFC_API ::XBot::RobotInterface * XBOT2_ROBOT_PLUGIN_FACTORY(Type)( \
+                            ::std::unique_ptr<::XBot::XBotInterface> model \
                             ) \
     { \
        return new Class(std::move(model)); \

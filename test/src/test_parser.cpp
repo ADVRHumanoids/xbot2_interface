@@ -4,7 +4,7 @@ using TestParser = TestCommon;
 
 TEST_F(TestParser, testUrdfOnly)
 {
-    auto model = XBot::ModelInterface2::getModel(urdf,
+    auto model = XBot::ModelInterface::getModel(urdf,
                                                  nullptr,
                                                  model_type);
 
@@ -14,7 +14,7 @@ TEST_F(TestParser, testUrdfOnly)
 
 TEST_F(TestParser, testUrdfSrdf)
 {
-    auto model = XBot::ModelInterface2::getModel(urdf,
+    auto model = XBot::ModelInterface::getModel(urdf,
                                                  srdf,
                                                  model_type);
 
@@ -24,7 +24,7 @@ TEST_F(TestParser, testUrdfSrdf)
 
 TEST_F(TestParser, checkSizes)
 {
-    auto model = XBot::ModelInterface2::getModel(urdf,
+    auto model = XBot::ModelInterface::getModel(urdf,
                                                  srdf,
                                                  model_type);
 
@@ -36,7 +36,7 @@ TEST_F(TestParser, checkSizes)
 
 TEST_F(TestParser, checkModelGetSet)
 {
-    auto model = XBot::ModelInterface2::getModel(urdf,
+    auto model = XBot::ModelInterface::getModel(urdf,
                                                  srdf,
                                                  model_type);
 
@@ -59,7 +59,7 @@ TEST_F(TestParser, checkModelGetSet)
 
 TEST_F(TestParser, checkJointSize)
 {
-    auto model = XBot::ModelInterface2::getModel(urdf,
+    auto model = XBot::ModelInterface::getModel(urdf,
                                                  srdf,
                                                  model_type);
     int nj = 0;
@@ -110,7 +110,7 @@ TEST_F(TestParser, checkJointSize)
 
 TEST_F(TestParser, checkJointsGetSet)
 {
-    auto model = XBot::ModelInterface2::getModel(urdf,
+    auto model = XBot::ModelInterface::getModel(urdf,
                                                  srdf,
                                                  model_type);
 

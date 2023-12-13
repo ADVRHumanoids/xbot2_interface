@@ -12,7 +12,7 @@
 
 namespace XBot {
 
-class ModelInterface2Pin : public ModelInterface2
+class ModelInterface2Pin : public ModelInterface
 {
 
 public:

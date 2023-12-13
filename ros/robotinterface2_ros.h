@@ -13,12 +13,12 @@
 
 namespace XBot {
 
-class RobotInterface2Ros : public RobotInterface2
+class RobotInterface2Ros : public RobotInterface
 {
 
 public:
 
-    RobotInterface2Ros(std::unique_ptr<XBotInterface2> model);
+    RobotInterface2Ros(std::unique_ptr<XBotInterface> model);
 
     bool sense() override;
 

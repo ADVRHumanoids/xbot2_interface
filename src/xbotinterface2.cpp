@@ -8,38 +8,38 @@
 
 using namespace XBot;
 
-XBotInterface2::XBotInterface2(const XBotInterface2::ConfigOptions &opt):
-    XBotInterface2(opt.urdf, opt.srdf)
+XBotInterface::XBotInterface(const XBotInterface::ConfigOptions &opt):
+    XBotInterface(opt.urdf, opt.srdf)
 {
 
 }
 
-XBotInterface2::XBotInterface2(urdf::ModelConstSharedPtr urdf,
+XBotInterface::XBotInterface(urdf::ModelConstSharedPtr urdf,
                                srdf::ModelConstSharedPtr srdf)
 {
     impl = std::make_shared<Impl>(urdf, srdf, *this);
 }
 
-XBotInterface2::XBotInterface2(std::shared_ptr<Impl> _impl):
+XBotInterface::XBotInterface(std::shared_ptr<Impl> _impl):
     impl(_impl)
 {
 
 }
 
-ModelInterface2::UniquePtr ModelInterface2::getModel(urdf::ModelConstSharedPtr urdf,
+ModelInterface::UniquePtr ModelInterface::getModel(urdf::ModelConstSharedPtr urdf,
                                                      srdf::ModelConstSharedPtr srdf,
                                                      std::string type)
 {
-    XBotInterface2::ConfigOptions opt { urdf, srdf };
+    XBotInterface::ConfigOptions opt { urdf, srdf };
 
-    auto mdl = CallFunction<ModelInterface2*>("libmodelinterface2_" + type + ".so",
+    auto mdl = CallFunction<ModelInterface*>("libmodelinterface2_" + type + ".so",
                                               "xbot2_create_model_plugin_" + type,
                                               opt);
 
     return UniquePtr(mdl);
 }
 
-void ModelInterface2::syncFrom(const XBotInterface2 &other)
+void ModelInterface::syncFrom(const XBotInterface &other)
 {
     setJointPosition(other.getJointPosition());
     setJointVelocity(other.getJointVelocity());
@@ -47,17 +47,17 @@ void ModelInterface2::syncFrom(const XBotInterface2 &other)
     setJointAcceleration(other.getJointAcceleration());
 }
 
-urdf::ModelConstSharedPtr XBotInterface2::getUrdf() const
+urdf::ModelConstSharedPtr XBotInterface::getUrdf() const
 {
     return impl->_urdf;
 }
 
-srdf::ModelConstSharedPtr XBotInterface2::getSrdf() const
+srdf::ModelConstSharedPtr XBotInterface::getSrdf() const
 {
     return impl->_srdf;
 }
 
-bool XBotInterface2::hasRobotState(string_const_ref name) const
+bool XBotInterface::hasRobotState(string_const_ref name) const
 {
     try
     {
@@ -70,12 +70,12 @@ bool XBotInterface2::hasRobotState(string_const_ref name) const
     }
 }
 
-Eigen::VectorXd XBotInterface2::getRobotState(string_const_ref name) const
+Eigen::VectorXd XBotInterface::getRobotState(string_const_ref name) const
 {
     return impl->getRobotState(name);
 }
 
-bool XBotInterface2::getRobotState(string_const_ref name, Eigen::VectorXd &q) const
+bool XBotInterface::getRobotState(string_const_ref name, Eigen::VectorXd &q) const
 {
     try
     {
@@ -88,42 +88,42 @@ bool XBotInterface2::getRobotState(string_const_ref name, Eigen::VectorXd &q) co
     }
 }
 
-int XBotInterface2::getJointNum() const
+int XBotInterface::getJointNum() const
 {
     return impl->_joints.size();
 }
 
-bool XBotInterface2::hasJoint(string_const_ref name) const
+bool XBotInterface::hasJoint(string_const_ref name) const
 {
     return static_cast<bool>(getJoint(name));
 }
 
-ModelJoint::Ptr ModelInterface2::getJoint(string_const_ref name)
+ModelJoint::Ptr ModelInterface::getJoint(string_const_ref name)
 {
     return impl->getJoint(name);
 }
 
-ModelJoint::Ptr ModelInterface2::getJoint(int i)
+ModelJoint::Ptr ModelInterface::getJoint(int i)
 {
     return impl->getJoint(i);
 }
 
-ModelInterface2::~ModelInterface2()
+ModelInterface::~ModelInterface()
 {
 
 }
 
-Joint::ConstPtr XBotInterface2::getJoint(string_const_ref name) const
+Joint::ConstPtr XBotInterface::getJoint(string_const_ref name) const
 {
     return impl->getJoint(name);
 }
 
-Joint::ConstPtr XBotInterface2::getJoint(int i) const
+Joint::ConstPtr XBotInterface::getJoint(int i) const
 {
     return impl->getJoint(i);
 }
 
-JointInfo XBotInterface2::getJointInfo(string_const_ref name) const
+JointInfo XBotInterface::getJointInfo(string_const_ref name) const
 {
     int jid = getJointId(name);
 
@@ -136,7 +136,7 @@ JointInfo XBotInterface2::getJointInfo(string_const_ref name) const
 
 }
 
-JointInfo XBotInterface2::getJointInfo(int i) const
+JointInfo XBotInterface::getJointInfo(int i) const
 {
     if(i >= getJointNum())
     {
@@ -146,7 +146,7 @@ JointInfo XBotInterface2::getJointInfo(int i) const
     return impl->_joint_info[i];
 }
 
-int XBotInterface2::getJointId(string_const_ref name) const
+int XBotInterface::getJointId(string_const_ref name) const
 {
     try
     {
@@ -158,7 +158,7 @@ int XBotInterface2::getJointId(string_const_ref name) const
     }
 }
 
-bool XBotInterface2::getJacobian(string_const_ref link_name, MatRef J) const
+bool XBotInterface::getJacobian(string_const_ref link_name, MatRef J) const
 {
     int idx = impl->get_link_id_error(link_name);
 
@@ -172,14 +172,14 @@ bool XBotInterface2::getJacobian(string_const_ref link_name, MatRef J) const
     return true;
 }
 
-bool XBotInterface2::getJacobian(string_const_ref link_name, Eigen::MatrixXd &J) const
+bool XBotInterface::getJacobian(string_const_ref link_name, Eigen::MatrixXd &J) const
 {
     J.setZero(6, getNv());
     return getJacobian(link_name, MatRef(J));
 }
 
 
-void XBotInterface2::getRelativeJacobian(int distal_id, int base_id, MatRef Jrel) const
+void XBotInterface::getRelativeJacobian(int distal_id, int base_id, MatRef Jrel) const
 {
     // take Jrel from tmp
     auto& Jtmp = impl->_tmp.J;
@@ -203,7 +203,7 @@ void XBotInterface2::getRelativeJacobian(int distal_id, int base_id, MatRef Jrel
     Utils::rotate(Jrel, w_T_b.linear().transpose());
 }
 
-bool XBotInterface2::getRelativeJacobian(string_const_ref distal_name,
+bool XBotInterface::getRelativeJacobian(string_const_ref distal_name,
                                          string_const_ref base_name,
                                          Eigen::MatrixXd &J) const
 {
@@ -222,12 +222,12 @@ bool XBotInterface2::getRelativeJacobian(string_const_ref distal_name,
 
 }
 
-Eigen::Affine3d XBotInterface2::getPose(string_const_ref link_name) const
+Eigen::Affine3d XBotInterface::getPose(string_const_ref link_name) const
 {
     return getPose(impl->get_link_id_throw(link_name));
 }
 
-bool XBotInterface2::getPose(string_const_ref link_name, Eigen::Affine3d &w_T_l) const
+bool XBotInterface::getPose(string_const_ref link_name, Eigen::Affine3d &w_T_l) const
 {
     int idx = impl->get_link_id_error(link_name);
 
@@ -241,17 +241,17 @@ bool XBotInterface2::getPose(string_const_ref link_name, Eigen::Affine3d &w_T_l)
     return true;
 }
 
-Eigen::Affine3d XBotInterface2::getPose(int distal_id, int base_id) const
+Eigen::Affine3d XBotInterface::getPose(int distal_id, int base_id) const
 {
     return getPose(base_id).inverse() * getPose(distal_id);
 }
 
-Eigen::Affine3d XBotInterface2::getPose(string_const_ref distal_name, string_const_ref base_name) const
+Eigen::Affine3d XBotInterface::getPose(string_const_ref distal_name, string_const_ref base_name) const
 {
     return getPose(base_name).inverse() * getPose(distal_name);
 }
 
-bool XBotInterface2::getPose(string_const_ref distal_name, string_const_ref base_name, Eigen::Affine3d &w_T_l) const
+bool XBotInterface::getPose(string_const_ref distal_name, string_const_ref base_name, Eigen::Affine3d &w_T_l) const
 {
     int didx = impl->get_link_id_error(distal_name);
 
@@ -267,7 +267,7 @@ bool XBotInterface2::getPose(string_const_ref distal_name, string_const_ref base
     return true;
 }
 
-Eigen::Vector6d XBotInterface2::getVelocityTwist(int link_id) const
+Eigen::Vector6d XBotInterface::getVelocityTwist(int link_id) const
 {
     Eigen::Vector6d ret;
     getJacobian(link_id, impl->_tmp.J);
@@ -275,12 +275,12 @@ Eigen::Vector6d XBotInterface2::getVelocityTwist(int link_id) const
     return ret;
 }
 
-Eigen::Vector6d XBotInterface2::getVelocityTwist(string_const_ref link_name) const
+Eigen::Vector6d XBotInterface::getVelocityTwist(string_const_ref link_name) const
 {
     return getVelocityTwist(impl->get_link_id_throw(link_name));
 }
 
-bool XBotInterface2::getVelocityTwist(string_const_ref link_name, Eigen::Vector6d &v) const
+bool XBotInterface::getVelocityTwist(string_const_ref link_name, Eigen::Vector6d &v) const
 {
     int idx = impl->get_link_id_error(link_name);
 
@@ -294,7 +294,7 @@ bool XBotInterface2::getVelocityTwist(string_const_ref link_name, Eigen::Vector6
     return true;
 }
 
-Eigen::Vector6d XBotInterface2::getAccelerationTwist(int link_id) const
+Eigen::Vector6d XBotInterface::getAccelerationTwist(int link_id) const
 {
     Eigen::Vector6d ret;
     getJacobian(link_id, impl->_tmp.J);
@@ -302,12 +302,12 @@ Eigen::Vector6d XBotInterface2::getAccelerationTwist(int link_id) const
     return ret;
 }
 
-Eigen::Vector6d XBotInterface2::getAccelerationTwist(string_const_ref link_name) const
+Eigen::Vector6d XBotInterface::getAccelerationTwist(string_const_ref link_name) const
 {
     return getAccelerationTwist(impl->get_link_id_throw(link_name));
 }
 
-bool XBotInterface2::getAccelerationTwist(string_const_ref link_name, Eigen::Vector6d &v) const
+bool XBotInterface::getAccelerationTwist(string_const_ref link_name, Eigen::Vector6d &v) const
 {
     int idx = impl->get_link_id_error(link_name);
 
@@ -321,17 +321,17 @@ bool XBotInterface2::getAccelerationTwist(string_const_ref link_name, Eigen::Vec
     return true;
 }
 
-Eigen::Vector6d XBotInterface2::getJdotTimesV(int link_id) const
+Eigen::Vector6d XBotInterface::getJdotTimesV(int link_id) const
 {
     throw std::runtime_error(__func__ + std::string(" not implemented by base class"));
 }
 
-Eigen::Vector6d XBotInterface2::getJdotTimesV(string_const_ref link_name) const
+Eigen::Vector6d XBotInterface::getJdotTimesV(string_const_ref link_name) const
 {
     return getJdotTimesV(impl->get_link_id_throw(link_name));
 }
 
-bool XBotInterface2::getJdotTimesV(string_const_ref link_name, Eigen::Vector6d &a) const
+bool XBotInterface::getJdotTimesV(string_const_ref link_name, Eigen::Vector6d &a) const
 {
     int idx = impl->get_link_id_error(link_name);
 
@@ -345,7 +345,7 @@ bool XBotInterface2::getJdotTimesV(string_const_ref link_name, Eigen::Vector6d &
     return true;
 }
 
-Eigen::Vector6d XBotInterface2::getRelativeVelocityTwist(int distal_id, int base_id) const
+Eigen::Vector6d XBotInterface::getRelativeVelocityTwist(int distal_id, int base_id) const
 {
     // initialize vrel with Jbase
     Eigen::Vector6d vrel = getVelocityTwist(base_id);
@@ -365,14 +365,14 @@ Eigen::Vector6d XBotInterface2::getRelativeVelocityTwist(int distal_id, int base
     return vrel;
 }
 
-Eigen::Vector6d XBotInterface2::getRelativeVelocityTwist(string_const_ref distal_name,
+Eigen::Vector6d XBotInterface::getRelativeVelocityTwist(string_const_ref distal_name,
                                                          string_const_ref base_name) const
 {
     return getRelativeVelocityTwist(impl->get_link_id_throw(distal_name),
                                     impl->get_link_id_throw(base_name));
 }
 
-bool XBotInterface2::getRelativeVelocityTwist(string_const_ref distal_name,
+bool XBotInterface::getRelativeVelocityTwist(string_const_ref distal_name,
                                               string_const_ref base_name,
                                               Eigen::Vector6d &v) const
 {
@@ -390,7 +390,7 @@ bool XBotInterface2::getRelativeVelocityTwist(string_const_ref distal_name,
     return true;
 }
 
-Eigen::Vector6d XBotInterface2::getRelativeAccelerationTwist(int distal_id, int base_id) const
+Eigen::Vector6d XBotInterface::getRelativeAccelerationTwist(int distal_id, int base_id) const
 {
     Eigen::Vector6d v_base = getVelocityTwist(base_id);
     Eigen::Vector6d v_distal = getVelocityTwist(distal_id);
@@ -420,14 +420,14 @@ Eigen::Vector6d XBotInterface2::getRelativeAccelerationTwist(int distal_id, int 
 
 }
 
-Eigen::Vector6d XBotInterface2::getRelativeAccelerationTwist(string_const_ref distal_name,
+Eigen::Vector6d XBotInterface::getRelativeAccelerationTwist(string_const_ref distal_name,
                                                              string_const_ref base_name) const
 {
     return getRelativeAccelerationTwist(impl->get_link_id_throw(distal_name),
                                         impl->get_link_id_throw(base_name));
 }
 
-bool XBotInterface2::getRelativeAccelerationTwist(string_const_ref distal_name, string_const_ref base_name, Eigen::Vector6d &v) const
+bool XBotInterface::getRelativeAccelerationTwist(string_const_ref distal_name, string_const_ref base_name, Eigen::Vector6d &v) const
 {
     int didx = impl->get_link_id_error(distal_name);
 
@@ -443,7 +443,7 @@ bool XBotInterface2::getRelativeAccelerationTwist(string_const_ref distal_name, 
     return true;
 }
 
-Eigen::Vector6d XBotInterface2::getRelativeJdotTimesV(int distal_id, int base_id) const
+Eigen::Vector6d XBotInterface::getRelativeJdotTimesV(int distal_id, int base_id) const
 {
     Eigen::Vector6d v_base = getVelocityTwist(base_id);
     Eigen::Vector6d v_distal = getVelocityTwist(distal_id);
@@ -473,14 +473,14 @@ Eigen::Vector6d XBotInterface2::getRelativeJdotTimesV(int distal_id, int base_id
 
 }
 
-Eigen::Vector6d XBotInterface2::getRelativeJdotTimesV(string_const_ref distal_name,
+Eigen::Vector6d XBotInterface::getRelativeJdotTimesV(string_const_ref distal_name,
                                                       string_const_ref base_name) const
 {
     return getRelativeJdotTimesV(impl->get_link_id_throw(distal_name),
                                  impl->get_link_id_throw(base_name));
 }
 
-bool XBotInterface2::getRelativeJdotTimesV(string_const_ref distal_name,
+bool XBotInterface::getRelativeJdotTimesV(string_const_ref distal_name,
                                            string_const_ref base_name,
                                            Eigen::Vector6d &v) const
 {
@@ -499,36 +499,36 @@ bool XBotInterface2::getRelativeJdotTimesV(string_const_ref distal_name,
     return true;
 }
 
-XBotInterface2::JointParametrization XBotInterface2::get_joint_parametrization(string_const_ref jname)
+XBotInterface::JointParametrization XBotInterface::get_joint_parametrization(string_const_ref jname)
 {
     return impl->get_joint_parametrization(jname);
 }
 
-UniversalJoint::Ptr XBotInterface2::getUniversalJoint(string_const_ref name)
+UniversalJoint::Ptr XBotInterface::getUniversalJoint(string_const_ref name)
 {
     return impl->getJoint(name);
 }
 
-UniversalJoint::Ptr XBotInterface2::getUniversalJoint(int i)
+UniversalJoint::Ptr XBotInterface::getUniversalJoint(int i)
 {
     return impl->getJoint(i);
 }
 
 
-void XBotInterface2::finalize()
+void XBotInterface::finalize()
 {
     return impl->finalize();
 }
 
-XBotInterface2::~XBotInterface2()
+XBotInterface::~XBotInterface()
 {
 
 }
 
 // impl
-XBotInterface2::Impl::Impl(urdf::ModelConstSharedPtr urdf,
+XBotInterface::Impl::Impl(urdf::ModelConstSharedPtr urdf,
                            srdf::ModelConstSharedPtr srdf,
-                           XBotInterface2& api):
+                           XBotInterface& api):
     _api(api),
     _urdf(urdf),
     _srdf(srdf)
@@ -536,7 +536,7 @@ XBotInterface2::Impl::Impl(urdf::ModelConstSharedPtr urdf,
 
 }
 
-Eigen::VectorXd XBotInterface2::Impl::getRobotState(string_const_ref name) const
+Eigen::VectorXd XBotInterface::Impl::getRobotState(string_const_ref name) const
 {
     if(!_srdf)
     {
@@ -572,7 +572,7 @@ Eigen::VectorXd XBotInterface2::Impl::getRobotState(string_const_ref name) const
     throw std::out_of_range("cannot retrieve robot state: no such state");
 }
 
-UniversalJoint::Ptr XBotInterface2::Impl::getJoint(string_const_ref name) const
+UniversalJoint::Ptr XBotInterface::Impl::getJoint(string_const_ref name) const
 {
     auto it = _name_id_map.find(name);
 
@@ -585,13 +585,13 @@ UniversalJoint::Ptr XBotInterface2::Impl::getJoint(string_const_ref name) const
     return _joints.at(i);
 }
 
-UniversalJoint::Ptr XBotInterface2::Impl::getJoint(int i) const
+UniversalJoint::Ptr XBotInterface::Impl::getJoint(int i) const
 {
     return _joints.at(i);
 }
 
-XBotInterface2::JointParametrization
-XBotInterface2::Impl::get_joint_parametrization(string_const_ref)
+XBotInterface::JointParametrization
+XBotInterface::Impl::get_joint_parametrization(string_const_ref)
 {
     JointParametrization ret;
 
@@ -600,7 +600,7 @@ XBotInterface2::Impl::get_joint_parametrization(string_const_ref)
     return ret;
 }
 
-int XBotInterface2::Impl::get_link_id_error(string_const_ref link_name) const
+int XBotInterface::Impl::get_link_id_error(string_const_ref link_name) const
 {
     int idx = _api.getLinkId(link_name);
 
@@ -612,7 +612,7 @@ int XBotInterface2::Impl::get_link_id_error(string_const_ref link_name) const
     return idx;
 }
 
-int XBotInterface2::Impl::get_link_id_throw(string_const_ref link_name) const
+int XBotInterface::Impl::get_link_id_throw(string_const_ref link_name) const
 {
     int idx = _api.getLinkId(link_name);
 
@@ -626,7 +626,7 @@ int XBotInterface2::Impl::get_link_id_throw(string_const_ref link_name) const
     return idx;
 }
 
-void XBotInterface2::Impl::finalize()
+void XBotInterface::Impl::finalize()
 {
     int nj = 0;
     int nq = 0;
@@ -799,19 +799,19 @@ void XBotInterface2::Impl::finalize()
 
 }
 
-void XBotInterface2::Impl::Temporaries::setZero(int nq, int nv)
+void XBotInterface::Impl::Temporaries::setZero(int nq, int nv)
 {
     J.setZero(6, nv);
     Jarg.setZero(6, nv);
 }
 
-bool XBotInterface2::ConfigOptions::set_urdf(std::string urdf_string)
+bool XBotInterface::ConfigOptions::set_urdf(std::string urdf_string)
 {
     auto urdf = std::make_shared<urdf::Model>();
     return urdf->initString(urdf_string);
 }
 
-bool XBotInterface2::ConfigOptions::set_srdf(std::string srdf_string)
+bool XBotInterface::ConfigOptions::set_srdf(std::string srdf_string)
 {
     auto srdf = std::make_shared<srdf::Model>();
     return srdf->initString(*urdf, srdf_string);

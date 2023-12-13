@@ -14,7 +14,7 @@ int main(int argc, char **argv)
     auto srdf = std::make_shared<srdf::Model>();
     srdf->initFile(*urdf, srdf_path);
 
-    auto model = XBot::ModelInterface2::getModel(urdf, srdf, argv[1]);
+    auto model = XBot::ModelInterface::getModel(urdf, srdf, argv[1]);
 
     std::cout << model->getJointPosition().transpose() << "\n\n";
 
@@ -44,7 +44,7 @@ int main(int argc, char **argv)
 
     std::cout << model->getJoint("j_arm1_4")->getJointPositionMinimal() << "\n\n";
 
-    auto robot = XBot::RobotInterface2::getRobot(urdf, srdf, "ros", argv[1]);
+    auto robot = XBot::RobotInterface::getRobot(urdf, srdf, "ros", argv[1]);
 
     robot->getJoint("j_wheel_2")->setPositionReferenceMinimal(from_value(1.0));
 

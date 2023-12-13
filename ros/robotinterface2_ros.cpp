@@ -4,8 +4,8 @@
 
 using namespace XBot;
 
-RobotInterface2Ros::RobotInterface2Ros(std::unique_ptr<XBotInterface2> model):
-    RobotInterface2(std::move(model)),
+RobotInterface2Ros::RobotInterface2Ros(std::unique_ptr<XBotInterface> model):
+    RobotInterface(std::move(model)),
     _nh("xbotcore"),
     _js_received(false)
 {

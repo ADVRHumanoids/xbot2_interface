@@ -13,21 +13,21 @@
 
 namespace XBot {
 
-class XBotInterface2::Impl
+class XBotInterface::Impl
 {
 
 public:
 
-    friend class XBotInterface2;
-    friend class ModelInterface2;
-    friend ReadStateInterface<XBotInterface2>;
-    friend ReadCmdInterface<RobotInterface2>;
-    friend WriteCmdInterface<RobotInterface2>;
-    friend WriteStateInterface<ModelInterface2>;
+    friend class XBotInterface;
+    friend class ModelInterface;
+    friend ReadStateInterface<XBotInterface>;
+    friend ReadCmdInterface<RobotInterface>;
+    friend WriteCmdInterface<RobotInterface>;
+    friend WriteStateInterface<ModelInterface>;
 
     Impl(urdf::ModelConstSharedPtr urdf,
          srdf::ModelConstSharedPtr srdf,
-         XBotInterface2& api);
+         XBotInterface& api);
 
     Eigen::VectorXd getRobotState(string_const_ref name) const;
 
@@ -46,7 +46,7 @@ public:
 private:
 
     // api
-    XBotInterface2& _api;
+    XBotInterface& _api;
 
     // urdf dom
     urdf::ModelConstSharedPtr _urdf;

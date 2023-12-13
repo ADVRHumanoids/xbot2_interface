@@ -12,7 +12,7 @@
 using namespace XBot;
 
 ModelInterface2Pin::ModelInterface2Pin(const ConfigOptions& opt):
-    ModelInterface2(opt),
+    ModelInterface(opt),
     _cached_computation(None),
     _world_aligned(pinocchio::ReferenceFrame::LOCAL_WORLD_ALIGNED)
 {
@@ -113,7 +113,7 @@ VecConstRef ModelInterface2Pin::difference(VecConstRef q1, VecConstRef q0) const
     return _tmp.qdiff;
 }
 
-XBotInterface2::JointParametrization ModelInterface2Pin::get_joint_parametrization(string_const_ref jname)
+XBotInterface::JointParametrization ModelInterface2Pin::get_joint_parametrization(string_const_ref jname)
 {
     JointParametrization ret;
 

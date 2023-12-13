@@ -7,8 +7,8 @@
 
 using namespace XBot;
 
-ModelInterface2Rbdl::ModelInterface2Rbdl(const XBotInterface2::ConfigOptions &opt):
-    ModelInterface2(opt)
+ModelInterface2Rbdl::ModelInterface2Rbdl(const XBotInterface::ConfigOptions &opt):
+    ModelInterface(opt)
 {
     // convert urdf dom -> string
     auto tixml = urdf::exportURDF(const_cast<urdf::Model&>(*getUrdf()));
@@ -100,7 +100,7 @@ VecConstRef ModelInterface2Rbdl::difference(VecConstRef q1, VecConstRef q0) cons
     return _tmp.vdiff;
 }
 
-XBotInterface2::JointParametrization ModelInterface2Rbdl::get_joint_parametrization(string_const_ref jname)
+XBotInterface::JointParametrization ModelInterface2Rbdl::get_joint_parametrization(string_const_ref jname)
 {
     JointParametrization ret;
 

@@ -239,10 +239,10 @@ template struct WriteStateInterface<ModelJoint>;
 template struct ReadCmdInterface<RobotJoint>;
 template struct WriteCmdInterface<UniversalJoint>;
 
-template struct ReadStateInterface<XBotInterface2>;
-template struct WriteStateInterface<ModelInterface2>;
-template struct ReadCmdInterface<RobotInterface2>;
-template struct WriteCmdInterface<RobotInterface2>;
+template struct ReadStateInterface<XBotInterface>;
+template struct WriteStateInterface<ModelInterface>;
+template struct ReadCmdInterface<RobotInterface>;
+template struct WriteCmdInterface<RobotInterface>;
 
 
 

@@ -11,7 +11,7 @@ namespace XBot {
 
 inline namespace v2 {
 
-class XBotInterface2;
+class XBotInterface;
 
 class ModelJoint;
 
@@ -68,7 +68,7 @@ public:
                            Eigen::VectorXd& q,
                            Eigen::VectorXd& v) const;
 
-    friend class XBotInterface2;
+    friend class XBotInterface;
     friend ReadStateInterface<Joint>;
     friend ReadCmdInterface<RobotJoint>;
 
@@ -114,7 +114,7 @@ public:
     VecConstRef getPositionReferenceMinimal() const;
     VecConstRef getPositionReferenceFeedbackMinimal() const;
 
-    friend class RobotInterface2;
+    friend class RobotInterface;
     friend ReadCmdInterface<RobotJoint>;
 
 protected:

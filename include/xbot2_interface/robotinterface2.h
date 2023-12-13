@@ -7,15 +7,15 @@ namespace XBot {
 
 inline namespace v2 {
 
-class XBOT2IFC_API RobotInterface2 : public XBotInterface2,
-                        public ReadCmdInterface<RobotInterface2>,
-                        protected WriteCmdInterface<RobotInterface2>,
-                        protected WriteStateInterface<RobotInterface2>
+class XBOT2IFC_API RobotInterface : public XBotInterface,
+                        public ReadCmdInterface<RobotInterface>,
+                        protected WriteCmdInterface<RobotInterface>,
+                        protected WriteStateInterface<RobotInterface>
 {
 
 public:
 
-    XBOT_DECLARE_SMART_PTR(RobotInterface2);
+    XBOT_DECLARE_SMART_PTR(RobotInterface);
 
     virtual bool sense() = 0;
 
@@ -30,13 +30,13 @@ public:
 
     RobotJoint::Ptr getJoint(int i);
 
-    virtual ~RobotInterface2();
+    virtual ~RobotInterface();
 
-    friend ReadCmdInterface<RobotInterface2>;
+    friend ReadCmdInterface<RobotInterface>;
 
-    friend WriteCmdInterface<RobotInterface2>;
+    friend WriteCmdInterface<RobotInterface>;
 
-    friend WriteStateInterface<RobotInterface2>;
+    friend WriteStateInterface<RobotInterface>;
 
 protected:
 
@@ -44,31 +44,31 @@ protected:
 
     std::unique_ptr<Impl> r_impl;
 
-    RobotInterface2(std::unique_ptr<XBotInterface2> model);
+    RobotInterface(std::unique_ptr<XBotInterface> model);
 
-    // XBotInterface2 interface
+    // XBotInterface interface
 public:
 
     void update() override;
 
     int getLinkId(string_const_ref link_name) const override;
 
-    using XBotInterface2::getJacobian;
+    using XBotInterface::getJacobian;
     void getJacobian(int link_id, MatRef J) const override;
 
-    using XBotInterface2::getPose;
+    using XBotInterface::getPose;
     Eigen::Affine3d getPose(int link_id) const override;
 
     VecConstRef sum(VecConstRef q0, VecConstRef v) const override;
     VecConstRef difference(VecConstRef q1, VecConstRef q0) const override;
 
-    using XBotInterface2::getVelocityTwist;
+    using XBotInterface::getVelocityTwist;
     Eigen::Vector6d getVelocityTwist(int link_id) const override;
 
-    using XBotInterface2::getAccelerationTwist;
+    using XBotInterface::getAccelerationTwist;
     Eigen::Vector6d getAccelerationTwist(int link_id) const override;
 
-    using XBotInterface2::getJdotTimesV;
+    using XBotInterface::getJdotTimesV;
     Eigen::Vector6d getJdotTimesV(int link_id) const override;
 
     VecConstRef computeInverseDynamics() const override;

@@ -10,17 +10,17 @@ namespace XBot {
 
 inline namespace v2 {
 
-class RobotInterface2;
+class RobotInterface;
 
-class ModelInterface2;
+class ModelInterface;
 
 
-class XBOT2IFC_API XBotInterface2 : public ReadStateInterface<XBotInterface2>
+class XBOT2IFC_API XBotInterface : public ReadStateInterface<XBotInterface>
 {
 
 public:
 
-    XBOT_DECLARE_SMART_PTR(XBotInterface2);
+    XBOT_DECLARE_SMART_PTR(XBotInterface);
 
     struct ConfigOptions
     {
@@ -31,12 +31,12 @@ public:
         bool set_srdf(std::string srdf_string);
     };
 
-    explicit XBotInterface2(const ConfigOptions& opt);
+    explicit XBotInterface(const ConfigOptions& opt);
 
-    XBotInterface2(urdf::ModelConstSharedPtr urdf,
+    XBotInterface(urdf::ModelConstSharedPtr urdf,
                    srdf::ModelConstSharedPtr srdf = nullptr);
 
-    XBotInterface2(XBotInterface2&&) = default;
+    XBotInterface(XBotInterface&&) = default;
 
     urdf::ModelConstSharedPtr getUrdf() const;
 
@@ -149,13 +149,13 @@ public:
     virtual VecConstRef difference(VecConstRef q1, VecConstRef q0) const = 0;
 
     //
-    virtual ~XBotInterface2();
+    virtual ~XBotInterface();
 
-    friend ReadStateInterface<XBotInterface2>;
+    friend ReadStateInterface<XBotInterface>;
 
-    friend WriteStateInterface<ModelInterface2>;
+    friend WriteStateInterface<ModelInterface>;
 
-    friend RobotInterface2;
+    friend RobotInterface;
 
 protected:
 
@@ -195,34 +195,34 @@ protected:
 
     class Impl;
 
-    XBotInterface2(std::shared_ptr<Impl> impl);
+    XBotInterface(std::shared_ptr<Impl> impl);
 
     std::shared_ptr<Impl> impl;
 
 };
 
 
-class XBOT2IFC_API ModelInterface2 : public XBotInterface2,
-        public WriteStateInterface<ModelInterface2>
+class XBOT2IFC_API ModelInterface : public XBotInterface,
+        public WriteStateInterface<ModelInterface>
 {
 
 public:
 
-    XBOT_DECLARE_SMART_PTR(ModelInterface2);
+    XBOT_DECLARE_SMART_PTR(ModelInterface);
 
-    using XBotInterface2::XBotInterface2;
+    using XBotInterface::XBotInterface;
 
     static UniquePtr getModel(urdf::ModelConstSharedPtr urdf,
                               srdf::ModelConstSharedPtr srdf,
                               std::string type);
 
-    void syncFrom(const XBotInterface2& other);
+    void syncFrom(const XBotInterface& other);
 
     ModelJoint::Ptr getJoint(string_const_ref name);
 
     ModelJoint::Ptr getJoint(int i);
 
-    virtual ~ModelInterface2();
+    virtual ~ModelInterface();
 
 };
 

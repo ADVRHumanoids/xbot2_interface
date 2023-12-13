@@ -11,23 +11,23 @@
 
 namespace XBot {
 
-class RobotInterface2::Impl
+class RobotInterface::Impl
 {
 
 public:
 
-    Impl(RobotInterface2& api,
-         std::unique_ptr<XBotInterface2> model);
+    Impl(RobotInterface& api,
+         std::unique_ptr<XBotInterface> model);
 
-    friend RobotInterface2;
+    friend RobotInterface;
 
 private:
 
     // api
-    RobotInterface2& _api;
+    RobotInterface& _api;
 
     // model
-    std::unique_ptr<XBotInterface2> _model;
+    std::unique_ptr<XBotInterface> _model;
 
 };
 
