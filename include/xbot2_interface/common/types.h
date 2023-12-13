@@ -4,6 +4,8 @@
 #include <Eigen/Dense>
 #include <memory>
 
+#include "visibility.h"
+
 #define XBOT_DECLARE_SMART_PTR(Class) \
     typedef std::shared_ptr<Class> Ptr; \
     typedef std::shared_ptr<const Class> ConstPtr; \
@@ -20,6 +22,8 @@ typedef Eigen::Matrix<uint8_t, Eigen::Dynamic, 1> CtrlModeVector;
 
 namespace XBot {
 
+inline namespace v2 {
+
 typedef Eigen::Ref<Eigen::VectorXd> VecRef;
 typedef Eigen::Ref<const Eigen::VectorXd> VecConstRef;
 
@@ -32,7 +36,7 @@ typedef Eigen::Ref<const Eigen::MatrixXd> MatConstRef;
 typedef std::string& string_ref;
 typedef const std::string& string_const_ref;
 
-Eigen::Scalard from_value(double value);
+XBOT2IFC_API Eigen::Scalard from_value(double value);
 
 namespace ControlMode {
     enum Type
@@ -46,7 +50,8 @@ namespace ControlMode {
     };
 }
 
-struct JointInfo
+
+struct XBOT2IFC_API JointInfo
 {
     int id;
     int iq;
@@ -56,6 +61,8 @@ struct JointInfo
 
     JointInfo();
 };
+
+}
 
 }
 

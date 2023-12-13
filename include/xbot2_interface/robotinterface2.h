@@ -5,7 +5,9 @@
 
 namespace XBot {
 
-class RobotInterface2 : public XBotInterface2,
+inline namespace v2 {
+
+class XBOT2IFC_API RobotInterface2 : public XBotInterface2,
                         public ReadCmdInterface<RobotInterface2>,
                         protected WriteCmdInterface<RobotInterface2>,
                         protected WriteStateInterface<RobotInterface2>
@@ -31,7 +33,9 @@ public:
     virtual ~RobotInterface2();
 
     friend ReadCmdInterface<RobotInterface2>;
+
     friend WriteCmdInterface<RobotInterface2>;
+
     friend WriteStateInterface<RobotInterface2>;
 
 protected:
@@ -44,12 +48,29 @@ protected:
 
     // XBotInterface2 interface
 public:
+
     void update() override;
-    MatConstRef getJacobian(string_const_ref link_name) const override;
-    Eigen::Affine3d getPose(string_const_ref link_name) const override;
+
+    int getLinkId(string_const_ref link_name) const override;
+
+    using XBotInterface2::getJacobian;
+    void getJacobian(int link_id, MatRef J) const override;
+
+    using XBotInterface2::getPose;
+    Eigen::Affine3d getPose(int link_id) const override;
+
     VecConstRef sum(VecConstRef q0, VecConstRef v) const override;
     VecConstRef difference(VecConstRef q1, VecConstRef q0) const override;
-    Eigen::Vector6d getVelocityTwist(string_const_ref link_name) const override;
+
+    using XBotInterface2::getVelocityTwist;
+    Eigen::Vector6d getVelocityTwist(int link_id) const override;
+
+    using XBotInterface2::getAccelerationTwist;
+    Eigen::Vector6d getAccelerationTwist(int link_id) const override;
+
+    using XBotInterface2::getJdotTimesV;
+    Eigen::Vector6d getJdotTimesV(int link_id) const override;
+
     VecConstRef computeInverseDynamics() const override;
 
 protected:
@@ -57,6 +78,8 @@ protected:
     JointParametrization get_joint_parametrization(string_const_ref jname) override;
 
 };
+
+}
 
 }
 

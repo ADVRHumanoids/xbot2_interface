@@ -114,7 +114,8 @@ TEST_F(TestKinematics, checkJacobianNumerical)
         }
 
         TIC();
-        auto J = model->getJacobian(lname);
+        Eigen::MatrixXd J;
+        ASSERT_TRUE(model->getJacobian(lname, J));
         dt += TOC();
         count++;
 
@@ -149,7 +150,8 @@ TEST_F(TestKinematics, checkVelocityVsJacobian)
         model->setJointPosition(q0);
         model->update();
 
-        Eigen::MatrixXd J = model->getJacobian(lname);
+        Eigen::MatrixXd J;
+        ASSERT_TRUE(model->getJacobian(lname, J));
 
         for(int i = 0; i < model->getNv(); i++)
         {
@@ -277,7 +279,8 @@ TEST_F(TestKinematics, checkRelativeJacobian)
         }
 
         TIC();
-        auto J = model->getRelativeJacobian(lname, bname);
+        Eigen::MatrixXd J;
+        ASSERT_TRUE(model->getRelativeJacobian(lname, bname, J));
         dt += TOC();
         count++;
 
@@ -317,7 +320,8 @@ TEST_F(TestKinematics, checkRelativeVelocityVsJacobian)
         model->setJointVelocity(vi);
         model->update();
 
-        Eigen::MatrixXd J = model->getRelativeJacobian(lname, bname);
+        Eigen::MatrixXd J;
+        ASSERT_TRUE(model->getRelativeJacobian(lname, bname, J));
 
         TIC();
         auto vel = model->getRelativeVelocityTwist(lname, bname);
@@ -424,7 +428,9 @@ TEST_F(TestKinematics, checkAcceleration)
         dt += TOC();
         count += 1;
 
-        Eigen::Vector6d acc_J = model->getJacobian(lname)*model->getJointAcceleration() +
+        Eigen::MatrixXd J;
+        ASSERT_TRUE(model->getJacobian(lname, J));
+        Eigen::Vector6d acc_J = J*model->getJointAcceleration() +
                 model->getJdotTimesV(lname);
 
         const double h = 1e-4;
@@ -488,7 +494,10 @@ TEST_F(TestKinematics, checkRelativeAcceleration)
         dt += TOC();
         count += 1;
 
-        Eigen::Vector6d acc_J = model->getRelativeJacobian(lname, bname) *
+        Eigen::MatrixXd J;
+        ASSERT_TRUE(model->getRelativeJacobian(lname, bname, J));
+
+        Eigen::Vector6d acc_J = J *
                 model->getJointAcceleration() +
                 model->getRelativeJdotTimesV(lname, bname);
 

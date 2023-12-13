@@ -6,13 +6,15 @@
 
 namespace XBot::Utils {
 
-Eigen::Matrix3d rpyToRotationMatrix(Eigen::Ref<const Eigen::Vector3d> rpy);
+inline namespace v2 {
 
-Eigen::Matrix3d rpyJacobian(Eigen::Ref<const Eigen::Vector3d> rpy);
+XBOT2IFC_API Eigen::Matrix3d rpyToRotationMatrix(Eigen::Ref<const Eigen::Vector3d> rpy);
 
-Eigen::Vector3d rotationMatrixToRpy(const Eigen::Matrix3d& R);
+XBOT2IFC_API Eigen::Matrix3d rpyJacobian(Eigen::Ref<const Eigen::Vector3d> rpy);
 
-Eigen::Matrix3d skew(const Eigen::Vector3d& r);
+XBOT2IFC_API Eigen::Vector3d rotationMatrixToRpy(const Eigen::Matrix3d& R);
+
+XBOT2IFC_API Eigen::Matrix3d skew(const Eigen::Vector3d& r);
 
 template <typename Mat>
 void changeRefPoint(Eigen::MatrixBase<Mat>& J_or_vel,
@@ -30,6 +32,8 @@ const Eigen::MatrixBase<Mat>& rotate(Eigen::MatrixBase<Mat>& J_or_vel,
     J_or_vel.template topRows<3>() = R * J_or_vel.template topRows<3>();
     J_or_vel.template bottomRows<3>() = R * J_or_vel.template bottomRows<3>();
     return J_or_vel;
+}
+
 }
 
 }

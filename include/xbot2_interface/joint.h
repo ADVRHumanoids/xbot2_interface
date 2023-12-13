@@ -5,8 +5,11 @@
 
 #include "common/types.h"
 #include "common/state_interface.h"
+#include "common/visibility.h"
 
 namespace XBot {
+
+inline namespace v2 {
 
 class XBotInterface2;
 
@@ -14,7 +17,8 @@ class ModelJoint;
 
 class RobotJoint;
 
-class Joint : public ReadStateInterface<Joint>
+
+class XBOT2IFC_API Joint : public ReadStateInterface<Joint>
 {
 
 public:
@@ -78,7 +82,8 @@ protected:
 
 };
 
-class ModelJoint : public virtual Joint,
+
+class XBOT2IFC_API ModelJoint : public virtual Joint,
         public WriteStateInterface<ModelJoint>
 {
 
@@ -96,7 +101,8 @@ protected:
 
 };
 
-class RobotJoint : public virtual Joint,
+
+class XBOT2IFC_API RobotJoint : public virtual Joint,
         public ReadCmdInterface<RobotJoint>
 {
 
@@ -117,7 +123,8 @@ protected:
 
 };
 
-class UniversalJoint : public RobotJoint,
+
+class XBOT2IFC_API UniversalJoint : public RobotJoint,
                        public ModelJoint,
                        public WriteCmdInterface<UniversalJoint>
 {
@@ -132,6 +139,8 @@ public:
 
     friend WriteCmdInterface<UniversalJoint>;
 };
+
+}
 
 }
 

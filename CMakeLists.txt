@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.5)
 
 project(xbot2_interface LANGUAGES CXX VERSION 0.1.0)
 
+option(XBOT2_IFC_BUILD_PINOCCHIO "Build Pinocchio implementation" ON)
+option(XBOT2_IFC_BUILD_RBDL "Build RBDL implementation" ON)
+option(XBOT2_IFC_BUILD_ROS "Build ROS implementation" ON)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -11,6 +15,8 @@ set(CMAKE_BUILD_RPATH "$ORIGIN;$ORIGIN/pinocchio;$ORIGIN/rbdl;$ORIGIN/ros")
 find_package(urdf REQUIRED)
 find_package(srdfdom REQUIRED)
 find_package(Eigen3 REQUIRED)
+
+include(GNUInstallDirs)
 
 include_directories(include/
     ${srdfdom_INCLUDE_DIRS})
@@ -24,26 +30,56 @@ add_library(xbot2_interface SHARED
     src/types.cpp
     src/utils.cpp)
 
+add_library(xbot2_interface::xbot2_interface ALIAS xbot2_interface)
+
 target_link_libraries(xbot2_interface
     PUBLIC
     ${urdf_LIBRARIES}
     ${srdfdom_LIBRARIES}
     Eigen3::Eigen)
 
+target_compile_options(xbot2_interface
+    PUBLIC
+    PRIVATE
+    -fvisibility-inlines-hidden
+    -fvisibility=hidden)
+
+target_compile_definitions(xbot2_interface
+    PUBLIC
+    PRIVATE
+    -DXBOT2IFC_DLL
+    -DXBOT2IFC_DLL_EXPORTS)
+
+target_include_directories(xbot2_interface
+    PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}>
+    )
+
+set_target_properties(xbot2_interface PROPERTIES
+    SOVERSION ${xbot2_interface_VERSION_MAJOR}.${xbot2_interface_VERSION_MINOR})
+
+install(
+    TARGETS xbot2_interface
+    EXPORT ${PROJECT_NAME}Targets
+    DESTINATION lib
+)
+
+install(DIRECTORY include/xbot2_interface
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/xbot2_interface
+    )
 
 
-find_package(pinocchio QUIET)
-if(${pinocchio_FOUND})
-    add_subdirectory(pinocchio/)
+if(${XBOT2_IFC_BUILD_PINOCCHIO})
+add_subdirectory(pinocchio/)
 endif()
 
-find_package(RBDL QUIET)
-if(${RBDL_FOUND})
+if(${XBOT2_IFC_BUILD_RBDL})
     add_subdirectory(rbdl/)
 endif()
 
-find_package(roscpp QUIET)
-if(googletest${roscpp_FOUND})
+if(${XBOT2_IFC_BUILD_ROS})
     add_subdirectory(ros/)
 endif()
 
@@ -51,3 +87,6 @@ add_executable(test_main main.cpp)
 target_link_libraries(test_main xbot2_interface)
 
 add_subdirectory(test)
+
+include(cmake/ExportProject.cmake)
+export_project()

@@ -21,21 +21,26 @@ public:
 
     virtual void update() override;
 
-    Eigen::Affine3d getPose(string_const_ref link_name) const override;
+    int getLinkId(string_const_ref link_name) const override;
 
-    MatConstRef getJacobian(string_const_ref link_name) const override;
+    Eigen::Affine3d getPose(int link_id) const override;
 
-    Eigen::Vector6d getVelocityTwist(string_const_ref link_name) const override;
+    void getJacobian(int link_id, MatRef J) const override;
 
-    Eigen::Vector6d getAccelerationTwist(string_const_ref link_name) const override;
+    Eigen::Vector6d getVelocityTwist(int link_id) const override;
 
-    Eigen::Vector6d getJdotTimesV(string_const_ref link_name) const override;
+    Eigen::Vector6d getAccelerationTwist(int link_id) const override;
+
+    Eigen::Vector6d getJdotTimesV(int link_id) const override;
 
     VecConstRef computeInverseDynamics() const override;
+
+    MatConstRef computeRegressor() const;
 
     VecConstRef sum(VecConstRef q0, VecConstRef v) const override;
 
     VecConstRef difference(VecConstRef q1, VecConstRef q0) const override;
+
 
 protected:
 

@@ -37,6 +37,10 @@ public:
 
     JointParametrization get_joint_parametrization(string_const_ref jname);
 
+    int get_link_id_error(string_const_ref link_name) const;
+
+    int get_link_id_throw(string_const_ref link_name) const;
+
     void finalize();
 
 private:
@@ -76,7 +80,7 @@ private:
 
     struct Temporaries
     {
-        Eigen::MatrixXd Jrel;
+        Eigen::MatrixXd J, Jarg;
 
         void setZero(int nq, int nv);
     };

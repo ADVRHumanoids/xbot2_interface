@@ -51,14 +51,19 @@ void XBot::RobotInterface2::update()
     return r_impl->_model->update();
 }
 
-MatConstRef XBot::RobotInterface2::getJacobian(string_const_ref link_name) const
+int RobotInterface2::getLinkId(string_const_ref link_name) const
 {
-    return r_impl->_model->getJacobian(link_name);
+    return r_impl->_model->getLinkId(link_name);
 }
 
-Eigen::Affine3d XBot::RobotInterface2::getPose(string_const_ref link_name) const
+void XBot::RobotInterface2::getJacobian(int link_id, MatRef J) const
 {
-    return r_impl->_model->getPose(link_name);
+    return r_impl->_model->getJacobian(link_id, J);
+}
+
+Eigen::Affine3d XBot::RobotInterface2::getPose(int link_id) const
+{
+    return r_impl->_model->getPose(link_id);
 }
 
 VecConstRef XBot::RobotInterface2::sum(VecConstRef q0, VecConstRef v) const
@@ -86,9 +91,19 @@ RobotInterface2::Impl::Impl(RobotInterface2 &api,
 
 }
 
-Eigen::Vector6d XBot::RobotInterface2::getVelocityTwist(string_const_ref link_name) const
+Eigen::Vector6d XBot::RobotInterface2::getVelocityTwist(int link_id) const
 {
-    return r_impl->_model->getVelocityTwist(link_name);
+    return r_impl->_model->getVelocityTwist(link_id);
+}
+
+Eigen::Vector6d RobotInterface2::getAccelerationTwist(int link_id) const
+{
+    return r_impl->_model->getAccelerationTwist(link_id);
+}
+
+Eigen::Vector6d RobotInterface2::getJdotTimesV(int link_id) const
+{
+    return r_impl->_model->getJdotTimesV(link_id);
 }
 
 VecConstRef XBot::RobotInterface2::computeInverseDynamics() const

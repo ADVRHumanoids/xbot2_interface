@@ -70,6 +70,30 @@ VecConstRef ReadStateInterface<Derived>::getJointEffort() const
 }
 
 template<class Derived>
+void ReadStateInterface<Derived>::getJointPosition(Eigen::VectorXd &q) const
+{
+    q = getJointPosition();
+}
+
+template<class Derived>
+void ReadStateInterface<Derived>::getJointVelocity(Eigen::VectorXd &v) const
+{
+    v = getJointVelocity();
+}
+
+template<class Derived>
+void ReadStateInterface<Derived>::getJointAcceleration(Eigen::VectorXd &a) const
+{
+    a = getJointAcceleration();
+}
+
+template<class Derived>
+void ReadStateInterface<Derived>::getJointEffort(Eigen::VectorXd &tau) const
+{
+    tau = getJointEffort();
+}
+
+template<class Derived>
 void WriteStateInterface<Derived>::setJointEffort(VecConstRef tau)
 {
     check_and_set(tau, derived().impl->_state.tau, __func__);

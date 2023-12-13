@@ -75,6 +75,19 @@ Eigen::VectorXd XBotInterface2::getRobotState(string_const_ref name) const
     return impl->getRobotState(name);
 }
 
+bool XBotInterface2::getRobotState(string_const_ref name, Eigen::VectorXd &q) const
+{
+    try
+    {
+        q = impl->getRobotState(name);
+        return true;
+    }
+    catch(std::out_of_range&)
+    {
+        return false;
+    }
+}
+
 int XBotInterface2::getJointNum() const
 {
     return impl->_joints.size();
@@ -145,61 +158,206 @@ int XBotInterface2::getJointId(string_const_ref name) const
     }
 }
 
-MatConstRef XBotInterface2::getRelativeJacobian(string_const_ref distal_name,
-                                                string_const_ref base_name) const
+bool XBotInterface2::getJacobian(string_const_ref link_name, MatRef J) const
+{
+    int idx = impl->get_link_id_error(link_name);
+
+    if(idx < 0)
+    {
+        return false;
+    }
+
+    getJacobian(idx, J);
+
+    return true;
+}
+
+bool XBotInterface2::getJacobian(string_const_ref link_name, Eigen::MatrixXd &J) const
+{
+    J.setZero(6, getNv());
+    return getJacobian(link_name, MatRef(J));
+}
+
+
+void XBotInterface2::getRelativeJacobian(int distal_id, int base_id, MatRef Jrel) const
 {
     // take Jrel from tmp
-    auto& Jrel = impl->_tmp.Jrel;
+    auto& Jtmp = impl->_tmp.J;
 
     // initialize Jrel with Jbase
-    Jrel = getJacobian(base_name);
+    getJacobian(base_id, Jtmp);
 
     // shift ref point to p_d
-    Eigen::Affine3d w_T_b = getPose(base_name);
-    Eigen::Affine3d w_T_d = getPose(distal_name);
+    Eigen::Affine3d w_T_b = getPose(base_id);
+    Eigen::Affine3d w_T_d = getPose(distal_id);
     Eigen::Vector3d r = w_T_d.translation() - w_T_b.translation();
-    Utils::changeRefPoint(Jrel, r);
+    Utils::changeRefPoint(Jtmp, r);
+
+    // get distal jacobian
+    getJacobian(distal_id, Jrel);
 
     // now Jrel = Jd - Jb_shifted
-    Jrel = getJacobian(distal_name) - Jrel;
+    Jrel = Jrel - Jtmp;
 
     // rotate to base
     Utils::rotate(Jrel, w_T_b.linear().transpose());
-
-    return Jrel;
 }
 
-void XBotInterface2::getJacobian(string_const_ref link_name, Eigen::MatrixXd &J) const
+bool XBotInterface2::getRelativeJacobian(string_const_ref distal_name,
+                                         string_const_ref base_name,
+                                         Eigen::MatrixXd &J) const
 {
-    J.noalias() = getJacobian(link_name);
+    int didx = impl->get_link_id_error(distal_name);
+
+    int bidx = impl->get_link_id_error(base_name);
+
+    if(didx < 0 || bidx < 0)
+    {
+        return false;
+    }
+
+    getRelativeJacobian(didx, bidx, J);
+
+    return true;
+
+}
+
+Eigen::Affine3d XBotInterface2::getPose(string_const_ref link_name) const
+{
+    return getPose(impl->get_link_id_throw(link_name));
+}
+
+bool XBotInterface2::getPose(string_const_ref link_name, Eigen::Affine3d &w_T_l) const
+{
+    int idx = impl->get_link_id_error(link_name);
+
+    if(idx < 0)
+    {
+        return false;
+    }
+
+    w_T_l = getPose(idx);
+
+    return true;
+}
+
+Eigen::Affine3d XBotInterface2::getPose(int distal_id, int base_id) const
+{
+    return getPose(base_id).inverse() * getPose(distal_id);
+}
+
+Eigen::Affine3d XBotInterface2::getPose(string_const_ref distal_name, string_const_ref base_name) const
+{
+    return getPose(base_name).inverse() * getPose(distal_name);
+}
+
+bool XBotInterface2::getPose(string_const_ref distal_name, string_const_ref base_name, Eigen::Affine3d &w_T_l) const
+{
+    int didx = impl->get_link_id_error(distal_name);
+
+    int bidx = impl->get_link_id_error(base_name);
+
+    if(didx < 0 || bidx < 0)
+    {
+        return false;
+    }
+
+    w_T_l = getPose(didx, bidx);
+
+    return true;
+}
+
+Eigen::Vector6d XBotInterface2::getVelocityTwist(int link_id) const
+{
+    Eigen::Vector6d ret;
+    getJacobian(link_id, impl->_tmp.J);
+    ret.noalias() = impl->_tmp.J * getJointVelocity();
+    return ret;
 }
 
 Eigen::Vector6d XBotInterface2::getVelocityTwist(string_const_ref link_name) const
 {
+    return getVelocityTwist(impl->get_link_id_throw(link_name));
+}
+
+bool XBotInterface2::getVelocityTwist(string_const_ref link_name, Eigen::Vector6d &v) const
+{
+    int idx = impl->get_link_id_error(link_name);
+
+    if(idx < 0)
+    {
+        return false;
+    }
+
+    v = getVelocityTwist(idx);
+
+    return true;
+}
+
+Eigen::Vector6d XBotInterface2::getAccelerationTwist(int link_id) const
+{
     Eigen::Vector6d ret;
-    ret.noalias() = getJacobian(link_name) * getJointVelocity();
+    getJacobian(link_id, impl->_tmp.J);
+    ret.noalias() = impl->_tmp.J*getJointAcceleration() + getJdotTimesV(link_id);
     return ret;
 }
 
 Eigen::Vector6d XBotInterface2::getAccelerationTwist(string_const_ref link_name) const
 {
-    return getJacobian(link_name)*getJointAcceleration() + getJdotTimesV(link_name);
+    return getAccelerationTwist(impl->get_link_id_throw(link_name));
 }
 
-Eigen::Vector6d XBotInterface2::getRelativeVelocityTwist(string_const_ref distal_name,
-                                                         string_const_ref base_name) const
+bool XBotInterface2::getAccelerationTwist(string_const_ref link_name, Eigen::Vector6d &v) const
+{
+    int idx = impl->get_link_id_error(link_name);
+
+    if(idx < 0)
+    {
+        return false;
+    }
+
+    v = getAccelerationTwist(idx);
+
+    return true;
+}
+
+Eigen::Vector6d XBotInterface2::getJdotTimesV(int link_id) const
+{
+    throw std::runtime_error(__func__ + std::string(" not implemented by base class"));
+}
+
+Eigen::Vector6d XBotInterface2::getJdotTimesV(string_const_ref link_name) const
+{
+    return getJdotTimesV(impl->get_link_id_throw(link_name));
+}
+
+bool XBotInterface2::getJdotTimesV(string_const_ref link_name, Eigen::Vector6d &a) const
+{
+    int idx = impl->get_link_id_error(link_name);
+
+    if(idx < 0)
+    {
+        return false;
+    }
+
+    a = getJdotTimesV(idx);
+
+    return true;
+}
+
+Eigen::Vector6d XBotInterface2::getRelativeVelocityTwist(int distal_id, int base_id) const
 {
     // initialize vrel with Jbase
-    Eigen::Vector6d vrel = getVelocityTwist(base_name);
+    Eigen::Vector6d vrel = getVelocityTwist(base_id);
 
     // shift ref point to p_d
-    Eigen::Affine3d w_T_b = getPose(base_name);
-    Eigen::Affine3d w_T_d = getPose(distal_name);
+    Eigen::Affine3d w_T_b = getPose(base_id);
+    Eigen::Affine3d w_T_d = getPose(distal_id);
     Eigen::Vector3d r = w_T_d.translation() - w_T_b.translation();
     Utils::changeRefPoint(vrel, r);
 
     // now Jrel = Jd - Jb_shifted
-    vrel = getVelocityTwist(distal_name) - vrel;
+    vrel = getVelocityTwist(distal_id) - vrel;
 
     // rotate to base
     Utils::rotate(vrel, w_T_b.linear().transpose());
@@ -207,19 +365,43 @@ Eigen::Vector6d XBotInterface2::getRelativeVelocityTwist(string_const_ref distal
     return vrel;
 }
 
-Eigen::Vector6d XBotInterface2::getRelativeAccelerationTwist(string_const_ref distal_name,
-                                                             string_const_ref base_name) const
+Eigen::Vector6d XBotInterface2::getRelativeVelocityTwist(string_const_ref distal_name,
+                                                         string_const_ref base_name) const
 {
-    Eigen::Vector6d v_base = getVelocityTwist(base_name);
-    Eigen::Vector6d v_distal = getVelocityTwist(distal_name);
+    return getRelativeVelocityTwist(impl->get_link_id_throw(distal_name),
+                                    impl->get_link_id_throw(base_name));
+}
 
-    Eigen::Vector6d v_rel = getRelativeVelocityTwist(distal_name, base_name);
+bool XBotInterface2::getRelativeVelocityTwist(string_const_ref distal_name,
+                                              string_const_ref base_name,
+                                              Eigen::Vector6d &v) const
+{
+    int didx = impl->get_link_id_error(distal_name);
 
-    Eigen::Affine3d w_T_b = getPose(base_name);
-    Eigen::Affine3d w_T_d = getPose(distal_name);
+    int bidx = impl->get_link_id_error(base_name);
 
-    Eigen::Vector6d a_d = getAccelerationTwist(distal_name);
-    Eigen::Vector6d a_b = getAccelerationTwist(base_name);
+    if(didx < 0 || bidx < 0)
+    {
+        return false;
+    }
+
+    v = getRelativeVelocityTwist(didx, bidx);
+
+    return true;
+}
+
+Eigen::Vector6d XBotInterface2::getRelativeAccelerationTwist(int distal_id, int base_id) const
+{
+    Eigen::Vector6d v_base = getVelocityTwist(base_id);
+    Eigen::Vector6d v_distal = getVelocityTwist(distal_id);
+
+    Eigen::Vector6d v_rel = getRelativeVelocityTwist(distal_id, base_id);
+
+    Eigen::Affine3d w_T_b = getPose(base_id);
+    Eigen::Affine3d w_T_d = getPose(distal_id);
+
+    Eigen::Vector6d a_d = getAccelerationTwist(distal_id);
+    Eigen::Vector6d a_b = getAccelerationTwist(base_id);
 
     const Eigen::Matrix3d& w_R_b = w_T_b.linear();
     Eigen::Vector3d r = w_T_d.translation() - w_T_b.translation();
@@ -235,26 +417,44 @@ Eigen::Vector6d XBotInterface2::getRelativeAccelerationTwist(string_const_ref di
     Eigen::Vector6d aux = a_d - a_b + rdot_cross_om;
 
     return -v_rel + Utils::rotate(aux, w_R_b.transpose());
+
 }
 
-Eigen::Vector6d XBotInterface2::getJdotTimesV(string_const_ref link_name) const
+Eigen::Vector6d XBotInterface2::getRelativeAccelerationTwist(string_const_ref distal_name,
+                                                             string_const_ref base_name) const
 {
-    throw std::runtime_error(__func__ + std::string(" not implemented"));
+    return getRelativeAccelerationTwist(impl->get_link_id_throw(distal_name),
+                                        impl->get_link_id_throw(base_name));
 }
 
-Eigen::Vector6d XBotInterface2::getRelativeJdotTimesV(string_const_ref distal_name,
-                                                      string_const_ref base_name) const
+bool XBotInterface2::getRelativeAccelerationTwist(string_const_ref distal_name, string_const_ref base_name, Eigen::Vector6d &v) const
 {
-    Eigen::Vector6d v_base = getVelocityTwist(base_name);
-    Eigen::Vector6d v_distal = getVelocityTwist(distal_name);
+    int didx = impl->get_link_id_error(distal_name);
 
-    Eigen::Vector6d v_rel = getRelativeVelocityTwist(distal_name, base_name);
+    int bidx = impl->get_link_id_error(base_name);
 
-    Eigen::Affine3d w_T_b = getPose(base_name);
-    Eigen::Affine3d w_T_d = getPose(distal_name);
+    if(didx < 0 || bidx < 0)
+    {
+        return false;
+    }
 
-    Eigen::Vector6d a0_d = getJdotTimesV(distal_name);
-    Eigen::Vector6d a0_b = getJdotTimesV(base_name);
+    v = getRelativeAccelerationTwist(didx, bidx);
+
+    return true;
+}
+
+Eigen::Vector6d XBotInterface2::getRelativeJdotTimesV(int distal_id, int base_id) const
+{
+    Eigen::Vector6d v_base = getVelocityTwist(base_id);
+    Eigen::Vector6d v_distal = getVelocityTwist(distal_id);
+
+    Eigen::Vector6d v_rel = getRelativeVelocityTwist(distal_id, base_id);
+
+    Eigen::Affine3d w_T_b = getPose(base_id);
+    Eigen::Affine3d w_T_d = getPose(distal_id);
+
+    Eigen::Vector6d a0_d = getJdotTimesV(distal_id);
+    Eigen::Vector6d a0_b = getJdotTimesV(base_id);
 
     const Eigen::Matrix3d& w_R_b = w_T_b.linear();
     Eigen::Vector3d r = w_T_d.translation() - w_T_b.translation();
@@ -270,6 +470,33 @@ Eigen::Vector6d XBotInterface2::getRelativeJdotTimesV(string_const_ref distal_na
     Eigen::Vector6d aux = a0_d - a0_b + rdot_cross_om;
 
     return -v_rel + Utils::rotate(aux, w_R_b.transpose());
+
+}
+
+Eigen::Vector6d XBotInterface2::getRelativeJdotTimesV(string_const_ref distal_name,
+                                                      string_const_ref base_name) const
+{
+    return getRelativeJdotTimesV(impl->get_link_id_throw(distal_name),
+                                 impl->get_link_id_throw(base_name));
+}
+
+bool XBotInterface2::getRelativeJdotTimesV(string_const_ref distal_name,
+                                           string_const_ref base_name,
+                                           Eigen::Vector6d &v) const
+{
+
+    int didx = impl->get_link_id_error(distal_name);
+
+    int bidx = impl->get_link_id_error(base_name);
+
+    if(didx < 0 || bidx < 0)
+    {
+        return false;
+    }
+
+    v = getRelativeJdotTimesV(didx, bidx);
+
+    return true;
 }
 
 XBotInterface2::JointParametrization XBotInterface2::get_joint_parametrization(string_const_ref jname)
@@ -371,6 +598,32 @@ XBotInterface2::Impl::get_joint_parametrization(string_const_ref)
     throw std::runtime_error(std::string(__func__) + " not impl");
 
     return ret;
+}
+
+int XBotInterface2::Impl::get_link_id_error(string_const_ref link_name) const
+{
+    int idx = _api.getLinkId(link_name);
+
+    if(idx < 0)
+    {
+        std::cerr << "link '" << link_name << "' does not exist \n";
+    }
+
+    return idx;
+}
+
+int XBotInterface2::Impl::get_link_id_throw(string_const_ref link_name) const
+{
+    int idx = _api.getLinkId(link_name);
+
+    if(idx < 0)
+    {
+        std::ostringstream ss;
+        ss << "link '" << link_name << "' does not exist \n";
+        throw std::out_of_range(ss.str());
+    }
+
+    return idx;
 }
 
 void XBotInterface2::Impl::finalize()
@@ -548,5 +801,18 @@ void XBotInterface2::Impl::finalize()
 
 void XBotInterface2::Impl::Temporaries::setZero(int nq, int nv)
 {
-    Jrel.setZero(6, nv);
+    J.setZero(6, nv);
+    Jarg.setZero(6, nv);
+}
+
+bool XBotInterface2::ConfigOptions::set_urdf(std::string urdf_string)
+{
+    auto urdf = std::make_shared<urdf::Model>();
+    return urdf->initString(urdf_string);
+}
+
+bool XBotInterface2::ConfigOptions::set_srdf(std::string srdf_string)
+{
+    auto srdf = std::make_shared<srdf::Model>();
+    return srdf->initString(*urdf, srdf_string);
 }

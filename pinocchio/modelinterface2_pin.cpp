@@ -7,6 +7,7 @@
 #include <pinocchio/algorithm/jacobian.hpp>
 #include <pinocchio/algorithm/rnea.hpp>
 #include <pinocchio/algorithm/joint-configuration.hpp>
+#include <pinocchio/algorithm/regressor.hpp>
 
 using namespace XBot;
 
@@ -45,16 +46,27 @@ void ModelInterface2Pin::update()
     _cached_computation = Kinematics;
 }
 
-Eigen::Affine3d ModelInterface2Pin::getPose(string_const_ref link_name) const
+int XBot::ModelInterface2Pin::getLinkId(string_const_ref link_name) const
+{
+    try
+    {
+        return get_frame_id(link_name);
+    }
+    catch (std::out_of_range&)
+    {
+        return -1;
+    }
+}
+
+Eigen::Affine3d ModelInterface2Pin::getPose(int frame_idx) const
 {
     Eigen::Affine3d ret;
-    auto frame_idx = get_frame_id(link_name);
     ret.translation() = _data.oMf.at(frame_idx).translation();
     ret.linear() = _data.oMf.at(frame_idx).rotation();
     return ret;
 }
 
-MatConstRef ModelInterface2Pin::getJacobian(string_const_ref link_name) const
+void ModelInterface2Pin::getJacobian(int link_id, MatRef J) const
 {
     if(!(_cached_computation & Jacobians))
     {
@@ -62,10 +74,9 @@ MatConstRef ModelInterface2Pin::getJacobian(string_const_ref link_name) const
         _cached_computation |= Jacobians;
     }
 
-    auto frame_idx = get_frame_id(link_name);
-    _tmp.J.setZero(6, getNv());
-    pinocchio::getFrameJacobian(_mdl, _data, frame_idx, _world_aligned, _tmp.J);
-    return _tmp.J;
+    J.setZero();
+
+    pinocchio::getFrameJacobian(_mdl, _data, link_id, _world_aligned, J);
 }
 
 VecConstRef ModelInterface2Pin::computeInverseDynamics() const
@@ -83,6 +94,11 @@ VecConstRef ModelInterface2Pin::computeInverseDynamics() const
     }
 
     return _tmp.rnea;
+}
+
+MatConstRef ModelInterface2Pin::computeRegressor() const
+{
+    throw std::runtime_error("not implemented");
 }
 
 VecConstRef ModelInterface2Pin::sum(VecConstRef q0, VecConstRef v) const
@@ -210,20 +226,18 @@ void ModelInterface2Pin::Temporaries::resize(int nq, int nv)
     qdiff.setZero(nv);
 }
 
-Eigen::Vector6d XBot::ModelInterface2Pin::getVelocityTwist(string_const_ref link_name) const
+Eigen::Vector6d XBot::ModelInterface2Pin::getVelocityTwist(int frame_idx) const
 {
-    auto frame_idx = get_frame_id(link_name);
     auto v = pinocchio::getFrameVelocity(_mdl, _data, frame_idx, _world_aligned);
     return v;
 }
 
-Eigen::Vector6d ModelInterface2Pin::getAccelerationTwist(string_const_ref link_name) const
+Eigen::Vector6d ModelInterface2Pin::getAccelerationTwist(int frame_idx) const
 {
-    auto frame_idx = get_frame_id(link_name);
     return pinocchio::getFrameClassicalAcceleration(_mdl, _data, frame_idx, _world_aligned);
 }
 
-Eigen::Vector6d ModelInterface2Pin::getJdotTimesV(string_const_ref link_name) const
+Eigen::Vector6d ModelInterface2Pin::getJdotTimesV(int frame_idx) const
 {
     if(!(_cached_computation & KinematicsNoAcc))
     {
@@ -231,8 +245,10 @@ Eigen::Vector6d ModelInterface2Pin::getJdotTimesV(string_const_ref link_name) co
         _cached_computation |= KinematicsNoAcc;
     }
 
-    auto frame_idx = get_frame_id(link_name);
     return pinocchio::getFrameClassicalAcceleration(_mdl, _data_no_acc, frame_idx, _world_aligned);
 }
 
 XBOT2_REGISTER_MODEL_PLUGIN(ModelInterface2Pin, pin);
+
+
+

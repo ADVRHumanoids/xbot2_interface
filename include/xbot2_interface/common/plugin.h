@@ -11,15 +11,15 @@
 #define XBOT2_MODEL_PLUGIN_GETABI(Name) xbot2_get_model_plugin_abi_version_##Name
 
 #define XBOT2_REGISTER_MODEL_PLUGIN(Class, Type) \
-    extern "C" XBOT2_HELPER_DLL_EXPORT \
-    XBOT2_API ::XBot::ModelInterface2 * XBOT2_MODEL_PLUGIN_FACTORY(Type)( \
+    extern "C" XBOT2IFC_HELPER_DLL_EXPORT \
+    XBOT2IFC_API ::XBot::ModelInterface2 * XBOT2_MODEL_PLUGIN_FACTORY(Type)( \
                             const ::XBot::XBotInterface2::ConfigOptions& opt \
                             ) \
     { \
        return new Class(opt); \
     } \
     \
-    extern "C" XBOT2_HELPER_DLL_EXPORT \
+    extern "C" XBOT2IFC_HELPER_DLL_EXPORT \
     void XBOT2_MODEL_PLUGIN_GETABI(Type)(int* major, int* minor, int* patch) \
     { \
         *major = XBOT2IFC_VERSION_MAJOR; \
@@ -31,15 +31,15 @@
 #define XBOT2_ROBOT_PLUGIN_GETABI(Name) xbot2_get_robot_plugin_abi_version_##Name
 
 #define XBOT2_REGISTER_ROBOT_PLUGIN(Class, Type) \
-    extern "C" XBOT2_HELPER_DLL_EXPORT \
-    XBOT2_API ::XBot::RobotInterface2 * XBOT2_ROBOT_PLUGIN_FACTORY(Type)( \
+    extern "C" XBOT2IFC_HELPER_DLL_EXPORT \
+    XBOT2IFC_API ::XBot::RobotInterface2 * XBOT2_ROBOT_PLUGIN_FACTORY(Type)( \
                             ::std::unique_ptr<::XBot::XBotInterface2> model \
                             ) \
     { \
        return new Class(std::move(model)); \
     } \
     \
-    extern "C" XBOT2_HELPER_DLL_EXPORT \
+    extern "C" XBOT2IFC_HELPER_DLL_EXPORT \
     void XBOT2_ROBOT_PLUGIN_GETABI(Type)(int* major, int* minor, int* patch) \
     { \
         *major = XBOT2IFC_VERSION_MAJOR; \

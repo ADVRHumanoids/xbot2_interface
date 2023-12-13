@@ -5,8 +5,10 @@
 
 namespace XBot {
 
+inline namespace v2 {
+
 template <class Derived>
-struct ReadStateInterface
+struct XBOT2IFC_API ReadStateInterface
 {
     friend Derived;
 
@@ -18,6 +20,11 @@ struct ReadStateInterface
     VecConstRef getJointAcceleration() const;
     VecConstRef getJointEffort() const;
 
+    void getJointPosition(Eigen::VectorXd& q) const;
+    void getJointVelocity(Eigen::VectorXd& v) const;
+    void getJointAcceleration(Eigen::VectorXd& a) const;
+    void getJointEffort(Eigen::VectorXd& tau) const;
+
 private:
 
     ReadStateInterface() = default;
@@ -28,7 +35,7 @@ private:
 };
 
 template <class Derived>
-struct WriteStateInterface
+struct XBOT2IFC_API WriteStateInterface
 {
     friend Derived;
 
@@ -49,7 +56,7 @@ private:
 };
 
 template <class Derived>
-struct ReadCmdInterface
+struct XBOT2IFC_API ReadCmdInterface
 {
     friend Derived;
 
@@ -80,7 +87,7 @@ private:
 };
 
 template <class Derived>
-struct WriteCmdInterface
+struct XBOT2IFC_API WriteCmdInterface
 {
     friend Derived;
 
@@ -96,6 +103,8 @@ private:
     Derived& derived();
     const Derived& derived() const;
 };
+
+}
 
 }
 

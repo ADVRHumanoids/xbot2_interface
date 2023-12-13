@@ -32,7 +32,9 @@ int main(int argc, char **argv)
 
     std::cout << model->getPose("contact_1").matrix() << "\n\n";
 
-    std::cout << model->getJacobian("contact_1").leftCols(12) << "\n\n";
+    Eigen::MatrixXd J;
+    model->getJacobian("contact_1", J);
+    std::cout << J.leftCols(12) << "\n\n";
 
     std::cout << model->getJoint("reference")->getJointPosition().transpose() << "\n\n";
 
