@@ -3,6 +3,7 @@
 #include <xbot2_interface/common/plugin.h>
 #include <xbot2_interface/common/utils.h>
 
+#include <pinocchio/algorithm/center-of-mass.hpp>
 #include <pinocchio/algorithm/frames.hpp>
 #include <pinocchio/algorithm/jacobian.hpp>
 #include <pinocchio/algorithm/rnea.hpp>
@@ -101,16 +102,14 @@ MatConstRef ModelInterface2Pin::computeRegressor() const
     throw std::runtime_error("not implemented");
 }
 
-VecConstRef ModelInterface2Pin::sum(VecConstRef q0, VecConstRef v) const
+void ModelInterface2Pin::sum(VecConstRef q0, VecConstRef v, Eigen::VectorXd& q1) const
 {
-    pinocchio::integrate(_mdl, q0, v, _tmp.qsum);
-    return _tmp.qsum;
+    pinocchio::integrate(_mdl, q0, v, q1);
 }
 
-VecConstRef ModelInterface2Pin::difference(VecConstRef q1, VecConstRef q0) const
+void ModelInterface2Pin::difference(VecConstRef q1, VecConstRef q0, Eigen::VectorXd& v) const
 {
-    _tmp.qdiff = pinocchio::difference(_mdl, q0, q1);
-    return _tmp.qdiff;
+    v = pinocchio::difference(_mdl, q0, q1);
 }
 
 XBotInterface::JointParametrization ModelInterface2Pin::get_joint_parametrization(string_const_ref jname)
@@ -246,6 +245,27 @@ Eigen::Vector6d ModelInterface2Pin::getJdotTimesV(int frame_idx) const
     }
 
     return pinocchio::getFrameClassicalAcceleration(_mdl, _data_no_acc, frame_idx, _world_aligned);
+}
+
+double ModelInterface2Pin::getMass() const
+{
+    return pinocchio::computeTotalMass(_mdl);
+}
+
+Eigen::Vector3d ModelInterface2Pin::getCOM() const
+{
+    if(!(_cached_computation & Com))
+    {
+        pinocchio::centerOfMass(_mdl, _data, false);
+        _cached_computation |= Com;
+    }
+
+    return _data.com[0];
+}
+
+void ModelInterface2Pin::getCOMJacobian(MatRef J) const
+{
+    J = pinocchio::jacobianCenterOfMass(_mdl, _data, false);
 }
 
 XBOT2_REGISTER_MODEL_PLUGIN(ModelInterface2Pin, pin);

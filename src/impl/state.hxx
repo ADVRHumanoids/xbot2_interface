@@ -12,14 +12,16 @@ struct StateTemplate
     typedef StateTemplate<ViewType> ViewContainer;
 
     Vec qmot, qlink,
-    vmot, vlink,
-    a,
-    tau,
-    k, d,
-    qref, vref, tauref;
+        vmot, vlink,
+        a,
+        tau,
+        k, d,
+        qref, vref, tauref,
+        qmin, qmax, vmax, taumax,
+        qneutral;
 
-    const std::vector<Vec*> qs = {&qmot, &qlink, &qref};
-    const std::vector<Vec*> vs = {&vmot, &vlink, &a, &tau, &k, &d, &vref, &tauref};
+    const std::vector<Vec*> qs = {&qmot, &qlink, &qref, &qneutral};
+    const std::vector<Vec*> vs = {&vmot, &vlink, &a, &tau, &k, &d, &vref, &tauref, &qmin, &qmax, &vmax, &taumax};
     const std::vector<Vec*> js = {};
 
 };
@@ -76,7 +78,12 @@ typename StateTemplate<Vec>::ViewContainer createView(StateTemplate<Vec>& cnt,
         cnt.d.segment(iv, nv),
         cnt.qref.segment(iq, nq),
         cnt.vref.segment(iv, nv),
-        cnt.tauref.segment(iv, nv)
+        cnt.tauref.segment(iv, nv),
+        cnt.qmin.segment(iv, nv),
+        cnt.qmax.segment(iv, nv),
+        cnt.vmax.segment(iv, nv),
+        cnt.taumax.segment(iv, nv),
+        cnt.qneutral.segment(iq, nq)
     };
 
     return ret;

@@ -5,6 +5,8 @@
 #include <srdfdom/model.h>
 
 #include "joint.h"
+#include "imu.h"
+#include "force_torque.h"
 
 namespace XBot {
 
@@ -52,19 +54,58 @@ public:
 
     bool hasJoint(string_const_ref name) const;
 
-    Joint::ConstPtr getJoint(string_const_ref name) const;
+    Joint::ConstPtr getJoint(string_const_ref joint_name) const;
 
-    Joint::ConstPtr getJoint(int i) const;
+    Joint::ConstPtr getJoint(int id) const;
 
-    JointInfo getJointInfo(string_const_ref name) const;
+    JointInfo getJointInfo(string_const_ref joint_name) const;
 
-    JointInfo getJointInfo(int i) const;
+    JointInfo getJointInfo(int id) const;
 
-    int getJointId(string_const_ref name) const;
+    int getJointId(string_const_ref joint_name) const;
+
+    int getDofIndex(string_const_ref joint_name) const;
+
+    const std::vector<std::string>& getJointNames() const;
 
     virtual void update() = 0;
 
     virtual int getLinkId(string_const_ref link_name) const = 0;
+
+    /* Eigen/map conversions */
+
+    void qToMap(VecConstRef q, JointNameMap& qmap);
+
+    void vToMap(VecConstRef v, JointNameMap& vmap);
+
+    void mapToQ(const JointNameMap& qmap, Eigen::VectorXd& q) const;
+
+    void mapToV(const JointNameMap& vmap, Eigen::VectorXd& v) const;
+
+    /* Joint limits */
+
+    bool checkJointLimits(VecConstRef q) const;
+
+
+    /* Attached sensors */
+
+    std::map<std::string, ImuSensor::ConstPtr> getImu() const;
+
+    ImuSensor::ConstPtr getImu(string_const_ref name) const;
+
+    std::map<std::string, ForceTorqueSensor::ConstPtr> getForceTorque() const;
+
+    ForceTorqueSensor::ConstPtr getForceTorque(string_const_ref name) const;
+
+
+    /* Floating base */
+
+    bool isFloatingBase() const;
+
+    bool getFloatingBaseLink(std::string& fb) const;
+
+    string_const_ref getFloatingBaseLink() const;
+
 
     /* Jacobians */
 
@@ -75,12 +116,16 @@ public:
 
     bool getJacobian(string_const_ref link_name, Eigen::MatrixXd& J) const;
 
+    Eigen::MatrixXd getJacobian(string_const_ref link_name) const;
+
     // relative
     virtual void getRelativeJacobian(int distal_id, int base_id, MatRef J) const;
 
     bool getRelativeJacobian(string_const_ref distal_name, string_const_ref base_name, MatRef J) const;
 
     bool getRelativeJacobian(string_const_ref distal_name, string_const_ref base_name, Eigen::MatrixXd& J) const;
+
+    Eigen::MatrixXd getRelativeJacobian(string_const_ref distal_name, string_const_ref base_name) const;
 
     /* Forward kinematics */
 
@@ -133,6 +178,15 @@ public:
 
     bool getRelativeAccelerationTwist(string_const_ref distal_name, string_const_ref base_name, Eigen::Vector6d& v) const;
 
+    // com
+
+    virtual Eigen::Vector3d getCOM() const = 0;
+
+    virtual void getCOMJacobian(MatRef J) const = 0;
+
+    bool getCOMJacobian(Eigen::MatrixXd& J) const;
+
+
     //
     Eigen::Vector6d getRelativeJdotTimesV(int distal_id, int base_id) const;
 
@@ -141,12 +195,18 @@ public:
     bool getRelativeJdotTimesV(string_const_ref distal_name, string_const_ref base_name, Eigen::Vector6d& v) const;
 
     // dynamics
+    virtual double getMass() const = 0;
+
     virtual VecConstRef computeInverseDynamics() const = 0;
 
     // manifold operations
-    virtual VecConstRef sum(VecConstRef q0, VecConstRef v) const = 0;
+    virtual void sum(VecConstRef q0, VecConstRef v, Eigen::VectorXd& q1) const = 0;
 
-    virtual VecConstRef difference(VecConstRef q1, VecConstRef q0) const = 0;
+    virtual void difference(VecConstRef q1, VecConstRef q0, Eigen::VectorXd& v) const = 0;
+
+    Eigen::VectorXd sum(VecConstRef q0, VecConstRef v) const;
+
+    Eigen::VectorXd difference(VecConstRef q1, VecConstRef q0) const;
 
     //
     virtual ~XBotInterface();
@@ -186,6 +246,10 @@ protected:
 
     virtual JointParametrization get_joint_parametrization(string_const_ref jname);
 
+    std::map<std::string, ImuSensor::Ptr> getImu();
+
+    std::map<std::string, ForceTorqueSensor::Ptr> getForceTorque();
+
 
 protected:
 
@@ -212,6 +276,9 @@ public:
 
     using XBotInterface::XBotInterface;
 
+    static UniquePtr getModel(std::string urdf_string,
+                              std::string type);
+
     static UniquePtr getModel(urdf::ModelConstSharedPtr urdf,
                               srdf::ModelConstSharedPtr srdf,
                               std::string type);
@@ -221,6 +288,14 @@ public:
     ModelJoint::Ptr getJoint(string_const_ref name);
 
     ModelJoint::Ptr getJoint(int i);
+
+    /* Floating base */
+
+    bool setFloatingBaseState(const Eigen::Affine3d& w_T_b, const Eigen::Vector6d& v);
+
+    bool setFloatingBasePose(const Eigen::Affine3d& w_T_b);
+
+    bool setFloatingBaseTwist(const Eigen::Vector6d& v);
 
     virtual ~ModelInterface();
 

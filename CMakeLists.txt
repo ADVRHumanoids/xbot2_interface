@@ -6,7 +6,7 @@ option(XBOT2_IFC_BUILD_PINOCCHIO "Build Pinocchio implementation" ON)
 option(XBOT2_IFC_BUILD_RBDL "Build RBDL implementation" ON)
 option(XBOT2_IFC_BUILD_ROS "Build ROS implementation" ON)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_INSTALL_RPATH $ORIGIN)
@@ -28,7 +28,10 @@ add_library(xbot2_interface SHARED
     src/chain.cpp
     src/joint.cpp
     src/types.cpp
-    src/utils.cpp)
+    src/utils.cpp
+    src/sensor.cpp
+    src/imu.cpp
+    src/force_torque.cpp)
 
 add_library(xbot2_interface::xbot2_interface ALIAS xbot2_interface)
 
@@ -82,6 +85,8 @@ endif()
 if(${XBOT2_IFC_BUILD_ROS})
     add_subdirectory(ros/)
 endif()
+
+add_subdirectory(python)
 
 add_executable(test_main main.cpp)
 target_link_libraries(test_main xbot2_interface)

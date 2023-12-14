@@ -35,18 +35,68 @@ RobotInterface2Ros::RobotInterface2Ros(std::unique_ptr<XBotInterface> model):
         throw std::runtime_error("no joint message received from topic: " + _js_sub.getTopic());
     }
 
+    // imu
+    auto imu_map = getImu();
 
+    for(auto [name, imu] : imu_map)
+    {
+        auto cb = [imu](const sensor_msgs::ImuConstPtr& msg)
+        {
+            wall_time ts = wall_time() +
+                           std::chrono::seconds(msg->header.stamp.sec) +
+                           std::chrono::nanoseconds(msg->header.stamp.nsec);
 
+            imu->setMeasurement(
+                Eigen::Vector3d::Map(&msg->angular_velocity.x),
+                Eigen::Vector3d::Map(&msg->linear_acceleration.x),
+                Eigen::Quaterniond(&msg->orientation.x),
+                ts);
+        };
+
+        auto sub = _nh.subscribe<sensor_msgs::Imu>("imu/" + name,
+                                                   1,
+                                                   cb,
+                                                   nullptr,
+                                                   ros::TransportHints().tcpNoDelay(true));
+
+        _subs.push_back(sub);
+    }
+
+    // ft
+    auto ft_map = getForceTorque();
+
+    for(auto [name, ft] : ft_map)
+    {
+        auto cb = [ft](const geometry_msgs::WrenchStampedConstPtr& msg)
+        {
+            wall_time ts = wall_time() +
+                           std::chrono::seconds(msg->header.stamp.sec) +
+                           std::chrono::nanoseconds(msg->header.stamp.nsec);
+
+            ft->setMeasurement(
+                Eigen::Vector6d::Map(&msg->wrench.force.x),
+                ts);
+        };
+
+        auto sub = _nh.subscribe<geometry_msgs::WrenchStamped>(
+            "ft/" + name,
+            1,
+            cb,
+            nullptr,
+            ros::TransportHints().tcpNoDelay(true));
+
+        _subs.push_back(sub);
+    }
 }
 
-bool RobotInterface2Ros::sense()
+bool RobotInterface2Ros::sense_impl()
 {
     _js_received = false;
     _cbq.callAvailable();
     return _js_received;
 }
 
-bool RobotInterface2Ros::move()
+bool RobotInterface2Ros::move_impl()
 {
     xbot_msgs::JointCommand cmd;
     const int nj = getJointNum();

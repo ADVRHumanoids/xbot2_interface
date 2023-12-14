@@ -1,8 +1,10 @@
 #ifndef TYPES_H
 #define TYPES_H
 
-#include <Eigen/Dense>
 #include <memory>
+#include <chrono>
+
+#include <Eigen/Dense>
 
 #include "visibility.h"
 
@@ -35,6 +37,10 @@ typedef Eigen::Ref<const Eigen::MatrixXd> MatConstRef;
 
 typedef std::string& string_ref;
 typedef const std::string& string_const_ref;
+
+typedef std::chrono::system_clock::time_point wall_time;
+
+typedef std::unordered_map<std::string, double> JointNameMap;
 
 XBOT2IFC_API Eigen::Scalard from_value(double value);
 

@@ -19,11 +19,18 @@ struct XBOT2IFC_API ReadStateInterface
     VecConstRef getJointVelocity() const;
     VecConstRef getJointAcceleration() const;
     VecConstRef getJointEffort() const;
+    std::pair<VecConstRef, VecConstRef> getJointLimits() const;
+    VecConstRef getVelocityLimits() const;
+    VecConstRef getEffortLimits() const;
+    VecConstRef getNeutralQ() const;
 
     void getJointPosition(Eigen::VectorXd& q) const;
     void getJointVelocity(Eigen::VectorXd& v) const;
     void getJointAcceleration(Eigen::VectorXd& a) const;
     void getJointEffort(Eigen::VectorXd& tau) const;
+    void getJointLimits(Eigen::VectorXd& qmin, Eigen::VectorXd& qmax) const;
+    void getVelocityLimits(Eigen::VectorXd& vmax) const;
+    void getEffortLimits(Eigen::VectorXd& taumax) const;
 
 private:
 
@@ -46,6 +53,12 @@ struct XBOT2IFC_API WriteStateInterface
     void setJointAcceleration(VecConstRef a);
 
     void setJointEffort(VecConstRef tau);
+
+    void setJointLimits(VecConstRef qmin, VecConstRef qmax);
+
+    void setVelocityLimits(VecConstRef vmax);
+
+    void setEffortLimits(VecConstRef taumax);
 
 private:
 

@@ -5,6 +5,21 @@
 
 using namespace XBot;
 
+bool RobotInterface::sense()
+{
+    for(auto& item : XBotInterface::impl->_sensor_map)
+    {
+        item.second->clear();
+    }
+
+    return sense_impl();
+}
+
+bool RobotInterface::move()
+{
+    return move_impl();
+}
+
 RobotInterface::UniquePtr RobotInterface::getRobot(urdf::ModelConstSharedPtr urdf,
                                               srdf::ModelConstSharedPtr srdf,
                                               std::string robot_type,
@@ -66,14 +81,14 @@ Eigen::Affine3d XBot::RobotInterface::getPose(int link_id) const
     return r_impl->_model->getPose(link_id);
 }
 
-VecConstRef XBot::RobotInterface::sum(VecConstRef q0, VecConstRef v) const
+void XBot::RobotInterface::sum(VecConstRef q0, VecConstRef v, Eigen::VectorXd& q1) const
 {
-    return r_impl->_model->sum(q0, v);
+    return r_impl->_model->sum(q0, v, q1);
 }
 
-VecConstRef XBot::RobotInterface::difference(VecConstRef q1, VecConstRef q0) const
+void XBot::RobotInterface::difference(VecConstRef q1, VecConstRef q0, Eigen::VectorXd& v) const
 {
-    return r_impl->_model->difference(q1, q0);
+    return r_impl->_model->difference(q1, q0, v);
 }
 
 XBotInterface::JointParametrization XBot::RobotInterface::get_joint_parametrization(string_const_ref jname)
@@ -104,6 +119,21 @@ Eigen::Vector6d RobotInterface::getAccelerationTwist(int link_id) const
 Eigen::Vector6d RobotInterface::getJdotTimesV(int link_id) const
 {
     return r_impl->_model->getJdotTimesV(link_id);
+}
+
+Eigen::Vector3d RobotInterface::getCOM() const
+{
+    return r_impl->_model->getCOM();
+}
+
+void RobotInterface::getCOMJacobian(MatRef J) const
+{
+    return r_impl->_model->getCOMJacobian(J);
+}
+
+double RobotInterface::getMass() const
+{
+    return r_impl->_model->getMass();
 }
 
 VecConstRef XBot::RobotInterface::computeInverseDynamics() const

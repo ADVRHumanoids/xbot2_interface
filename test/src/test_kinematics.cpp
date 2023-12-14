@@ -11,7 +11,8 @@ TEST_F(TestKinematics, checkJointFk)
     {
         Eigen::VectorXd q0 = model->getJointPosition();
         Eigen::VectorXd v = Eigen::VectorXd::Random(model->getNv());
-        Eigen::VectorXd q = model->sum(q0, v);
+        Eigen::VectorXd q;
+        model->sum(q0, v, q);
 
         model->setJointPosition(q);
         model->setJointVelocity(v);
@@ -92,8 +93,10 @@ TEST_F(TestKinematics, checkJacobianNumerical)
         for(int i = 0; i < model->getNv(); i++)
         {
             auto vi = Eigen::VectorXd::Unit(model->getNv(), i);
-            Eigen::VectorXd qplus = model->sum(q0, vi*h/2);
-            Eigen::VectorXd qminus = model->sum(q0, -vi*h/2);
+            Eigen::VectorXd qplus;
+            model->sum(q0, vi*h/2, qplus);
+            Eigen::VectorXd qminus;
+            model->sum(q0, -vi*h/2, qminus);
 
             model->setJointPosition(qplus);
             model->update();
@@ -126,7 +129,8 @@ TEST_F(TestKinematics, checkJacobianNumerical)
     {
         Eigen::VectorXd q0 = model->getJointPosition();
         Eigen::VectorXd v = Eigen::VectorXd::Random(model->getNv());
-        Eigen::VectorXd q = model->sum(q0, v);
+        Eigen::VectorXd q;
+        model->sum(q0, v, q);
 
         for(auto [lname, lptr] : model->getUrdf()->links_)
         {
@@ -174,7 +178,8 @@ TEST_F(TestKinematics, checkVelocityVsJacobian)
     {
         Eigen::VectorXd q0 = model->getJointPosition();
         Eigen::VectorXd v = Eigen::VectorXd::Random(model->getNv());
-        Eigen::VectorXd q = model->sum(q0, v);
+        Eigen::VectorXd q;
+        model->sum(q0, v, q);
 
         for(auto [lname, lptr] : model->getUrdf()->links_)
         {
@@ -205,8 +210,8 @@ TEST_F(TestKinematics, checkJdotTimesV)
 
         const double h = 1e-4;
 
-        Eigen::VectorXd qplus = model->sum(q0, v*h/2);
-        Eigen::VectorXd qminus = model->sum(q0, -v*h/2);
+        Eigen::VectorXd qplus; model->sum(q0, v*h/2, qplus);
+        Eigen::VectorXd qminus; model->sum(q0, -v*h/2, qminus);
 
         model->setJointPosition(qplus);
         model->update();
@@ -227,7 +232,7 @@ TEST_F(TestKinematics, checkJdotTimesV)
     {
         Eigen::VectorXd q0 = model->getJointPosition();
         Eigen::VectorXd v = Eigen::VectorXd::Random(model->getNv());
-        Eigen::VectorXd q = model->sum(q0, v);
+        Eigen::VectorXd q; model->sum(q0, v, q);
 
         for(auto [lname, lptr] : model->getUrdf()->links_)
         {
@@ -257,8 +262,8 @@ TEST_F(TestKinematics, checkRelativeJacobian)
         for(int i = 0; i < model->getNv(); i++)
         {
             auto vi = Eigen::VectorXd::Unit(model->getNv(), i);
-            Eigen::VectorXd qplus = model->sum(q0, vi*h/2);
-            Eigen::VectorXd qminus = model->sum(q0, -vi*h/2);
+            Eigen::VectorXd qplus; model->sum(q0, vi*h/2, qplus);
+            Eigen::VectorXd qminus; model->sum(q0, -vi*h/2, qminus);
 
             model->setJointPosition(qplus);
             model->update();
@@ -294,7 +299,7 @@ TEST_F(TestKinematics, checkRelativeJacobian)
     {
         Eigen::VectorXd q0 = model->getJointPosition();
         Eigen::VectorXd v = Eigen::VectorXd::Random(model->getNv());
-        Eigen::VectorXd q = model->sum(q0, v);
+        Eigen::VectorXd q; model->sum(q0, v, q);
 
         for(auto [lname, lptr] : model->getUrdf()->links_)
         {
@@ -337,7 +342,7 @@ TEST_F(TestKinematics, checkRelativeVelocityVsJacobian)
     {
         Eigen::VectorXd q0 = model->getJointPosition();
         Eigen::VectorXd v = Eigen::VectorXd::Random(model->getNv());
-        Eigen::VectorXd q = model->sum(q0, v);
+        Eigen::VectorXd q; model->sum(q0, v, q);
 
         for(auto [lname, lptr] : model->getUrdf()->links_)
         {
@@ -371,8 +376,8 @@ TEST_F(TestKinematics, checkRelativeJdotTimesV)
 
         const double h = 1e-4;
 
-        Eigen::VectorXd qplus = model->sum(q0, v*h/2);
-        Eigen::VectorXd qminus = model->sum(q0, -v*h/2);
+        Eigen::VectorXd qplus; model->sum(q0, v*h/2, qplus);
+        Eigen::VectorXd qminus; model->sum(q0, -v*h/2, qminus);
 
         model->setJointPosition(qplus);
         model->update();
@@ -396,7 +401,7 @@ TEST_F(TestKinematics, checkRelativeJdotTimesV)
     {
         Eigen::VectorXd q0 = model->getJointPosition();
         Eigen::VectorXd v = Eigen::VectorXd::Random(model->getNv());
-        Eigen::VectorXd q = model->sum(q0, v);
+        Eigen::VectorXd q; model->sum(q0, v, q);
 
         for(auto [lname, lptr] : model->getUrdf()->links_)
         {
@@ -435,9 +440,9 @@ TEST_F(TestKinematics, checkAcceleration)
 
         const double h = 1e-4;
 
-        Eigen::VectorXd qjplus = model->sum(q0, v*h/2 + a*h*h/8);
+        Eigen::VectorXd qjplus; model->sum(q0, v*h/2 + a*h*h/8, qjplus);
         Eigen::VectorXd vjplus = v + a*h/2;
-        Eigen::VectorXd qjminus = model->sum(q0, -v*h/2 - a*h*h/8);
+        Eigen::VectorXd qjminus; model->sum(q0, -v*h/2 - a*h*h/8, qjminus);
         Eigen::VectorXd vjminus = v - a*h/2;
 
         model->setJointPosition(qjplus);
@@ -463,7 +468,7 @@ TEST_F(TestKinematics, checkAcceleration)
     {
         Eigen::VectorXd q0 = model->getJointPosition();
         Eigen::VectorXd v = Eigen::VectorXd::Random(model->getNv());
-        Eigen::VectorXd q = model->sum(q0, v);
+        Eigen::VectorXd q; model->sum(q0, v, q);
         Eigen::VectorXd a = Eigen::VectorXd::Random(model->getNv());
 
         for(auto [lname, lptr] : model->getUrdf()->links_)
@@ -503,9 +508,9 @@ TEST_F(TestKinematics, checkRelativeAcceleration)
 
         const double h = 1e-4;
 
-        Eigen::VectorXd qjplus = model->sum(q0, v*h/2 + a*h*h/8);
+        Eigen::VectorXd qjplus; model->sum(q0, v*h/2 + a*h*h/8, qjplus);
         Eigen::VectorXd vjplus = v + a*h/2;
-        Eigen::VectorXd qjminus = model->sum(q0, -v*h/2 - a*h*h/8);
+        Eigen::VectorXd qjminus; model->sum(q0, -v*h/2 - a*h*h/8, qjminus);
         Eigen::VectorXd vjminus = v - a*h/2;
 
         model->setJointPosition(qjplus);
@@ -531,7 +536,7 @@ TEST_F(TestKinematics, checkRelativeAcceleration)
     {
         Eigen::VectorXd q0 = model->getJointPosition();
         Eigen::VectorXd v = Eigen::VectorXd::Random(model->getNv());
-        Eigen::VectorXd q = model->sum(q0, v);
+        Eigen::VectorXd q; model->sum(q0, v, q);
         Eigen::VectorXd a = Eigen::VectorXd::Random(model->getNv());
 
         for(auto [lname, lptr] : model->getUrdf()->links_)

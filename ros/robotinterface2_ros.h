@@ -9,6 +9,8 @@
 #include <xbot_msgs/JointCommand.h>
 #include <geometry_msgs/PointStamped.h>
 #include <geometry_msgs/TwistStamped.h>
+#include <geometry_msgs/WrenchStamped.h>
+#include <sensor_msgs/Imu.h>
 #include <nav_msgs/Odometry.h>
 
 namespace XBot {
@@ -20,9 +22,9 @@ public:
 
     RobotInterface2Ros(std::unique_ptr<XBotInterface> model);
 
-    bool sense() override;
+    bool sense_impl() override;
 
-    bool move() override;
+    bool move_impl() override;
 
 private:
 
@@ -44,6 +46,8 @@ private:
     ros::Publisher _cmd_pub;
 
     ros::Publisher _base_cmd_pub;
+
+    std::vector<ros::Subscriber> _subs;
 
     bool _js_received;
 

@@ -17,9 +17,9 @@ public:
 
     XBOT_DECLARE_SMART_PTR(RobotInterface);
 
-    virtual bool sense() = 0;
+    virtual bool sense();
 
-    virtual bool move() = 0;
+    virtual bool move();
 
     static UniquePtr getRobot(urdf::ModelConstSharedPtr urdf,
                               srdf::ModelConstSharedPtr srdf,
@@ -46,6 +46,10 @@ protected:
 
     RobotInterface(std::unique_ptr<XBotInterface> model);
 
+    virtual bool sense_impl() = 0;
+
+    virtual bool move_impl() = 0;
+
     // XBotInterface interface
 public:
 
@@ -59,8 +63,8 @@ public:
     using XBotInterface::getPose;
     Eigen::Affine3d getPose(int link_id) const override;
 
-    VecConstRef sum(VecConstRef q0, VecConstRef v) const override;
-    VecConstRef difference(VecConstRef q1, VecConstRef q0) const override;
+    void sum(VecConstRef q0, VecConstRef v, Eigen::VectorXd& q1) const override;
+    void difference(VecConstRef q1, VecConstRef q0, Eigen::VectorXd& v) const override;
 
     using XBotInterface::getVelocityTwist;
     Eigen::Vector6d getVelocityTwist(int link_id) const override;
@@ -70,6 +74,12 @@ public:
 
     using XBotInterface::getJdotTimesV;
     Eigen::Vector6d getJdotTimesV(int link_id) const override;
+
+    Eigen::Vector3d getCOM() const override;
+
+    void getCOMJacobian(MatRef J) const override;
+
+    double getMass() const override;
 
     VecConstRef computeInverseDynamics() const override;
 

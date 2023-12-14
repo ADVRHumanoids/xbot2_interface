@@ -94,9 +94,70 @@ void ReadStateInterface<Derived>::getJointEffort(Eigen::VectorXd &tau) const
 }
 
 template<class Derived>
+std::pair<VecConstRef, VecConstRef> ReadStateInterface<Derived>::getJointLimits() const
+{
+    return std::make_pair(derived().impl->_state.qmin, derived().impl->_state.qmax);
+}
+
+template<class Derived>
+void ReadStateInterface<Derived>::getJointLimits(Eigen::VectorXd &qmin, Eigen::VectorXd &qmax) const
+{
+    std::tie(qmin, qmax) = getJointLimits();
+}
+
+template<class Derived>
+VecConstRef ReadStateInterface<Derived>::getVelocityLimits() const
+{
+    return derived().impl->_state.vmax;
+}
+
+template<class Derived>
+void ReadStateInterface<Derived>::getVelocityLimits(Eigen::VectorXd &vmax) const
+{
+    vmax = getVelocityLimits();
+}
+
+template<class Derived>
+VecConstRef ReadStateInterface<Derived>::getEffortLimits() const
+{
+    return derived().impl->_state.taumax;
+}
+
+template<class Derived>
+void ReadStateInterface<Derived>::getEffortLimits(Eigen::VectorXd &taumax) const
+{
+    taumax = getVelocityLimits();
+}
+
+template<class Derived>
+VecConstRef ReadStateInterface<Derived>::getNeutralQ() const
+{
+    return derived().impl->_state.qneutral;
+}
+
+template<class Derived>
 void WriteStateInterface<Derived>::setJointEffort(VecConstRef tau)
 {
     check_and_set(tau, derived().impl->_state.tau, __func__);
+}
+
+template<class Derived>
+void WriteStateInterface<Derived>::setJointLimits(VecConstRef qmin, VecConstRef qmax)
+{
+    check_and_set(qmin, derived().impl->_state.qmin, __func__);
+    check_and_set(qmax, derived().impl->_state.qmax, __func__);
+}
+
+template<class Derived>
+void WriteStateInterface<Derived>::setVelocityLimits(VecConstRef vmax)
+{
+    check_and_set(vmax, derived().impl->_state.vmax, __func__);
+}
+
+template<class Derived>
+void WriteStateInterface<Derived>::setEffortLimits(VecConstRef taumax)
+{
+    check_and_set(taumax, derived().impl->_state.taumax, __func__);
 }
 
 template<class Derived>
@@ -243,6 +304,16 @@ template struct ReadStateInterface<XBotInterface>;
 template struct WriteStateInterface<ModelInterface>;
 template struct ReadCmdInterface<RobotInterface>;
 template struct WriteCmdInterface<RobotInterface>;
+
+
+
+
+
+
+
+
+
+
 
 
 

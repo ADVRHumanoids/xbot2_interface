@@ -9,12 +9,12 @@ TEST_F(TestParametrization, checkSumDiff)
     Eigen::VectorXd vrand1 = Eigen::VectorXd::Random(model->getNv());
     Eigen::VectorXd vrand2 = Eigen::VectorXd::Random(model->getNv());
 
-    Eigen::VectorXd q1 = model->sum(q0, vrand1);
-    Eigen::VectorXd q2 = model->sum(q0, vrand2);
+    Eigen::VectorXd q1; model->sum(q0, vrand1, q1);
+    Eigen::VectorXd q2; model->sum(q0, vrand2, q2);
     Eigen::VectorXd vzero = Eigen::VectorXd::Zero(model->getNv());
 
-    Eigen::VectorXd qdiff1 = model->difference(q1, q1);
-    Eigen::VectorXd qdiff2 = model->difference(q2, q2);
+    Eigen::VectorXd qdiff1; model->difference(q1, q1, qdiff1);
+    Eigen::VectorXd qdiff2; model->difference(q2, q2, qdiff2);
 
     EXPECT_TRUE(qdiff1.norm() < 1e-12);
     EXPECT_TRUE(qdiff2.norm() < 1e-12);

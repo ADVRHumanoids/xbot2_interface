@@ -33,13 +33,19 @@ public:
 
     Eigen::Vector6d getJdotTimesV(int link_id) const override;
 
+    double getMass() const override;
+
+    Eigen::Vector3d getCOM() const override;
+
+    void getCOMJacobian(MatRef J) const override;
+
     VecConstRef computeInverseDynamics() const override;
 
     MatConstRef computeRegressor() const;
 
-    VecConstRef sum(VecConstRef q0, VecConstRef v) const override;
+    void sum(VecConstRef q0, VecConstRef v, Eigen::VectorXd& q1) const override;
 
-    VecConstRef difference(VecConstRef q1, VecConstRef q0) const override;
+    void difference(VecConstRef q1, VecConstRef q0, Eigen::VectorXd& v) const override;
 
 
 protected:
@@ -64,7 +70,8 @@ private:
         Kinematics = 1,
         KinematicsNoAcc = 2,
         Jacobians = 4,
-        Rnea = 8
+        Rnea = 8,
+        Com = 16
     };
 
     mutable uint16_t _cached_computation;
