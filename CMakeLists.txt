@@ -21,6 +21,8 @@ include(GNUInstallDirs)
 include_directories(include/
     ${srdfdom_INCLUDE_DIRS})
 
+add_definitions(-DBOOST_BIND_GLOBAL_PLACEHOLDERS)
+
 add_library(xbot2_interface SHARED
     src/state_interface.cpp
     src/xbotinterface2.cpp
