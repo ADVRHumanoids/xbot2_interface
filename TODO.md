@@ -23,11 +23,12 @@ This package replaces the good ole' XBotInterface
  - [x] getMass
  - [ ] getGravity
  - [ ] setGravity
- - [ ] getInertiaMatrix
- - [ ] getInertiaInverseTimesVector
- - [ ] getInertiaInverseTimesMatrix
- - [ ] getInertiaInverse
- - [ ] computeGravityCompensation
+ - [x] getInertiaMatrix
+ - [x] getInertiaInverseTimesVector
+ - [x] getInertiaInverseTimesMatrix
+ - [x] getInertiaInverse
+ - [x] computeGravityCompensation
  - [x] get/set joint limits
  - [x] eigen2map / map2eigen
+ - [ ] syncFrom / setReferenceFrom
  
