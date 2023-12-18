@@ -26,6 +26,10 @@ public:
                               std::string robot_type,
                               std::string model_type);
 
+    static UniquePtr getRobot(std::string urdf_string,
+                              std::string robot_type,
+                              std::string model_type);
+
     RobotJoint::Ptr getJoint(string_const_ref name);
 
     RobotJoint::Ptr getJoint(int i);
@@ -53,7 +57,7 @@ protected:
     // XBotInterface interface
 public:
 
-    void update() override;
+    void update_impl() override;
 
     int getLinkId(string_const_ref link_name) const override;
 
@@ -82,6 +86,14 @@ public:
     double getMass() const override;
 
     VecConstRef computeInverseDynamics() const override;
+
+    VecConstRef computeGravityCompensation() const override;
+
+    VecConstRef computeForwardDynamics() const override;
+
+    MatConstRef computeInertiaMatrix() const override;
+
+    MatConstRef computeInertiaInverse() const override;
 
 protected:
 

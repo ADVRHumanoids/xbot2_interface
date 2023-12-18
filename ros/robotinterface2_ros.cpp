@@ -138,10 +138,10 @@ bool RobotInterface2Ros::move_impl()
         cmd.name.push_back(j->getName());
         cmd.ctrl_mode.push_back(ctrl);
         cmd.position.push_back(j->getPositionReferenceMinimal().value());
-        cmd.velocity.push_back(0.0);
-        cmd.effort.push_back(0.0);
-        cmd.stiffness.push_back(j->getStiffnessCmd().value());
-        cmd.damping.push_back(0.0);
+        cmd.velocity.push_back(j->getVelocityReference().value());
+        cmd.effort.push_back(j->getEffortReference().value());
+        cmd.stiffness.push_back(j->getStiffnessDesired().value());
+        cmd.damping.push_back(j->getDampingDesired().value());
 
         pub_cmd = true;
 
@@ -202,6 +202,8 @@ void RobotInterface2Ros::on_js_recv(xbot_msgs::JointStateConstPtr msg)
         j->setJointEffort(from_value(msg->effort[i]));
 
         j->setStiffnessFeedback(from_value(msg->stiffness[i]));
+
+        j->setDampingFeedback(from_value(msg->damping[i]));
 
 
     }

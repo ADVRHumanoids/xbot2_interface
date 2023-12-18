@@ -20,6 +20,7 @@ bool RobotInterface::move()
     return move_impl();
 }
 
+
 RobotInterface::UniquePtr RobotInterface::getRobot(urdf::ModelConstSharedPtr urdf,
                                               srdf::ModelConstSharedPtr srdf,
                                               std::string robot_type,
@@ -38,6 +39,16 @@ RobotInterface::UniquePtr RobotInterface::getRobot(urdf::ModelConstSharedPtr urd
     return UniquePtr(rob);
 }
 
+RobotInterface::UniquePtr RobotInterface::getRobot(std::string urdf_string,
+                                                   std::string robot_type,
+                                                   std::string model_type)
+{
+    XBotInterface::ConfigOptions opt;
+    opt.set_urdf(urdf_string);
+
+    return getRobot(opt.urdf, opt.srdf, robot_type, model_type);
+}
+
 RobotJoint::Ptr RobotInterface::getJoint(string_const_ref name)
 {
     return getUniversalJoint(name);
@@ -54,14 +65,13 @@ RobotInterface::~RobotInterface()
 }
 
 RobotInterface::RobotInterface(std::unique_ptr<XBotInterface> model):
-    XBotInterface(model->impl)
+    XBotInterface(model->impl)  // trick: share state between internal model and robot
 {
     r_impl = std::make_unique<Impl>(*this, std::move(model));
-    finalize();
 }
 
 
-void XBot::RobotInterface::update()
+void XBot::RobotInterface::update_impl()
 {
     return r_impl->_model->update();
 }
@@ -139,4 +149,24 @@ double RobotInterface::getMass() const
 VecConstRef XBot::RobotInterface::computeInverseDynamics() const
 {
     return r_impl->_model->computeInverseDynamics();
+}
+
+VecConstRef RobotInterface::computeGravityCompensation() const
+{
+    return r_impl->_model->computeGravityCompensation();
+}
+
+VecConstRef RobotInterface::computeForwardDynamics() const
+{
+    return r_impl->_model->computeForwardDynamics();
+}
+
+MatConstRef RobotInterface::computeInertiaMatrix() const
+{
+    return r_impl->_model->computeInertiaMatrix();
+}
+
+MatConstRef RobotInterface::computeInertiaInverse() const
+{
+    return r_impl->_model->computeInertiaInverse();
 }

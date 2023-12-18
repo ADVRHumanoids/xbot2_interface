@@ -79,6 +79,8 @@ TEST_F(TestParser, checkJointSize)
 
         auto j = model->getJoint(jname);
 
+        EXPECT_EQ(jptr->type, j->getType());
+
         int jid = model->getJointId(jname);
 
         EXPECT_GE(jid, 0);
@@ -168,6 +170,116 @@ TEST_F(TestParser, checkJointsGetSet)
         EXPECT_THROW(j->setJointVelocity(xwrong), std::out_of_range);
         EXPECT_THROW(j->setJointAcceleration(xwrong), std::out_of_range);
         EXPECT_THROW(j->setJointEffort(xwrong), std::out_of_range);
+
+    }
+}
+
+
+TEST_F(TestParser, checkJointLimits)
+{
+    auto model = XBot::ModelInterface::getModel(urdf,
+                                                srdf,
+                                                model_type);
+
+    auto [qmin, qmax] = model->getJointLimits();
+    auto vmax = model->getVelocityLimits();
+    auto taumax = model->getEffortLimits();
+
+    for(auto [jname, jptr] : urdf->joints_)
+    {
+        if(jptr->type == urdf::Joint::FIXED)
+        {
+            EXPECT_FALSE(model->hasJoint(jname));
+            EXPECT_EQ(model->getJointId(jname), -1);
+            continue;
+        }
+
+        if(!jptr->limits)
+        {
+            continue;
+        }
+
+        auto xbj = model->getJoint(jname);
+
+        auto jinfo = xbj->getJointInfo();
+
+        if(jptr->type == urdf::Joint::REVOLUTE ||
+            jptr->type == urdf::Joint::PRISMATIC)
+        {
+            EXPECT_EQ(jptr->limits->lower, xbj->getJointLimits().first[0]);
+            EXPECT_EQ(jptr->limits->upper, xbj->getJointLimits().second[0]);
+            EXPECT_EQ(jptr->limits->velocity, xbj->getVelocityLimits()[0]);
+            EXPECT_EQ(jptr->limits->effort, xbj->getEffortLimits()[0]);
+
+            EXPECT_EQ(jptr->limits->lower, qmin[jinfo.iv]);
+            EXPECT_EQ(jptr->limits->upper, qmax[jinfo.iv]);
+            EXPECT_EQ(jptr->limits->velocity, vmax[jinfo.iv]);
+            EXPECT_EQ(jptr->limits->effort, taumax[jinfo.iv]);
+        }
+
+        if(jptr->type == urdf::Joint::CONTINUOUS)
+        {
+            EXPECT_EQ(-M_PI, xbj->getJointLimits().first[0]);
+            EXPECT_EQ(M_PI, xbj->getJointLimits().second[0]);
+            EXPECT_EQ(jptr->limits->velocity, xbj->getVelocityLimits()[0]);
+            EXPECT_EQ(jptr->limits->effort, xbj->getEffortLimits()[0]);
+
+            EXPECT_EQ(-M_PI, qmin[jinfo.iv]);
+            EXPECT_EQ(M_PI, qmax[jinfo.iv]);
+            EXPECT_EQ(jptr->limits->velocity, vmax[jinfo.iv]);
+            EXPECT_EQ(jptr->limits->effort, taumax[jinfo.iv]);
+        }
+
+        if(jptr->type == urdf::Joint::FLOATING)
+        {
+            EXPECT_TRUE((xbj->getJointLimits().first.head<3>().array() < 1e6).all());
+            EXPECT_TRUE((xbj->getJointLimits().second.head<3>().array() > 1e6).all());
+            EXPECT_TRUE((xbj->getJointLimits().first.tail<3>().array() == -M_PI).all());
+            EXPECT_TRUE((xbj->getJointLimits().second.tail<3>().array() == M_PI).all());
+        }
+
+    }
+}
+
+TEST_F(TestParser, checkJointLimits2)
+{
+
+    auto model = XBot::ModelInterface::getModel(urdf,
+                                                srdf,
+                                                model_type);
+
+    auto [qmin, qmax] = model->getJointLimits();
+    auto vmax = model->getVelocityLimits();
+    auto taumax = model->getEffortLimits();
+
+    for(int i = 0; i < 100000; i++)
+    {
+        auto q = model->generateRandomQ();
+        bool ok = model->checkJointLimits(q);
+        EXPECT_TRUE(ok);
+
+        if(!ok)
+        {
+            auto dq = model->difference(q, model->getNeutralQ());
+
+            std::cout << "q   : " << q.transpose().format(2) << "\n";
+            std::cout << "qmin: " << qmin.transpose().format(2) << "\n";
+            std::cout << "dq  : " << dq.transpose().format(2) << "\n";
+            std::cout << "qmax: " << qmax.transpose().format(2) << "\n";
+            std::cout << "qerr: " << (dq-qmin).cwiseMin(0).transpose().format(2) << "\n";
+            std::cout << "qerr: " << (dq-qmax).cwiseMax(0).transpose().format(2) << "\n";
+        }
+    }
+
+
+    for(int i = 0; i < 10000; i++)
+    {
+        auto q = model->generateRandomQ();
+        model->setJointPosition(q);
+
+        int ji = rand() % model->getJointNum();
+
+        auto j = model->getJoint(ji);
 
     }
 }

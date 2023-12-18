@@ -36,13 +36,17 @@ public:
     explicit XBotInterface(const ConfigOptions& opt);
 
     XBotInterface(urdf::ModelConstSharedPtr urdf,
-                   srdf::ModelConstSharedPtr srdf = nullptr);
+                  srdf::ModelConstSharedPtr srdf = nullptr);
 
     XBotInterface(XBotInterface&&) = default;
+
+    const std::string& getName() const;
 
     urdf::ModelConstSharedPtr getUrdf() const;
 
     srdf::ModelConstSharedPtr getSrdf() const;
+
+    ConfigOptions getConfigOptions() const;
 
     bool hasRobotState(string_const_ref name) const;
 
@@ -58,9 +62,9 @@ public:
 
     Joint::ConstPtr getJoint(int id) const;
 
-    JointInfo getJointInfo(string_const_ref joint_name) const;
+    const JointInfo& getJointInfo(string_const_ref joint_name) const;
 
-    JointInfo getJointInfo(int id) const;
+    const JointInfo& getJointInfo(int id) const;
 
     int getJointId(string_const_ref joint_name) const;
 
@@ -68,7 +72,7 @@ public:
 
     const std::vector<std::string>& getJointNames() const;
 
-    virtual void update() = 0;
+    void update();
 
     virtual int getLinkId(string_const_ref link_name) const = 0;
 
@@ -85,6 +89,12 @@ public:
     /* Joint limits */
 
     bool checkJointLimits(VecConstRef q) const;
+
+    VecRef enforceJointLimits(Eigen::VectorXd& q, double tol = 0.0) const;
+
+    void generateRandomQ(Eigen::VectorXd& qrand) const;
+
+    Eigen::VectorXd generateRandomQ() const;
 
 
     /* Attached sensors */
@@ -186,6 +196,8 @@ public:
 
     bool getCOMJacobian(Eigen::MatrixXd& J) const;
 
+    Eigen::MatrixXd getCOMJacobian() const;
+
 
     //
     Eigen::Vector6d getRelativeJdotTimesV(int distal_id, int base_id) const;
@@ -198,6 +210,18 @@ public:
     virtual double getMass() const = 0;
 
     virtual VecConstRef computeInverseDynamics() const = 0;
+
+    virtual VecConstRef computeGravityCompensation() const = 0;
+
+    void computeInverseDynamics(Eigen::VectorXd& rnea) const;
+
+    void computeGravityCompensation(Eigen::VectorXd& gcomp) const;
+
+    virtual VecConstRef computeForwardDynamics() const = 0;
+
+    virtual MatConstRef computeInertiaMatrix() const = 0;
+
+    virtual MatConstRef computeInertiaInverse() const;
 
     // manifold operations
     virtual void sum(VecConstRef q0, VecConstRef v, Eigen::VectorXd& q1) const = 0;
@@ -218,6 +242,8 @@ public:
     friend RobotInterface;
 
 protected:
+
+    virtual void update_impl() = 0;
 
     void finalize();
 
@@ -285,13 +311,25 @@ public:
 
     void syncFrom(const XBotInterface& other);
 
+    std::string getType() const;
+
+    virtual UniquePtr clone() = 0;
+
+    UniquePtr generateReducedModel(VecConstRef q, std::vector<std::string> joints_to_fix) const;
+
     ModelJoint::Ptr getJoint(string_const_ref name);
 
     ModelJoint::Ptr getJoint(int i);
 
+    ModelJoint::ConstPtr getJoint(string_const_ref name) const;
+
+    ModelJoint::ConstPtr getJoint(int i) const;
+
     /* Floating base */
 
     bool setFloatingBaseState(const Eigen::Affine3d& w_T_b, const Eigen::Vector6d& v);
+
+    bool setFloatingBaseState(const ImuSensor& imu);
 
     bool setFloatingBasePose(const Eigen::Affine3d& w_T_b);
 

@@ -49,6 +49,9 @@ private:
 
     void parse_imu();
 
+    // type
+    std::string _type;
+
     // api
     XBotInterface& _api;
 
@@ -93,7 +96,14 @@ private:
         Eigen::MatrixXd J, Jarg;
         Eigen::VectorXd v;
 
+
+        // inertia matrix ldlt
+        bool ldlt_dirty = true;
+        Eigen::LDLT<Eigen::MatrixXd> ldlt;
+        Eigen::MatrixXd M;
+
         void setZero(int nq, int nv);
+        void setDirty();
     };
 
     Temporaries _tmp;

@@ -551,6 +551,185 @@ TEST_F(TestKinematics, checkRelativeAcceleration)
     std::cout << "getRelativeAccelerationTwist requires " << dt/count*1e6 << " us \n";
 }
 
+TEST_F(TestKinematics, checkSignatures)
+{
+    auto urdf = model->getUrdf();
+
+    model->setJointPosition(model->generateRandomQ());
+    model->update();
+
+    for(auto [lname, lptr] : urdf->links_)
+    {
+        int lid = model->getLinkId(lname);
+        ASSERT_GE(lid, 0);
+
+        // return by reference by id
+        Eigen::MatrixXd J;
+        J.setZero(6, model->getNv());
+        model->getJacobian(lid, J);
+
+        // by value with link name
+        auto Jret = model->getJacobian(lname);
+
+        EXPECT_TRUE((J.cwiseEqual(Jret)).all());
+
+        // with link name
+        J.setZero(6, model->getNv());
+        model->getJacobian(lname, J);
+
+        EXPECT_TRUE((J.cwiseEqual(Jret)).all());
+
+        // fill buffer
+        Eigen::MatrixXd JJ;
+        JJ.setZero(10, model->getNv());
+        model->getJacobian(lname, JJ.topRows<6>());
+
+        EXPECT_TRUE((JJ.topRows<6>().cwiseEqual(Jret)).all());
+
+        for(auto [lname1, lptr1] : urdf->links_)
+        {
+            int lid1 = model->getLinkId(lname1);
+            ASSERT_GE(lid1, 0);
+
+            // return by reference by id
+            Eigen::MatrixXd J;
+            J.setZero(6, model->getNv());
+            model->getRelativeJacobian(lid, lid1, J);
+
+            // by value with link name
+            auto Jret = model->getRelativeJacobian(lname, lname1);
+
+            EXPECT_TRUE((J.cwiseEqual(Jret)).all());
+
+            // with link name
+            J.setZero(6, model->getNv());
+            model->getRelativeJacobian(lname, lname1, J);
+
+            EXPECT_TRUE((J.cwiseEqual(Jret)).all());
+
+            // fill buffer
+            Eigen::MatrixXd JJ;
+            JJ.setZero(10, model->getNv());
+            model->getRelativeJacobian(lname, lname1, JJ.topRows<6>());
+
+            EXPECT_TRUE((JJ.topRows<6>().cwiseEqual(Jret)).all());
+        }
+    }
+}
+
+TEST_F(TestKinematics, checkGcomp)
+{
+    double dt_gcomp = 0;
+    double dt_rnea = 0;
+    int count = 0;
+
+    for(int i = 0; i < 1000; i++)
+    {
+        model->setJointPosition(model->generateRandomQ());
+        model->update();
+
+        TIC(gc);
+        auto gcomp = model->computeGravityCompensation();
+        dt_gcomp += TOC(gc);
+
+        auto Jcom = model->getCOMJacobian();
+        Eigen::Vector3d mg(0, 0, 9.81*model->getMass());
+
+        Eigen::VectorXd err = (gcomp - Jcom.transpose()*mg);
+
+        EXPECT_LT(err.lpNorm<Eigen::Infinity>(), 1e-3) <<
+            "err = " << err.transpose().format(2) << "\n";
+
+        TIC(id);
+        auto rnea = model->computeInverseDynamics();
+        dt_rnea += TOC(id);
+
+        err = (gcomp - rnea);
+
+        EXPECT_LT(err.lpNorm<Eigen::Infinity>(), 1e-6) <<
+            "err = " << err.transpose().format(2) << "\n";
+
+        count++;
+    }
+
+    std::cout << "computeGravityCompensation requires " << dt_gcomp/count*1e6 << " us \n";
+    std::cout << "computeInverseDynamics requires " << dt_rnea/count*1e6 << " us \n";
+
+}
+
+TEST_F(TestKinematics, checkRneaVsCrba)
+{
+    int count = 0;
+    double dt = 0;
+
+    for(int i = 0; i < 1000; i++)
+    {
+        model->setJointPosition(model->generateRandomQ());
+        Eigen::VectorXd a;
+        a.setRandom(model->getNv());
+        model->setJointAcceleration(a);
+        model->update();
+
+        TIC();
+        Eigen::MatrixXd M = model->computeInertiaMatrix();
+        dt += TOC();
+
+        Eigen::VectorXd gcomp = model->computeGravityCompensation();
+        Eigen::VectorXd rnea = model->computeInverseDynamics();
+
+        Eigen::VectorXd err = M*a + gcomp - rnea;
+
+        EXPECT_LT(err.lpNorm<Eigen::Infinity>(), 1e-6) <<
+            "err = " << err.transpose().format(2) << "\n"
+            << "M*a + g = " << (M*a + gcomp).transpose().format(2) << "\n"
+            << "rnea    = " << (rnea).transpose().format(2) << "\n";
+    }
+
+    std::cout << "computeInertiaMatrix requires " << dt/count*1e6 << " us \n";
+
+}
+
+
+TEST_F(TestKinematics, checkInertiaInverse)
+{
+    int count = 0;
+    double dt_fd = 0;
+    double dt_minv = 0;
+
+    for(int i = 0; i < 1000; i++)
+    {
+        model->setJointPosition(model->generateRandomQ());
+        Eigen::VectorXd tau;
+        tau.setRandom(model->getNv());
+        model->setJointEffort(tau);
+        model->update();
+
+        Eigen::MatrixXd eye, Minv;
+        eye.setIdentity(model->getNv(), model->getNv());
+        Minv.resizeLike(eye);
+
+        TIC();
+        Minv = model->computeInertiaInverse();
+        dt_minv += TOC();
+        count++;
+
+        Eigen::VectorXd fd;
+        TIC(fd);
+        fd = model->computeForwardDynamics();
+        dt_fd += TOC(fd);
+        Eigen::VectorXd gcomp = model->computeGravityCompensation();
+
+        Eigen::VectorXd err = Minv*(tau - gcomp) - fd;
+
+        EXPECT_LT(err.lpNorm<Eigen::Infinity>(), 1e-2) <<
+            "err = " << err.transpose().format(2);
+    }
+
+    std::cout << "computeInertiaInverseTimesMatrix requires " << dt_minv/count*1e6 << " us \n";
+    std::cout << "computeForwardDynamics requires " << dt_fd/count*1e6 << " us \n";
+
+}
+
 
 int main(int argc, char ** argv)
 {

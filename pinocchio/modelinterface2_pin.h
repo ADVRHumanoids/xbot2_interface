@@ -8,8 +8,6 @@
 
 #include <xbot2_interface/xbotinterface2.h>
 
-
-
 namespace XBot {
 
 class ModelInterface2Pin : public ModelInterface
@@ -19,7 +17,9 @@ public:
 
     ModelInterface2Pin(const ConfigOptions& opt);
 
-    virtual void update() override;
+    UniquePtr clone() override;
+
+    void update_impl() override;
 
     int getLinkId(string_const_ref link_name) const override;
 
@@ -41,6 +41,14 @@ public:
 
     VecConstRef computeInverseDynamics() const override;
 
+    VecConstRef computeGravityCompensation() const override;
+
+    VecConstRef computeForwardDynamics() const override;
+
+    MatConstRef computeInertiaMatrix() const override;
+
+    MatConstRef computeInertiaInverse() const override;
+
     MatConstRef computeRegressor() const;
 
     void sum(VecConstRef q0, VecConstRef v, Eigen::VectorXd& q1) const override;
@@ -57,6 +65,7 @@ private:
     pinocchio::Index get_frame_id(string_const_ref name) const;
 
     pinocchio::Model _mdl;
+    pinocchio::Model _mdl_zerograv;
     mutable pinocchio::Data _data;
     mutable pinocchio::Data _data_no_acc;
 
@@ -71,7 +80,8 @@ private:
         KinematicsNoAcc = 2,
         Jacobians = 4,
         Rnea = 8,
-        Com = 16
+        Gcomp = 16,
+        Com = 32
     };
 
     mutable uint16_t _cached_computation;
@@ -82,9 +92,12 @@ private:
         Eigen::VectorXd qsum;
         Eigen::VectorXd qdiff;
         Eigen::VectorXd rnea;
+        Eigen::VectorXd gcomp;
 
         void resize(int nq, int nv);
     };
+
+    Eigen::MatrixXd _eye;
 
     mutable Temporaries _tmp;
     Eigen::VectorXd _qneutral;

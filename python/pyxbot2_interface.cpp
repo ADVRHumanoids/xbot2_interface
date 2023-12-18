@@ -10,10 +10,9 @@ namespace py = pybind11;
 
 PYBIND11_MODULE(pyxbot2_interface, m) {
 
-
     py::class_<XBotInterface>(m, "XBotInterface")
-        // .def("getUrdfString", &XBotInterface::getUrdfString)
-        // .def("getSrdfString", &XBotInterface::getSrdfString)
+        .def("getName",
+             &XBotInterface::getName)
         .def("getJointNum",
              &XBotInterface::getJointNum)
         .def("getNq",
@@ -48,22 +47,14 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
              py::overload_cast<>(&XBotInterface::getMass, py::const_))
         .def("getNeutralQ",
              py::overload_cast<>(&XBotInterface::getNeutralQ, py::const_))
+        .def("generateRandomQ",
+             py::overload_cast<>(&XBotInterface::generateRandomQ, py::const_))
+        .def("checkJointLimits",
+             py::overload_cast<VecConstRef>(&XBotInterface::checkJointLimits, py::const_))
         .def("sum",
              py::overload_cast<VecConstRef, VecConstRef>(&XBotInterface::sum, py::const_))
         .def("difference",
              py::overload_cast<VecConstRef, VecConstRef>(&XBotInterface::difference, py::const_))
-        // .def("getJointPositionMap", [])
-        // .def("getJointEffortMap", getjointtor_map)
-        // .def("getJointVelocity", getjointvel)
-        // .def("getJointByName", &XBotInterface::getJointByName, py::return_value_policy::reference)
-        // .def("getJointByDofIndex", &XBotInterface::getJointByDofIndex, py::return_value_policy::reference)
-        // .def("getJointByID", &XBotInterface::getJointByID, py::return_value_policy::reference)
-        // .def("getEnabledJointNames", &XBotInterface::getEnabledJointNames)
-        // .def("getEnabledJointId", &XBotInterface::getEnabledJointId)
-        // .def("getDofIndex", (int (XBotInterface::*)(const std::string&) const) &XBotInterface::getDofIndex)
-        // .def("getDofIndex", (int (XBotInterface::*)(int) const) &XBotInterface::getDofIndex)
-        // .def("eigenToMap", eigen2map)
-        // .def("mapToEigen", map2eigen)
         .def("getForceTorque",
              py::overload_cast<>(&XBotInterface::getForceTorque, py::const_),
              py::return_value_policy::reference)
@@ -80,6 +71,8 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
              py::overload_cast<string_const_ref>(&XBotInterface::getJdotTimesV, py::const_))
         .def("getCOM",
              py::overload_cast<>(&XBotInterface::getCOM, py::const_))
+        .def("getCOMJacobian",
+             py::overload_cast<>(&XBotInterface::getCOMJacobian, py::const_))
         .def("getRelativeVelocityTwist",
              py::overload_cast<string_const_ref, string_const_ref>(&XBotInterface::getRelativeVelocityTwist, py::const_))
         .def("getRelativeAccelerationTwist",
@@ -92,22 +85,84 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
              py::overload_cast<string_const_ref, string_const_ref>(&XBotInterface::getRelativeJacobian, py::const_))
         .def("computeInverseDynamics",
              py::overload_cast<>(&XBotInterface::computeInverseDynamics, py::const_))
+        .def("computeForwardDynamics",
+             py::overload_cast<>(&XBotInterface::computeForwardDynamics, py::const_))
+        .def("computeInertiaMatrix",
+             py::overload_cast<>(&XBotInterface::computeInertiaMatrix, py::const_))
+        .def("computeInertiaInverse",
+             py::overload_cast<>(&XBotInterface::computeInertiaInverse, py::const_))
         ;
 
     py::class_<ModelInterface, XBotInterface>(m, "ModelInterface")
         .def(py::init(py::overload_cast<std::string, std::string>(&ModelInterface::getModel)),
              py::arg("urdf_string"), py::arg("model_type") = "pin")
-        .def("update", &ModelInterface::update)
-        .def("setJointPosition", &ModelInterface::setJointPosition)
-        .def("setJointVelocity", &ModelInterface::setJointVelocity)
-        .def("setJointAcceleration", &ModelInterface::setJointAcceleration)
-        .def("setJointEffort", &ModelInterface::setJointEffort)
-        .def("setJointLimits", &ModelInterface::setJointLimits)
-        .def("setVelocityLimits", &ModelInterface::setVelocityLimits)
-        .def("setEffortLimits", &ModelInterface::setEffortLimits)
-        .def("setFloatingBasePose", &ModelInterface::setFloatingBasePose)
-        .def("setFloatingBaseState", &ModelInterface::setFloatingBaseState)
-        .def("setFloatingBaseTwist", &ModelInterface::setFloatingBaseTwist)
+        .def("getType",
+             &ModelInterface::getType)
+        .def("update",
+             &ModelInterface::update)
+        .def("generateReducedModel",
+             &ModelInterface::generateReducedModel)
+        .def("setJointPosition",
+             &ModelInterface::setJointPosition)
+        .def("setJointVelocity",
+             &ModelInterface::setJointVelocity)
+        .def("setJointAcceleration",
+             &ModelInterface::setJointAcceleration)
+        .def("setJointEffort",
+             &ModelInterface::setJointEffort)
+        .def("setJointLimits",
+             &ModelInterface::setJointLimits)
+        .def("setVelocityLimits",
+             &ModelInterface::setVelocityLimits)
+        .def("setEffortLimits",
+             &ModelInterface::setEffortLimits)
+        .def("setFloatingBasePose",
+             &ModelInterface::setFloatingBasePose)
+        // .def("setFloatingBaseState", &ModelInterface::setFloatingBaseState)
+        .def("setFloatingBaseTwist",
+             &ModelInterface::setFloatingBaseTwist)
+        ;
+
+    py::class_<RobotInterface, XBotInterface>(m, "RobotInterface")
+        .def(py::init(py::overload_cast<std::string, std::string, std::string>(
+                 &RobotInterface::getRobot)),
+             py::arg("urdf_string"), py::arg("robot_type"), py::arg("model_type") = "pin")
+        .def("update",
+             &RobotInterface::update)
+        .def("sense",
+             &RobotInterface::sense)
+        .def("move",
+             &RobotInterface::move)
+        .def("getMotorPosition",
+             py::overload_cast<>(&RobotInterface::getMotorPosition, py::const_))
+        .def("getMotorVelocity",
+             py::overload_cast<>(&RobotInterface::getMotorVelocity, py::const_))
+        .def("getPositionReference",
+             py::overload_cast<>(&RobotInterface::getPositionReference, py::const_))
+        .def("getVelocityReference",
+             py::overload_cast<>(&RobotInterface::getVelocityReference, py::const_))
+        .def("getEffortReference",
+             py::overload_cast<>(&RobotInterface::getEffortReference, py::const_))
+        .def("getStiffness",
+             py::overload_cast<>(&RobotInterface::getStiffness, py::const_))
+        .def("getDamping",
+             py::overload_cast<>(&RobotInterface::getDamping, py::const_))
+        .def("setPositionReference",
+             &RobotInterface::setPositionReference)
+        .def("setVelocityReference",
+             &RobotInterface::setVelocityReference)
+        .def("setEffortReference",
+             &RobotInterface::setEffortReference)
+        .def("setStiffness",
+             &RobotInterface::setStiffness)
+        .def("setDamping",
+             &RobotInterface::setDamping)
+        .def("getControlMode",
+             &RobotInterface::getControlMode)
+        .def("setControlMode",
+             &RobotInterface::setControlMode)
+        .def("getValidCommandMask",
+             &RobotInterface::getValidCommandMask)
         ;
 
     py::class_<JointInfo>(m, "JointInfo")

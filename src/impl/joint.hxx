@@ -19,7 +19,8 @@ public:
 
     Impl(detail::StateView sv,
          detail::CommandView cv,
-         urdf::JointConstSharedPtr urdf_joint);
+         urdf::JointConstSharedPtr urdf_joint,
+         JointInfo jinfo);
 
     std::function<void(VecConstRef, VecRef)> fn_minimal_to_q;
 
@@ -56,6 +57,8 @@ private:
     Joint * api;
 
     urdf::JointConstSharedPtr _urdf_joint;
+
+    JointInfo _jinfo;
 
     detail::StateView _state;
 

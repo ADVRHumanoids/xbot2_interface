@@ -33,6 +33,36 @@ TEST_F(TestParametrization, checkSumDiff)
 }
 
 
+TEST_F(TestParametrization, checkJointFk)
+{
+    for(int iter = 0; iter < 1000; iter++)
+    {
+        auto q = model->generateRandomQ();
+        auto v = model->getJointVelocity();
+        model->setJointPosition(q);
+        model->update();
+
+        for(int id = 0; id < model->getJointNum(); id++)
+        {
+            auto j = model->getJoint(id);
+            auto jinfo = j->getJointInfo();
+
+            Eigen::Affine3d Tc;
+            Eigen::Vector6d vc;
+
+            j->forwardKinematics(q.segment(jinfo.iq, jinfo.nq),
+                                 v.segment(jinfo.iv, jinfo.nv),
+                                 Tc, vc);
+
+            Eigen::Affine3d Tok = model->getPose(j->getChildLink(), j->getParentLink());
+
+            EXPECT_TRUE(Tok.isApprox(Tc, 0.001)) <<
+                j->getName() << "\nTc = " << Tc.matrix().format(2) << "\nTok = " << Tok.matrix().format(2) << std::endl;
+        }
+    }
+}
+
+
 TEST_F(TestParametrization, checkJointFkIk)
 {
     for(int iter = 0; iter < 1000; iter++)
@@ -95,6 +125,63 @@ TEST_F(TestParametrization, checkJointMinimalParam)
             EXPECT_THROW(j->positionToMinimal(qwrong, qmin), std::out_of_range);
             EXPECT_THROW(j->minimalToPosition(qwrong, qj), std::out_of_range);
         }
+    }
+}
+
+TEST_F(TestParametrization, checkReducedModel)
+{
+    auto qfix = model->generateRandomQ();
+
+    std::vector<std::string> j_to_fix = {"j_arm1_4", "hip_pitch_3", "j_wheel_2"};
+
+    auto redmodel = model->generateReducedModel(
+        qfix, j_to_fix);
+
+    EXPECT_EQ(model->getJointNum(), redmodel->getJointNum() + j_to_fix.size());
+
+    for(auto j : j_to_fix)
+    {
+        EXPECT_TRUE(model->hasJoint(j));
+        EXPECT_FALSE(redmodel->hasJoint(j));
+        EXPECT_FALSE(bool(redmodel->getJoint(j)));
+    }
+
+    EXPECT_EQ(model->getMass(), redmodel->getMass());
+
+    auto redq = redmodel->generateRandomQ();
+    Eigen::VectorXd redv = Eigen::VectorXd::Random(redmodel->getNv());
+    redmodel->setJointPosition(redq);
+    redmodel->setJointVelocity(redv);
+    redmodel->update();
+
+    for(auto jname : model->getJointNames())
+    {
+        if(!redmodel->hasJoint(jname))
+        {
+            int iq = model->getJointInfo(jname).iq;
+            int nq = model->getJointInfo(jname).nq;
+            model->getJoint(jname)->setJointPosition(qfix.segment(iq, nq));
+            continue;
+        }
+
+        model->getJoint(jname)->setJointPosition(
+            redmodel->getJoint(jname)->getJointPosition()
+            );
+
+        model->getJoint(jname)->setJointVelocity(
+            redmodel->getJoint(jname)->getJointVelocity()
+            );
+    }
+
+    model->update();
+
+    for(auto [lname, lptr] : model->getUrdf()->links_)
+    {
+        auto T1 = model->getPose(lname);
+        auto T2 = redmodel->getPose(lname);
+        EXPECT_TRUE(T1.isApprox(T2)) <<
+            lname << "\nTc = " << T1.matrix().format(2) << "\nTok = " << T2.matrix().format(2) << std::endl;
+
     }
 }
 

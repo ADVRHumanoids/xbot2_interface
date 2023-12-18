@@ -6,7 +6,6 @@
 #include <pinocchio/algorithm/center-of-mass.hpp>
 #include <pinocchio/algorithm/frames.hpp>
 #include <pinocchio/algorithm/jacobian.hpp>
-#include <pinocchio/algorithm/rnea.hpp>
 #include <pinocchio/algorithm/joint-configuration.hpp>
 #include <pinocchio/algorithm/regressor.hpp>
 
@@ -21,9 +20,14 @@ ModelInterface2Pin::ModelInterface2Pin(const ConfigOptions& opt):
     _data = pinocchio::Data(_mdl);
     _data_no_acc = pinocchio::Data(_mdl);
 
+    _mdl_zerograv = _mdl;
+    _mdl_zerograv.gravity = decltype(_mdl)::Motion::Zero();
+
     _qneutral = pinocchio::neutral(_mdl);
 
     _tmp.resize(_mdl.nq, _mdl.nv);
+
+    _eye.setIdentity(_mdl.nv, _mdl.nv);
 
     _vzero.setZero(_mdl.nv);
 
@@ -35,7 +39,12 @@ ModelInterface2Pin::ModelInterface2Pin(const ConfigOptions& opt):
     finalize();
 }
 
-void ModelInterface2Pin::update()
+ModelInterface::UniquePtr ModelInterface2Pin::clone()
+{
+    return std::make_unique<ModelInterface2Pin>(getConfigOptions());
+}
+
+void ModelInterface2Pin::update_impl()
 {
     pinocchio::forwardKinematics(_mdl, _data,
                                  getJointPosition(),
@@ -45,6 +54,8 @@ void ModelInterface2Pin::update()
     pinocchio::updateFramePlacements(_mdl, _data);
 
     _cached_computation = Kinematics;
+
+
 }
 
 int XBot::ModelInterface2Pin::getLinkId(string_const_ref link_name) const
@@ -80,22 +91,6 @@ void ModelInterface2Pin::getJacobian(int link_id, MatRef J) const
     pinocchio::getFrameJacobian(_mdl, _data, link_id, _world_aligned, J);
 }
 
-VecConstRef ModelInterface2Pin::computeInverseDynamics() const
-{
-    if(!(_cached_computation & Rnea))
-    {
-
-        _tmp.rnea = pinocchio::rnea(_mdl, _data,
-                                    getJointPosition(),
-                                    getJointVelocity(),
-                                    getJointAcceleration());
-
-        _cached_computation |= Rnea;
-
-    }
-
-    return _tmp.rnea;
-}
 
 MatConstRef ModelInterface2Pin::computeRegressor() const
 {
@@ -104,6 +99,7 @@ MatConstRef ModelInterface2Pin::computeRegressor() const
 
 void ModelInterface2Pin::sum(VecConstRef q0, VecConstRef v, Eigen::VectorXd& q1) const
 {
+    q1.resize(getNq());
     pinocchio::integrate(_mdl, q0, v, q1);
 }
 
@@ -112,13 +108,14 @@ void ModelInterface2Pin::difference(VecConstRef q1, VecConstRef q0, Eigen::Vecto
     v = pinocchio::difference(_mdl, q0, q1);
 }
 
-XBotInterface::JointParametrization ModelInterface2Pin::get_joint_parametrization(string_const_ref jname)
+XBotInterface::JointParametrization
+ModelInterface2Pin::get_joint_parametrization(string_const_ref jname)
 {
     JointParametrization ret;
 
     if(!_mdl.existJointName(std::string(jname)))
     {
-        return ret;
+        throw std::out_of_range("joint '" + jname + "' not found in pinocchio model");
     }
 
     // get id of this joint inside pin model

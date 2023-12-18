@@ -4,6 +4,20 @@
 #include "impl/robotinterface2.hxx"
 #include "impl/utils.h"
 
+#define GENERATE_GETTER_IMPL(IfcName, Name, Var) \
+template <class Derived> \
+VecConstRef IfcName<Derived>::get##Name() const \
+{ \
+    return derived().impl->_state.Var; \
+}
+
+#define GENERATE_SETTER_IMPL(IfcName, Name, Var) \
+template<class Derived> \
+void IfcName<Derived>::set##Name(VecConstRef q) \
+{ \
+    check_and_set(q, derived().impl->_state.Var, __func__); \
+}
+
 using namespace XBot;
 
 template <typename T1, typename T2, typename T3>
@@ -27,17 +41,15 @@ int ReadStateInterface<Derived>::getNv() const
     return derived().impl->_state.vlink.size();
 }
 
-template <class Derived>
-VecConstRef ReadStateInterface<Derived>::getJointPosition() const
-{
-    return derived().impl->_state.qlink;
-}
+// template <class Derived>
+// VecConstRef ReadStateInterface<Derived>::getJointPosition() const
+// {
+//     return derived().impl->_state.qlink;
+// }
 
-template<class Derived>
-void WriteStateInterface<Derived>::setJointPosition(VecConstRef q)
-{
-    check_and_set(q, derived().impl->_state.qlink, __func__);
-}
+GENERATE_GETTER_IMPL(ReadStateInterface, JointPosition, qlink)
+
+GENERATE_SETTER_IMPL(WriteStateInterface, JointPosition, qlink)
 
 template <class Derived>
 VecConstRef ReadStateInterface<Derived>::getJointVelocity() const
@@ -96,7 +108,8 @@ void ReadStateInterface<Derived>::getJointEffort(Eigen::VectorXd &tau) const
 template<class Derived>
 std::pair<VecConstRef, VecConstRef> ReadStateInterface<Derived>::getJointLimits() const
 {
-    return std::make_pair(derived().impl->_state.qmin, derived().impl->_state.qmax);
+    return std::make_pair<VecConstRef, VecConstRef>(derived().impl->_state.qmin,
+                                                    derived().impl->_state.qmax);
 }
 
 template<class Derived>
@@ -169,6 +182,11 @@ void ReadCmdInterface<Derived>::setPositionReference(VecConstRef q)
                  derived().impl->_cmd.ctrlset);
 }
 
+GENERATE_GETTER_IMPL(ReadCmdInterface, MotorPosition, qmot)
+
+GENERATE_GETTER_IMPL(ReadCmdInterface, MotorVelocity, vmot)
+
+
 template<class Derived>
 VecConstRef ReadCmdInterface<Derived>::getVelocityReference() const
 {
@@ -191,9 +209,67 @@ void ReadCmdInterface<Derived>::setVelocityReference(VecConstRef q)
 }
 
 template<class Derived>
-VecConstRef ReadCmdInterface<Derived>::getStiffnessCmd() const
+VecConstRef ReadCmdInterface<Derived>::getEffortReference() const
+{
+    return derived().impl->_cmd.taucmd;
+}
+
+template<class Derived>
+VecConstRef ReadCmdInterface<Derived>::getEffortReferenceFeedback() const
+{
+    return derived().impl->_state.tauref;
+}
+
+template<class Derived>
+void ReadCmdInterface<Derived>::setEffortReference(VecConstRef q)
+{
+    check_and_set(q, derived().impl->_cmd.taucmd, __func__);
+    set_ctrlmask(derived().impl->_cmd.ctrlmode,
+                 ControlMode::Effort,
+                 derived().impl->_cmd.ctrlset);
+}
+
+
+template<class Derived>
+VecConstRef ReadCmdInterface<Derived>::getStiffnessDesired() const
 {
     return derived().impl->_cmd.kcmd;
+}
+
+template<class Derived>
+VecConstRef ReadCmdInterface<Derived>::getStiffness() const
+{
+    return derived().impl->_state.k;
+}
+
+template<class Derived>
+void ReadCmdInterface<Derived>::setStiffness(VecConstRef q)
+{
+    check_and_set(q, derived().impl->_cmd.kcmd, __func__);
+    set_ctrlmask(derived().impl->_cmd.ctrlmode,
+                 ControlMode::Stiffness,
+                 derived().impl->_cmd.ctrlset);
+}
+
+template<class Derived>
+VecConstRef ReadCmdInterface<Derived>::getDampingDesired() const
+{
+    return derived().impl->_cmd.dcmd;
+}
+
+template<class Derived>
+VecConstRef ReadCmdInterface<Derived>::getDamping() const
+{
+    return derived().impl->_state.d;
+}
+
+template<class Derived>
+void ReadCmdInterface<Derived>::setDamping(VecConstRef q)
+{
+    check_and_set(q, derived().impl->_cmd.dcmd, __func__);
+    set_ctrlmask(derived().impl->_cmd.ctrlmode,
+                 ControlMode::Damping,
+                 derived().impl->_cmd.ctrlset);
 }
 
 template<class Derived>
@@ -280,6 +356,16 @@ const Derived& WriteCmdInterface<Derived>::derived() const
     return static_cast<const Derived&>(*this);
 }
 
+GENERATE_SETTER_IMPL(WriteCmdInterface, MotorPosition, qmot);
+
+GENERATE_SETTER_IMPL(WriteCmdInterface, MotorVelocity, vmot);
+
+template<class Derived>
+void WriteCmdInterface<Derived>::setPositionReferenceFeedback(VecConstRef q)
+{
+    check_and_set(q, derived().impl->_state.qref, __func__);
+}
+
 
 template<class Derived>
 void WriteCmdInterface<Derived>::setVelocityReferenceFeedback(VecConstRef q)
@@ -288,9 +374,21 @@ void WriteCmdInterface<Derived>::setVelocityReferenceFeedback(VecConstRef q)
 }
 
 template<class Derived>
+void WriteCmdInterface<Derived>::setEffortReferenceFeedback(VecConstRef q)
+{
+    check_and_set(q, derived().impl->_state.tauref, __func__);
+}
+
+template<class Derived>
 void WriteCmdInterface<Derived>::setStiffnessFeedback(VecConstRef k)
 {
     check_and_set(k, derived().impl->_state.k, __func__);
+}
+
+template<class Derived>
+void WriteCmdInterface<Derived>::setDampingFeedback(VecConstRef k)
+{
+    check_and_set(k, derived().impl->_state.d, __func__);
 }
 
 namespace XBot {
@@ -304,17 +402,6 @@ template struct ReadStateInterface<XBotInterface>;
 template struct WriteStateInterface<ModelInterface>;
 template struct ReadCmdInterface<RobotInterface>;
 template struct WriteCmdInterface<RobotInterface>;
-
-
-
-
-
-
-
-
-
-
-
 
 
 }

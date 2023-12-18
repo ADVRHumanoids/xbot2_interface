@@ -15,7 +15,7 @@ XBotInterface::XBotInterface(const XBotInterface::ConfigOptions &opt):
 }
 
 XBotInterface::XBotInterface(urdf::ModelConstSharedPtr urdf,
-                               srdf::ModelConstSharedPtr srdf)
+                             srdf::ModelConstSharedPtr srdf)
 {
     impl = std::make_shared<Impl>(urdf, srdf, *this);
 }
@@ -44,15 +44,95 @@ ModelInterface::UniquePtr ModelInterface::getModel(urdf::ModelConstSharedPtr urd
                                               "xbot2_create_model_plugin_" + type,
                                               opt);
 
+    mdl->impl->_type = type;
+
     return UniquePtr(mdl);
 }
 
 void ModelInterface::syncFrom(const XBotInterface &other)
 {
-    setJointPosition(other.getJointPosition());
-    setJointVelocity(other.getJointVelocity());
-    setJointEffort(other.getJointEffort());
-    setJointAcceleration(other.getJointAcceleration());
+    for(const auto& jname : getJointNames())
+    {
+        auto oj = other.getJoint(jname);
+
+        if(!oj)
+        {
+            continue;
+        }
+
+        auto j = getJoint(jname);
+
+        j->setJointPosition(oj->getJointPosition());
+        j->setJointVelocity(oj->getJointVelocity());
+        j->setJointEffort(oj->getJointEffort());
+        j->setJointAcceleration(oj->getJointAcceleration());
+    }
+
+
+}
+
+std::string ModelInterface::getType() const
+{
+    return impl->_type;
+}
+
+ModelInterface::UniquePtr ModelInterface::generateReducedModel(
+    VecConstRef q, std::vector<std::string> joints_to_fix) const
+{
+    check_mat_size(q, getNq(), 1, __func__);
+
+    auto urdf = std::make_shared<urdf::Model>(*getUrdf());
+    auto srdf = std::make_shared<srdf::Model>(*getSrdf());
+
+    for(auto jname : joints_to_fix)
+    {
+        auto uj = urdf->joints_.at(jname);
+        auto xj = getJoint(jname);
+        auto jinfo = xj->getJointInfo();
+
+        if(uj->type == urdf::Joint::FIXED)
+        {
+            continue;
+        }
+        else
+        {
+            auto& origin = uj->parent_to_joint_origin_transform;
+
+            Eigen::Affine3d Tj;
+            Eigen::Vector6d vj;
+
+            double roll, pitch, yaw;
+            origin.rotation.getRPY(roll, pitch, yaw);
+
+            xj->forwardKinematics(q.segment(jinfo.iq, jinfo.nq),
+                                  Eigen::VectorXd::Zero(jinfo.nv),
+                                  Tj, vj);
+
+            Eigen::Quaterniond origin_rot_new(Tj.linear());
+
+            origin.rotation.setFromQuaternion(origin_rot_new.x(),
+                                              origin_rot_new.y(),
+                                              origin_rot_new.z(),
+                                              origin_rot_new.w()
+                                              );
+
+            origin.position.x = Tj.translation().x();
+            origin.position.y = Tj.translation().y();
+            origin.position.z = Tj.translation().z();
+
+            origin.rotation.getRPY(roll, pitch, yaw);
+
+            uj->type = urdf::Joint::FIXED;
+
+        }
+    }
+
+    return getModel(urdf, srdf, getType());
+}
+
+const std::string& XBotInterface::getName() const
+{
+    return getUrdf()->name_;
 }
 
 urdf::ModelConstSharedPtr XBotInterface::getUrdf() const
@@ -63,6 +143,14 @@ urdf::ModelConstSharedPtr XBotInterface::getUrdf() const
 srdf::ModelConstSharedPtr XBotInterface::getSrdf() const
 {
     return impl->_srdf;
+}
+
+XBotInterface::ConfigOptions XBotInterface::getConfigOptions() const
+{
+    ConfigOptions cfg;
+    cfg.urdf = getUrdf();
+    cfg.srdf = getSrdf();
+    return cfg;
 }
 
 bool XBotInterface::hasRobotState(string_const_ref name) const
@@ -116,6 +204,16 @@ ModelJoint::Ptr ModelInterface::getJoint(int i)
     return impl->getJoint(i);
 }
 
+ModelJoint::ConstPtr ModelInterface::getJoint(string_const_ref name) const
+{
+    return impl->getJoint(name);
+}
+
+ModelJoint::ConstPtr ModelInterface::getJoint(int i) const
+{
+    return impl->getJoint(i);
+}
+
 bool ModelInterface::setFloatingBaseState(const Eigen::Affine3d &w_T_b, const Eigen::Vector6d &twist)
 {
     if(!isFloatingBase())
@@ -131,6 +229,25 @@ bool ModelInterface::setFloatingBaseState(const Eigen::Affine3d &w_T_b, const Ei
     fb->setJointVelocity(v);
 
     return true;
+}
+
+bool ModelInterface::setFloatingBaseState(const ImuSensor &imu)
+{
+    // pdot = vlin + om x r
+    // pddot = alin + dom x t + om x (om x r)
+
+    // pddot = J*a + dJ*v
+    // om = J*v
+
+    auto fb = getJoint(0);
+
+    auto Jimu = getJacobian(imu.getName());
+
+    Eigen::Vector6d vfb = fb->getJointVelocity();
+    vfb.tail<3>() = Jimu.block<3, 3>(3, 3).fullPivLu().solve(imu.getAngularVelocity());
+
+    return false;
+
 }
 
 bool ModelInterface::setFloatingBasePose(const Eigen::Affine3d& w_T_b)
@@ -180,7 +297,7 @@ Joint::ConstPtr XBotInterface::getJoint(int i) const
     return impl->getJoint(i);
 }
 
-JointInfo XBotInterface::getJointInfo(string_const_ref name) const
+const JointInfo& XBotInterface::getJointInfo(string_const_ref name) const
 {
     int jid = getJointId(name);
 
@@ -193,7 +310,7 @@ JointInfo XBotInterface::getJointInfo(string_const_ref name) const
 
 }
 
-JointInfo XBotInterface::getJointInfo(int i) const
+const JointInfo& XBotInterface::getJointInfo(int i) const
 {
     if(i >= getJointNum())
     {
@@ -223,6 +340,12 @@ int XBotInterface::getDofIndex(string_const_ref joint_name) const
 const std::vector<std::string> &XBotInterface::getJointNames() const
 {
     return impl->_joint_name;
+}
+
+void XBotInterface::update()
+{
+    impl->_tmp.setDirty();
+    update_impl();
 }
 
 void XBotInterface::qToMap(VecConstRef q, JointNameMap& qmap)
@@ -357,6 +480,61 @@ bool XBotInterface::checkJointLimits(VecConstRef q) const
     return (dq.array() <= qmax.array() && dq.array() >= qmin.array()).all();
 }
 
+VecRef XBotInterface::enforceJointLimits(Eigen::VectorXd& q, double tol) const
+{
+    check_mat_size(q, getNq(), 1, __func__);
+
+    auto& dq = impl->_tmp.v;
+    difference(q, getNeutralQ(), dq);
+
+    auto& qmin = impl->_state.qmin;
+    auto& qmax = impl->_state.qmax;
+    dq = dq.array().max(qmin.array() + tol).min(qmax.array() - tol);
+
+    sum(getNeutralQ(), dq, q);
+
+    return q;
+
+}
+
+void XBotInterface::generateRandomQ(Eigen::VectorXd &qrand) const
+{
+    auto& dq = impl->_tmp.v;
+    auto& qmin = impl->_state.qmin;
+    auto& qmax = impl->_state.qmax;
+
+    // set random motion between -1 and 1
+    dq.setRandom();
+
+    // hack!!!
+    for(int i = 0; i < getJointNum(); i++)
+    {
+        auto j = getJoint(i);
+
+        if(j->getType() == urdf::Joint::FLOATING)
+        {
+            dq.segment<3>(j->getJointInfo().iv) /= M_PI;
+        }
+    }
+
+    // map to [0, 1]
+    dq = (dq.array() + 1)/2.;
+
+    // map to [qmin, qmax]
+    dq = dq.cwiseProduct(qmax - qmin) + qmin;
+
+    // apply motion
+    qrand.resize(getNq());
+    sum(impl->_state.qneutral, dq, qrand);
+}
+
+Eigen::VectorXd XBotInterface::generateRandomQ() const
+{
+    Eigen::VectorXd qrand;
+    generateRandomQ(qrand);
+    return qrand;
+}
+
 std::map<std::string, ImuSensor::ConstPtr> XBotInterface::getImu() const
 {
     std::map<std::string, ImuSensor::ConstPtr> ret(impl->_imu_map.begin(),
@@ -462,6 +640,9 @@ Eigen::MatrixXd XBotInterface::getJacobian(string_const_ref link_name) const
 
 void XBotInterface::getRelativeJacobian(int distal_id, int base_id, MatRef Jrel) const
 {
+    // check mat size
+    check_mat_size(Jrel, 6, getNv(), __func__);
+
     // take Jrel from tmp
     auto& Jtmp = impl->_tmp.J;
 
@@ -485,8 +666,8 @@ void XBotInterface::getRelativeJacobian(int distal_id, int base_id, MatRef Jrel)
 }
 
 bool XBotInterface::getRelativeJacobian(string_const_ref distal_name,
-                                         string_const_ref base_name,
-                                         Eigen::MatrixXd &J) const
+                                        string_const_ref base_name,
+                                        MatRef J) const
 {
     int didx = impl->get_link_id_error(distal_name);
 
@@ -497,7 +678,21 @@ bool XBotInterface::getRelativeJacobian(string_const_ref distal_name,
         return false;
     }
 
+    J.setZero();
+
     getRelativeJacobian(didx, bidx, J);
+
+    return true;
+}
+
+bool XBotInterface::getRelativeJacobian(string_const_ref distal_name,
+                                         string_const_ref base_name,
+                                         Eigen::MatrixXd &J) const
+{
+
+    J.setZero(6, getNv());
+
+    getRelativeJacobian(distal_name, base_name, MatRef(J));
 
     return true;
 
@@ -740,6 +935,21 @@ bool XBotInterface::getRelativeAccelerationTwist(string_const_ref distal_name, s
     return true;
 }
 
+bool XBotInterface::getCOMJacobian(Eigen::MatrixXd &J) const
+{
+    J.setZero(3, getNv());
+    getCOMJacobian(MatRef(J));
+    return true;
+}
+
+Eigen::MatrixXd XBotInterface::getCOMJacobian() const
+{
+    Eigen::MatrixXd Jcom;
+    Jcom.setZero(3, getNv());
+    getCOMJacobian(Jcom);
+    return Jcom;
+}
+
 Eigen::Vector6d XBotInterface::getRelativeJdotTimesV(int distal_id, int base_id) const
 {
     Eigen::Vector6d v_base = getVelocityTwist(base_id);
@@ -794,6 +1004,21 @@ bool XBotInterface::getRelativeJdotTimesV(string_const_ref distal_name,
     v = getRelativeJdotTimesV(didx, bidx);
 
     return true;
+}
+
+void XBotInterface::computeInverseDynamics(Eigen::VectorXd& rnea) const
+{
+    rnea = computeInverseDynamics();
+}
+
+void XBotInterface::computeGravityCompensation(Eigen::VectorXd& gcomp) const
+{
+    gcomp = computeGravityCompensation();
+}
+
+MatConstRef XBotInterface::computeInertiaInverse() const
+{
+    throw NotImplemented(__func__);
 }
 
 Eigen::VectorXd XBotInterface::sum(VecConstRef q0, VecConstRef v) const
@@ -1070,14 +1295,22 @@ void XBotInterface::Impl::finalize()
                                      i, 1);
 
         // create private implementation of joint
-        auto jimpl = std::make_unique<Joint::Impl>(sv, cv, jptr);
+        auto jimpl = std::make_unique<Joint::Impl>(sv, cv, jptr, _joint_info[i]);
 
         // inject mappings
         auto& jparam = jparam_map.at(jname);
         jimpl->fn_minimal_to_q = jparam.fn_minimal_to_q;
         jimpl->fn_q_to_minimal = jparam.fn_q_to_minimal;
-        jimpl->fn_fwd_kin = jparam.fn_fwd_kin;
-        jimpl->fn_inv_kin = jparam.fn_inv_kin;
+
+        if(jparam.fn_fwd_kin)
+        {
+            jimpl->fn_fwd_kin = jparam.fn_fwd_kin;
+        }
+
+        if(jparam.fn_inv_kin)
+        {
+            jimpl->fn_inv_kin = jparam.fn_inv_kin;
+        }
 
         // check we got all info we need
         if(nq != nv &&
@@ -1113,7 +1346,7 @@ void XBotInterface::Impl::finalize()
         // set joint limits
         auto lims = jptr->limits;
 
-        double infinity = 1e9;
+        double infinity = 1e3;
 
         if(jptr->type == urdf::Joint::REVOLUTE ||
             jptr->type == urdf::Joint::PRISMATIC)
@@ -1206,6 +1439,13 @@ void XBotInterface::Impl::Temporaries::setZero(int nq, int nv)
     J.setZero(6, nv);
     Jarg.setZero(6, nv);
     v.setZero(nv);
+    M.setIdentity(nv, nv);
+    ldlt.compute(M);
+}
+
+void XBotInterface::Impl::Temporaries::setDirty()
+{
+    ldlt_dirty = true;
 }
 
 bool XBotInterface::ConfigOptions::set_urdf(std::string urdf_string)

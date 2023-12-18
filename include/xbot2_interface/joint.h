@@ -35,6 +35,8 @@ public:
 
     urdf::JointConstSharedPtr getUrdfJoint() const;
 
+    const JointInfo& getJointInfo() const;
+
     VecRef getJointPositionMinimal() const;
 
     void minimalToPosition(VecConstRef q_minimal,
