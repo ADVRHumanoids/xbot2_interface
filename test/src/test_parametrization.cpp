@@ -100,25 +100,44 @@ TEST_F(TestParametrization, checkJointFkIk)
 
 TEST_F(TestParametrization, checkJointMinimalParam)
 {
-    Eigen::VectorXd q0 = model->getJointPosition();
-    Eigen::VectorXd v = Eigen::VectorXd::Random(model->getNv());
-    Eigen::VectorXd q = model->sum(q0, v);
-
     for(int iter = 0; iter < 1000; iter++)
     {
+        Eigen::VectorXd q0 = model->getJointPosition();
+        Eigen::VectorXd v = Eigen::VectorXd::Random(model->getNv());
+        Eigen::VectorXd q = model->sum(q0, v);
+        model->setJointPosition(q);
+        model->update();
+
         for(int id = 0; id < model->getJointNum(); id++)
         {
             auto j = model->getJoint(id);
 
             auto qj = q.segment(model->getJointInfo(id).iq,
                                 j->getNq());
+
             Eigen::VectorXd qmin;
             j->positionToMinimal(qj, qmin);
 
             Eigen::VectorXd qj_exp;
             j->minimalToPosition(qmin, qj_exp);
 
-            EXPECT_TRUE(qj.isApprox(qj_exp));
+            ASSERT_EQ(qj_exp.size(), j->getNq());
+
+            // fk should not change
+            auto T1 = model->getPose(j->getChildLink(), j->getParentLink());
+            j->setJointPosition(qj_exp);
+            model->update();
+            auto T2 = model->getPose(j->getChildLink(), j->getParentLink());
+
+
+            EXPECT_TRUE(T1.isApprox(T2, 1e-3)) <<
+                "err   = " << (qj - qj_exp).lpNorm<Eigen::Infinity>() << "\n" <<
+                "qj    = " << qj.transpose().format(2) << "\n" <<
+                "qjexp = " << qj_exp.transpose().format(2) << "\n" <<
+                "T1    =\n" << T1.matrix().format(2) << "\n" <<
+                "T2    =\n" << T2.matrix().format(2) << "\n";
+
+
 
             // wrong size should throw
             Eigen::VectorXd qwrong(10);

@@ -40,6 +40,18 @@ RobotInterface::UniquePtr RobotInterface::getRobot(urdf::ModelConstSharedPtr urd
 }
 
 RobotInterface::UniquePtr RobotInterface::getRobot(std::string urdf_string,
+                                                  std::string srdf_string,
+                                                  std::string robot_type,
+                                                  std::string model_type)
+{
+    XBotInterface::ConfigOptions opt;
+    opt.set_urdf(urdf_string);
+    opt.set_srdf(srdf_string);
+
+    return getRobot(opt.urdf, opt.srdf, robot_type, model_type);
+}
+
+RobotInterface::UniquePtr RobotInterface::getRobot(std::string urdf_string,
                                                    std::string robot_type,
                                                    std::string model_type)
 {
@@ -57,6 +69,68 @@ RobotJoint::Ptr RobotInterface::getJoint(string_const_ref name)
 RobotJoint::Ptr RobotInterface::getJoint(int i)
 {
     return getUniversalJoint(i);
+}
+
+const std::vector<RobotJoint::Ptr> &RobotInterface::getJoints()
+{
+    return impl->_joints_rob;
+}
+
+const std::vector<RobotJoint::ConstPtr> &RobotInterface::getJoints() const
+{
+    return impl->_joints_rob_const;
+}
+
+void RobotInterface::setControlMode(const std::map<std::string, ControlMode::Type> &ctrl_map)
+{
+    for(const auto& [jname, jctrl] : ctrl_map)
+    {
+        if(auto j = getJoint(jname))
+        {
+            j->setControlMode(jctrl);
+        }
+    }
+}
+
+void RobotInterface::setReferenceFrom(const XBotInterface &other,
+                                      ControlMode::Type mask)
+{
+    int i = 0;
+
+    if(mask == ControlMode::NONE)
+    {
+        return;
+    }
+
+    for(const auto& jname : getJointNames())
+    {
+        auto j = getJoint(i);
+
+        i++;
+
+        auto jo = other.getJoint(jname);
+
+        if(!jo)
+        {
+            continue;
+        }
+
+        if(mask & ControlMode::POSITION)
+        {
+            j->setPositionReference(jo->getJointPosition());
+        }
+
+        if(mask & ControlMode::VELOCITY)
+        {
+            j->setVelocityReference(jo->getJointVelocity());
+        }
+
+        if(mask & ControlMode::EFFORT)
+        {
+            j->setEffortReference(jo->getJointEffort());
+        }
+
+    }
 }
 
 RobotInterface::~RobotInterface()

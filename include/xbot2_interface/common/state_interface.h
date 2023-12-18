@@ -60,6 +60,16 @@ struct XBOT2IFC_API ReadStateInterface
 
     void getEffortLimits(Eigen::VectorXd& taumax) const;
 
+    // map based accessors
+
+    void getJointPosition(JointNameMap& q) const;
+
+    void getJointVelocity(JointNameMap& v) const;
+
+    void getJointAcceleration(JointNameMap& a) const;
+
+    void getJointEffort(JointNameMap& tau) const;
+
     friend Derived;
 
 private:
@@ -89,6 +99,14 @@ struct XBOT2IFC_API WriteStateInterface
     void setVelocityLimits(VecConstRef vmax);
 
     void setEffortLimits(VecConstRef taumax);
+
+    void setJointPosition(const JointNameMap& q);
+
+    void setJointVelocity(const JointNameMap& v);
+
+    void setJointAcceleration(const JointNameMap& a);
+
+    void setJointEffort(const JointNameMap& tau);
 
 private:
 
@@ -127,6 +145,7 @@ struct XBOT2IFC_API ReadCmdInterface
 
     CtrlModeVectorConstRef getControlMode() const;
     void setControlMode(CtrlModeVectorConstRef ctrl);
+    void setControlMode(ControlMode::Type ctrl);
     CtrlModeVectorConstRef getValidCommandMask() const;
     void clearCommandMask();
 

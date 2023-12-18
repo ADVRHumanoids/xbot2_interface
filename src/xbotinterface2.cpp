@@ -34,6 +34,17 @@ ModelInterface::UniquePtr ModelInterface::getModel(std::string urdf_string, std:
     return getModel(opt.urdf, nullptr, type);
 }
 
+ModelInterface::UniquePtr ModelInterface::getModel(std::string urdf_string,
+                                   std::string srdf_string,
+                                   std::string type)
+{
+    XBotInterface::ConfigOptions opt;
+    opt.set_urdf(urdf_string);
+    opt.set_srdf(srdf_string);
+
+    return getModel(opt.urdf, opt.srdf, type);
+}
+
 ModelInterface::UniquePtr ModelInterface::getModel(urdf::ModelConstSharedPtr urdf,
                                                      srdf::ModelConstSharedPtr srdf,
                                                      std::string type)
@@ -214,6 +225,16 @@ ModelJoint::ConstPtr ModelInterface::getJoint(int i) const
     return impl->getJoint(i);
 }
 
+const std::vector<ModelJoint::Ptr> &ModelInterface::getJoints()
+{
+    return impl->_joints_mdl;
+}
+
+const std::vector<ModelJoint::ConstPtr> &ModelInterface::getJoints() const
+{
+    return impl->_joints_mdl_const;
+}
+
 bool ModelInterface::setFloatingBaseState(const Eigen::Affine3d &w_T_b, const Eigen::Vector6d &twist)
 {
     if(!isFloatingBase())
@@ -342,6 +363,16 @@ const std::vector<std::string> &XBotInterface::getJointNames() const
     return impl->_joint_name;
 }
 
+const std::vector<Joint::Ptr> &XBotInterface::getJoints()
+{
+    return impl->_joints_xbi;
+}
+
+const std::vector<Joint::ConstPtr> &XBotInterface::getJoints() const
+{
+    return impl->_joints_xbi_const;
+}
+
 void XBotInterface::update()
 {
     impl->_tmp.setDirty();
@@ -352,42 +383,14 @@ void XBotInterface::qToMap(VecConstRef q, JointNameMap& qmap)
 {
     check_mat_size(q, getNq(), 1, __func__);
 
-    for(int i = 0; i < getJointNum(); i++)
-    {
-        auto jinfo = getJointInfo(i);
-
-        if(jinfo.nq == 1)
-        {
-            qmap[getJointNames()[i]] = q[jinfo.iq];
-            continue;
-        }
-
-        for(int k = 0; k < jinfo.nq; k++)
-        {
-            qmap[getJointNames()[i] + "_" + std::to_string(k)] = q[jinfo.iq + k];
-        }
-    }
+    detail::qToMap(impl->_state, q, qmap);
 }
 
 void XBotInterface::vToMap(VecConstRef v, JointNameMap& vmap)
 {
     check_mat_size(v, getNv(), 1, __func__);
 
-    for(int i = 0; i < getJointNum(); i++)
-    {
-        auto jinfo = getJointInfo(i);
-
-        if(jinfo.nv == 1)
-        {
-            vmap[getJointNames()[i]] = v[jinfo.iv];
-            continue;
-        }
-
-        for(int k = 0; k < jinfo.nv; k++)
-        {
-            vmap[getJointNames()[i] + "_" + std::to_string(k)] = v[jinfo.iv + k];
-        }
-    }
+    detail::vToMap(impl->_state, v, vmap);
 }
 
 void XBotInterface::mapToQ(const JointNameMap& qmap, Eigen::VectorXd &q) const
@@ -397,36 +400,7 @@ void XBotInterface::mapToQ(const JointNameMap& qmap, Eigen::VectorXd &q) const
         q = getNeutralQ();
     }
 
-    for(int i = 0; i < getJointNum(); i++)
-    {
-        auto jinfo = getJointInfo(i);
-
-        if(jinfo.nq == 1)
-        {
-            try
-            {
-                q[jinfo.iq] = qmap.at(getJointNames()[i]);
-            }
-            catch(std::out_of_range&)
-            {
-
-            }
-
-            continue;
-        }
-
-        for(int k = 0; k < jinfo.nq; k++)
-        {
-            try
-            {
-                q[jinfo.iq + k] = qmap.at(getJointNames()[i] + "_" + std::to_string(k));
-            }
-            catch(std::out_of_range&)
-            {
-
-            }
-        }
-    }
+    detail::mapToQ(impl->_state, qmap, q);
 }
 
 void XBotInterface::mapToV(const JointNameMap& vmap, Eigen::VectorXd& v) const
@@ -436,36 +410,7 @@ void XBotInterface::mapToV(const JointNameMap& vmap, Eigen::VectorXd& v) const
         v.setZero(getNv());
     }
 
-    for(int i = 0; i < getJointNum(); i++)
-    {
-        auto jinfo = getJointInfo(i);
-
-        if(jinfo.nv == 1)
-        {
-            try
-            {
-                v[jinfo.iv] = vmap.at(getJointNames()[i]);
-            }
-            catch(std::out_of_range&)
-            {
-
-            }
-
-            continue;
-        }
-
-        for(int k = 0; k < jinfo.nv; k++)
-        {
-            try
-            {
-                v[jinfo.iv + k] = vmap.at(getJointNames()[i] + "_" + std::to_string(k));
-            }
-            catch(std::out_of_range&)
-            {
-
-            }
-        }
-    }
+    detail::mapToV(impl->_state, vmap, v);
 }
 
 bool XBotInterface::checkJointLimits(VecConstRef q) const
@@ -573,6 +518,27 @@ ForceTorqueSensor::ConstPtr XBotInterface::getForceTorque(string_const_ref name)
     {
         return nullptr;
     }
+}
+
+bool XBotInterface::addSensor(Sensor::Ptr s)
+{
+    if(impl->_sensor_map.contains(s->getName()))
+    {
+        return false;
+    }
+
+    impl->_sensor_map[s->getName()] = s;
+
+    if(auto ft = std::dynamic_pointer_cast<ForceTorqueSensor>(s))
+    {
+        impl->_ft_map[s->getName()] = ft;
+    }
+    else if(auto imu = std::dynamic_pointer_cast<ImuSensor>(s))
+    {
+        impl->_imu_map[s->getName()] =  imu;
+    }
+
+    return true;
 }
 
 bool XBotInterface::isFloatingBase() const
@@ -1074,7 +1040,7 @@ XBotInterface::~XBotInterface()
 XBotInterface::Impl::Impl(urdf::ModelConstSharedPtr urdf,
                            srdf::ModelConstSharedPtr srdf,
                            XBotInterface& api):
-    _api(api),
+    _api(&api),
     _urdf(urdf),
     _srdf(srdf)
 {
@@ -1149,7 +1115,7 @@ XBotInterface::Impl::get_joint_parametrization(string_const_ref)
 
 int XBotInterface::Impl::get_link_id_error(string_const_ref link_name) const
 {
-    int idx = _api.getLinkId(link_name);
+    int idx = _api->getLinkId(link_name);
 
     if(idx < 0)
     {
@@ -1161,7 +1127,7 @@ int XBotInterface::Impl::get_link_id_error(string_const_ref link_name) const
 
 int XBotInterface::Impl::get_link_id_throw(string_const_ref link_name) const
 {
-    int idx = _api.getLinkId(link_name);
+    int idx = _api->getLinkId(link_name);
 
     if(idx < 0)
     {
@@ -1193,7 +1159,7 @@ void XBotInterface::Impl::finalize()
         }
 
         // get parametrization from implementation
-        auto jparam = _api.get_joint_parametrization(jname);
+        auto jparam = _api->get_joint_parametrization(jname);
 
         // not found?
         if(jparam.info.id < 0)
@@ -1282,6 +1248,31 @@ void XBotInterface::Impl::finalize()
 
         auto [id, iq, iv, nq, nv] = _joint_info[i];
 
+        // assign joint qname and vname
+        if(nq == 1)
+        {
+            _state.qnames[iq] = jname;
+        }
+        else
+        {
+            for(int i = 0; i < nq; i++)
+            {
+                _state.qnames[iq + i] = jname + "__" + std::to_string(i);
+            }
+        }
+
+        if(nv == 1)
+        {
+            _state.vnames[iv] = jname;
+        }
+        else
+        {
+            for(int i = 0; i < nv; i++)
+            {
+                _state.vnames[iv + i] = jname + "__" + std::to_string(i);
+            }
+        }
+
         // create xbot's joint
 
         // get views on relevant states and control
@@ -1340,8 +1331,15 @@ void XBotInterface::Impl::finalize()
         }
 
         // create and save joint
+        // in several flavours to be returned by reference by models and robots
         auto j =  std::make_shared<UniversalJoint>(std::move(jimpl));
         _joints.push_back(j);
+        _joints_xbi.push_back(j);
+        _joints_xbi_const.push_back(j);
+        _joints_mdl.push_back(j);
+        _joints_mdl_const.push_back(j);
+        _joints_rob.push_back(j);
+        _joints_rob_const.push_back(j);
 
         // set joint limits
         auto lims = jptr->limits;
@@ -1382,7 +1380,7 @@ void XBotInterface::Impl::finalize()
     _tmp.setZero(nq, nv);
 
     // trigger model update
-    _api.update();
+    _api->update();
 
 }
 

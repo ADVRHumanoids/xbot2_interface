@@ -37,6 +37,10 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
              py::overload_cast<>(&XBotInterface::getJointNames, py::const_))
         .def("getJoint",
              py::overload_cast<string_const_ref>(&XBotInterface::getJoint, py::const_))
+        .def("getJoints",
+             py::overload_cast<>(&XBotInterface::getJoints, py::const_))
+        .def("getJoints",
+             py::overload_cast<>(&XBotInterface::getJoints))
         .def("getJointId",
              py::overload_cast<string_const_ref>(&XBotInterface::getJointId, py::const_))
         .def("getJointInfo",
@@ -100,16 +104,20 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
              &ModelInterface::getType)
         .def("update",
              &ModelInterface::update)
+        .def("getJoints",
+             py::overload_cast<>(&ModelInterface::getJoints, py::const_))
+        .def("getJoints",
+             py::overload_cast<>(&ModelInterface::getJoints))
         .def("generateReducedModel",
              &ModelInterface::generateReducedModel)
         .def("setJointPosition",
-             &ModelInterface::setJointPosition)
+             py::overload_cast<VecConstRef>(&ModelInterface::setJointPosition))
         .def("setJointVelocity",
-             &ModelInterface::setJointVelocity)
+             py::overload_cast<VecConstRef>(&ModelInterface::setJointVelocity))
         .def("setJointAcceleration",
-             &ModelInterface::setJointAcceleration)
+             py::overload_cast<VecConstRef>(&ModelInterface::setJointAcceleration))
         .def("setJointEffort",
-             &ModelInterface::setJointEffort)
+             py::overload_cast<VecConstRef>(&ModelInterface::setJointEffort))
         .def("setJointLimits",
              &ModelInterface::setJointLimits)
         .def("setVelocityLimits",
@@ -133,6 +141,10 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
              &RobotInterface::sense)
         .def("move",
              &RobotInterface::move)
+        .def("getJoints",
+             py::overload_cast<>(&RobotInterface::getJoints, py::const_))
+        .def("getJoints",
+             py::overload_cast<>(&RobotInterface::getJoints))
         .def("getMotorPosition",
              py::overload_cast<>(&RobotInterface::getMotorPosition, py::const_))
         .def("getMotorVelocity",
@@ -160,7 +172,11 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
         .def("getControlMode",
              &RobotInterface::getControlMode)
         .def("setControlMode",
-             &RobotInterface::setControlMode)
+             py::overload_cast<ControlMode::Type>(&RobotInterface::setControlMode))
+        .def("setControlMode",
+             py::overload_cast<CtrlModeVectorConstRef>(&RobotInterface::setControlMode))
+        .def("setControlMode",
+             py::overload_cast<const std::map<std::string, ControlMode::Type>&>(&RobotInterface::setControlMode))
         .def("getValidCommandMask",
              &RobotInterface::getValidCommandMask)
         ;
@@ -181,6 +197,29 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
                 " nv = " << self.nv;
             return ss.str();
         })
+        ;
+
+    py::class_<Sensor>(m, "Sensor")
+        .def("getName",
+             &Sensor::getName)
+        .def("getTimestamp",
+             &Sensor::getTimestamp)
+        .def("isUpdated",
+             &Sensor::isUpdated)
+        ;
+
+    py::class_<ImuSensor, Sensor>(m, "ImuSensor")
+        .def("getAngularVelocity",
+             py::overload_cast<>(&ImuSensor::getAngularVelocity, py::const_))
+        .def("getLinearAcceleration",
+             py::overload_cast<>(&ImuSensor::getLinearAcceleration, py::const_))
+        .def("getOrientation",
+             py::overload_cast<>(&ImuSensor::getOrientation, py::const_))
+        ;
+
+    py::class_<ForceTorqueSensor, Sensor>(m, "ForceTorqueSensor")
+        .def("getWrench",
+             py::overload_cast<>(&ForceTorqueSensor::getWrench, py::const_))
         ;
 
 

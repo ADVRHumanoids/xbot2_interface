@@ -129,7 +129,7 @@ bool RobotInterface2Ros::move_impl()
         j->clearCommandMask();
 
         // if no cmd was set, skip
-        if(ctrl == ControlMode::None)
+        if(ctrl == ControlMode::NONE)
         {
             continue;
         }
@@ -155,7 +155,7 @@ bool RobotInterface2Ros::move_impl()
     // handle base
     auto jfb = getUniversalJoint(0);
     if(jfb->getType() == urdf::Joint::FLOATING &&
-            (jfb->getValidCommandMask()[0] & ControlMode::Velocity))
+            (jfb->getValidCommandMask()[0] & ControlMode::VELOCITY))
     {
         geometry_msgs::TwistStamped basecmd;
         basecmd.header.stamp = cmd.header.stamp;

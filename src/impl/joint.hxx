@@ -54,7 +54,7 @@ public:
 
 private:
 
-    Joint * api;
+    Joint * _api;
 
     urdf::JointConstSharedPtr _urdf_joint;
 

@@ -284,6 +284,54 @@ TEST_F(TestParser, checkJointLimits2)
     }
 }
 
+TEST_F(TestParser, checkMapConversions)
+{
+    auto model = XBot::ModelInterface::getModel(urdf,
+                                                srdf,
+                                                model_type);
+
+    auto qrand = model->generateRandomQ();
+
+    XBot::JointNameMap qmap, qmap1;
+
+    model->qToMap(qrand, qmap);
+
+    EXPECT_EQ(qmap.size(), model->getNq());
+
+    model->setJointPosition(qmap);
+    Eigen::VectorXd qout = model->getJointPosition();
+    EXPECT_TRUE(qrand.cwiseEqual(qout).all());
+    model->getJointPosition(qmap1);
+    EXPECT_EQ(qmap1, qmap);
+
+    Eigen::VectorXd vrand;
+    vrand.setRandom(model->getNv());
+
+    XBot::JointNameMap vmap, vmap1;
+    model->vToMap(vrand, vmap);
+
+    model->setJointVelocity(vmap);
+    Eigen::VectorXd vout = model->getJointVelocity();
+    EXPECT_TRUE(vrand.cwiseEqual(vout).all());
+    model->getJointVelocity(vmap1);
+    EXPECT_EQ(vmap1, vmap);
+    vmap1.clear();
+
+    model->setJointAcceleration(vmap);
+    vout = model->getJointAcceleration();
+    EXPECT_TRUE(vrand.cwiseEqual(vout).all());
+    model->getJointAcceleration(vmap1);
+    EXPECT_EQ(vmap1, vmap);
+    vmap1.clear();
+
+    model->setJointEffort(vmap);
+    vout = model->getJointEffort();
+    EXPECT_TRUE(vrand.cwiseEqual(vout).all());
+    model->getJointEffort(vmap1);
+    EXPECT_EQ(vmap1, vmap);
+    vmap1.clear();
+
+}
 
 int main(int argc, char ** argv)
 {

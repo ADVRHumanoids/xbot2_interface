@@ -134,7 +134,7 @@ void Joint::inverseKinematics(const Eigen::Affine3d &p_T_c,
 Joint::Joint(std::unique_ptr<Joint::Impl> _impl):
     impl(std::move(_impl))
 {
-    impl->api = this;
+    impl->_api = this;
 }
 
 void ModelJoint::setJointPositionMinimal(VecConstRef q)

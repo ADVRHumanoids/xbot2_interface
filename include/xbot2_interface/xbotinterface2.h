@@ -30,7 +30,9 @@ public:
         srdf::ModelConstSharedPtr srdf;
 
         bool set_urdf(std::string urdf_string);
+
         bool set_srdf(std::string srdf_string);
+
     };
 
     explicit XBotInterface(const ConfigOptions& opt);
@@ -72,6 +74,10 @@ public:
 
     const std::vector<std::string>& getJointNames() const;
 
+    const std::vector<Joint::Ptr>& getJoints();
+
+    const std::vector<Joint::ConstPtr>& getJoints() const;
+
     void update();
 
     virtual int getLinkId(string_const_ref link_name) const = 0;
@@ -106,6 +112,8 @@ public:
     std::map<std::string, ForceTorqueSensor::ConstPtr> getForceTorque() const;
 
     ForceTorqueSensor::ConstPtr getForceTorque(string_const_ref name) const;
+
+    bool addSensor(Sensor::Ptr s);
 
 
     /* Floating base */
@@ -305,6 +313,10 @@ public:
     static UniquePtr getModel(std::string urdf_string,
                               std::string type);
 
+    static UniquePtr getModel(std::string urdf_string,
+                              std::string srdf_string,
+                              std::string type);
+
     static UniquePtr getModel(urdf::ModelConstSharedPtr urdf,
                               srdf::ModelConstSharedPtr srdf,
                               std::string type);
@@ -325,6 +337,10 @@ public:
 
     ModelJoint::ConstPtr getJoint(int i) const;
 
+    const std::vector<ModelJoint::Ptr>& getJoints();
+
+    const std::vector<ModelJoint::ConstPtr>& getJoints() const;
+
     /* Floating base */
 
     bool setFloatingBaseState(const Eigen::Affine3d& w_T_b, const Eigen::Vector6d& v);
@@ -338,6 +354,8 @@ public:
     virtual ~ModelInterface();
 
 };
+
+using ConfigOptions = XBotInterface::ConfigOptions;
 
 }
 

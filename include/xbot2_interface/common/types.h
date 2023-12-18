@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <chrono>
+#include <bitset>
 
 #include <Eigen/Dense>
 
@@ -44,17 +45,84 @@ typedef std::unordered_map<std::string, double> JointNameMap;
 
 XBOT2IFC_API Eigen::Scalard from_value(double value);
 
-namespace ControlMode {
+class ControlMode {
+
+public:
+
     enum Type
     {
-        None = 0,
-        Position = 1,
-        Velocity = 2,
-        Effort = 4,
-        Stiffness = 8,
-        Damping = 16
+        NONE = 0,
+        POSITION = 1,
+        VELOCITY = 2,
+        EFFORT = 4,
+        STIFFNESS = 8,
+        DAMPING = 16,
+        ALL = 31
     };
-}
+
+    /**
+     * @brief Representation of a control mode as a bitset
+     *
+     * Bit 0 -> position
+     * Bit 1 -> velocity
+     * Bit 2 -> effort
+     * Bit 3 -> stiffness
+     * Bit 4 -> damping
+     */
+    typedef std::bitset<5> Bitset;
+
+    ControlMode(Type type = NONE);
+
+    ControlMode(std::string name, Type type = NONE);
+
+    operator Type() const;
+
+    Type type() const;
+
+    ControlMode operator+(ControlMode other) const;
+
+    bool operator==(ControlMode ctrl_mode) const;
+
+    bool isPositionEnabled() const;
+
+    bool isVelocityEnabled() const;
+
+    bool isEffortEnabled() const;
+
+    bool isStiffnessEnabled() const;
+
+    bool isDampingEnabled() const;
+
+    const std::string& getName() const;
+
+    static ControlMode Position();
+
+    static ControlMode Velocity();
+
+    static ControlMode Effort();
+
+    static ControlMode PosImpedance();
+
+    static ControlMode Impedance();
+
+    static ControlMode Stiffness();
+
+    static ControlMode Damping();
+
+    [[deprecated("Use None() instead")]]
+    static ControlMode Idle();
+
+    static ControlMode None();
+
+    static ControlMode FromBitset(Bitset bitset);
+
+    static Bitset AsBitset(const ControlMode& ctrl_mode);
+
+private:
+
+    std::string _name;
+    Type _type;
+};
 
 struct XBOT2IFC_API NotImplemented : std::runtime_error
 {

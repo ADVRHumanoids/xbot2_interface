@@ -23,7 +23,7 @@ public:
 
     void clear();
 
-    ~Sensor();
+    virtual ~Sensor();
 
 protected:
 

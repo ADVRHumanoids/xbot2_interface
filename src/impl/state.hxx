@@ -3,6 +3,8 @@
 
 #include <xbot2_interface/common/types.h>
 
+#include "utils.h"
+
 namespace XBot { namespace detail {
 
 template <typename Vec>
@@ -19,6 +21,8 @@ struct StateTemplate
         qref, vref, tauref,
         qmin, qmax, vmax, taumax,
         qneutral;
+
+    std::vector<std::string> qnames, vnames;
 
     const std::vector<Vec*> qs = {&qmot, &qlink, &qref, &qneutral};
     const std::vector<Vec*> vs = {&vmot, &vlink, &a, &tau, &k, &d, &vref, &tauref, &qmin, &qmax, &vmax, &taumax};
@@ -37,11 +41,67 @@ struct CommandTemplate
     VecInt ctrlmode;
     VecInt ctrlset;
 
+    std::vector<std::string> qnames, vnames;
+
     const std::vector<Vec*> qs = {&qcmd};
     const std::vector<Vec*> vs = {&vcmd, &taucmd, &kcmd, &dcmd};
     const std::vector<VecInt*> js = {&ctrlmode, &ctrlset};
 };
 
+
+template<class Container>
+void qToMap(const Container& cnt, VecConstRef q, JointNameMap &qmap)
+{
+    for(int i = 0; i < cnt.qnames.size(); i++)
+    {
+        qmap[cnt.qnames[i]] = q[i];
+    }
+}
+
+template<class Container>
+void mapToQ(const Container& cnt, const JointNameMap& qmap, VecRef q)
+{
+    check_mat_size(q, cnt.qnames.size(), 1, __func__);
+
+    for(int i = 0; i < cnt.qnames.size(); i++)
+    {
+        try
+        {
+            q[i] = qmap.at(cnt.qnames[i]);
+        }
+        catch (std::out_of_range&)
+        {
+
+        }
+    }
+}
+
+template<class Container>
+void vToMap(const Container& cnt, VecConstRef v, JointNameMap &vmap)
+{
+    for(int i = 0; i < cnt.vnames.size(); i++)
+    {
+        vmap[cnt.vnames[i]] = v[i];
+    }
+}
+
+template<class Container>
+void mapToV(const Container& cnt, const JointNameMap& vmap, VecRef v)
+{
+    check_mat_size(v, cnt.vnames.size(), 1, __func__);
+
+    for(int i = 0; i < cnt.vnames.size(); i++)
+    {
+        try
+        {
+            v[i] = vmap.at(cnt.vnames[i]);
+        }
+        catch (std::out_of_range&)
+        {
+
+        }
+    }
+}
 
 template <typename T>
 void resize(T& cnt, int nq, int nv, int nj)
@@ -60,6 +120,11 @@ void resize(T& cnt, int nq, int nv, int nj)
     {
         cnt.js[i]->setZero(nj);
     }
+
+    cnt.qnames.assign(nq, "");
+
+    cnt.vnames.assign(nv, "");
+
 }
 
 template <typename Vec>
@@ -86,6 +151,10 @@ typename StateTemplate<Vec>::ViewContainer createView(StateTemplate<Vec>& cnt,
         cnt.qneutral.segment(iq, nq)
     };
 
+    ret.qnames.assign(cnt.qnames.begin() + iq, cnt.qnames.begin() + iq + nq);
+
+    ret.vnames.assign(cnt.vnames.begin() + iv, cnt.vnames.begin() + iv + nv);
+
     return ret;
 }
 
@@ -104,6 +173,10 @@ typename CommandTemplate<Vec, VecInt>::ViewContainer createView(CommandTemplate<
         cnt.ctrlmode.segment(ij, nj),
         cnt.ctrlset.segment(ij, nj)
     };
+
+    ret.qnames.assign(cnt.qnames.begin() + iq, cnt.qnames.begin() + iq + nq);
+
+    ret.vnames.assign(cnt.vnames.begin() + iv, cnt.vnames.begin() + iv + nv);
 
     return ret;
 }

@@ -27,12 +27,27 @@ public:
                               std::string model_type);
 
     static UniquePtr getRobot(std::string urdf_string,
+                              std::string srdf_string,
+                              std::string robot_type,
+                              std::string model_type);
+
+    static UniquePtr getRobot(std::string urdf_string,
                               std::string robot_type,
                               std::string model_type);
 
     RobotJoint::Ptr getJoint(string_const_ref name);
 
     RobotJoint::Ptr getJoint(int i);
+
+    const std::vector<RobotJoint::Ptr>& getJoints();
+
+    const std::vector<RobotJoint::ConstPtr>& getJoints() const;
+
+    using ReadCmdInterface::setControlMode;
+
+    void setControlMode(const std::map<std::string, ControlMode::Type>& ctrl_map);
+
+    void setReferenceFrom(const XBotInterface& other, ControlMode::Type mask = ControlMode::ALL);
 
     virtual ~RobotInterface();
 
