@@ -36,3 +36,12 @@ Eigen::Matrix3d XBot::Utils::skew(const Eigen::Vector3d &r)
             -r[1],  r[0],     0;
     return S;
 }
+
+const Eigen::Vector6d& XBot::Utils::rotate(Eigen::Vector6d& vel,
+                                           const Eigen::Matrix3d& R)
+{
+    vel.topRows<3>() = R * vel.topRows<3>();
+    vel.bottomRows<3>() = R * vel.bottomRows<3>();
+    return vel;
+}
+

@@ -2,6 +2,32 @@
 
 using TestKinematics = TestWithModel;
 
+TEST_F(TestKinematics, checkExceptions)
+{
+    EXPECT_THROW(model->getPose(-100), std::out_of_range);
+    EXPECT_THROW(model->getPose("not_exist"), std::out_of_range);
+    EXPECT_THROW(model->getPose(-100, -101), std::out_of_range);
+    EXPECT_THROW(model->getPose("not_exist", "not_exist_1"), std::out_of_range);
+
+    EXPECT_THROW(model->getVelocityTwist(-100), std::out_of_range);
+    EXPECT_THROW(model->getVelocityTwist("not_exist"), std::out_of_range);
+    EXPECT_THROW(model->getRelativeVelocityTwist(-100, -101), std::out_of_range);
+    EXPECT_THROW(model->getRelativeVelocityTwist("not_exist", "not_exist_1"), std::out_of_range);
+
+    EXPECT_THROW(model->getAccelerationTwist(-100), std::out_of_range);
+    EXPECT_THROW(model->getAccelerationTwist("not_exist"), std::out_of_range);
+    EXPECT_THROW(model->getRelativeAccelerationTwist(-100, -101), std::out_of_range);
+    EXPECT_THROW(model->getRelativeAccelerationTwist("not_exist", "not_exist_1"), std::out_of_range);
+
+    EXPECT_THROW(model->getJdotTimesV(-100), std::out_of_range);
+    EXPECT_THROW(model->getJdotTimesV("not_exist"), std::out_of_range);
+    EXPECT_THROW(model->getRelativeJdotTimesV(-100, -101), std::out_of_range);
+    EXPECT_THROW(model->getRelativeJdotTimesV("not_exist", "not_exist_1"), std::out_of_range);
+
+    EXPECT_THROW(model->getJacobian("not_exist"), std::out_of_range);
+    EXPECT_THROW(model->getRelativeJacobian("not_exist", "not_exist_1"), std::out_of_range);
+}
+
 TEST_F(TestKinematics, checkJointFk)
 {
     double dt = 0;
@@ -729,6 +755,8 @@ TEST_F(TestKinematics, checkInertiaInverse)
     std::cout << "computeForwardDynamics requires " << dt_fd/count*1e6 << " us \n";
 
 }
+
+
 
 
 int main(int argc, char ** argv)

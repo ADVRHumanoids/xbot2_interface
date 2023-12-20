@@ -25,13 +25,18 @@ void changeRefPoint(Eigen::MatrixBase<Mat>& J_or_vel,
     J_or_vel.template topRows<3>().noalias() -= S * J_or_vel.template bottomRows<3>();
 }
 
-template <typename Mat>
-const Eigen::MatrixBase<Mat>& rotate(Eigen::MatrixBase<Mat>& J_or_vel,
-                                     const Eigen::Matrix3d& R)
+XBOT2IFC_API const Eigen::Vector6d& rotate(Eigen::Vector6d& vel,
+                              const Eigen::Matrix3d& R);
+
+template <typename Mat, typename MatOutput>
+const Eigen::MatrixBase<MatOutput>& rotate(const Eigen::MatrixBase<Mat>& J,
+                                     const Eigen::Matrix3d& R,
+                                     Eigen::MatrixBase<MatOutput>& output)
 {
-    J_or_vel.template topRows<3>() = R * J_or_vel.template topRows<3>();
-    J_or_vel.template bottomRows<3>() = R * J_or_vel.template bottomRows<3>();
-    return J_or_vel;
+    output.resize(J.rows(), J.cols());
+    output.template topRows<3>().noalias() = R * J.template topRows<3>();
+    output.template bottomRows<3>().noalias() = R * J.template bottomRows<3>();
+    return output;
 }
 
 }

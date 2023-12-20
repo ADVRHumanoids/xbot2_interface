@@ -99,7 +99,7 @@ private:
 
     struct Temporaries
     {
-        Eigen::MatrixXd J, Jarg;
+        Eigen::MatrixXd J, J1, Jarg;
         Eigen::VectorXd v;
 
 

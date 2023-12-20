@@ -611,6 +611,7 @@ void XBotInterface::getRelativeJacobian(int distal_id, int base_id, MatRef Jrel)
 
     // take Jrel from tmp
     auto& Jtmp = impl->_tmp.J;
+    auto& Jtmp1 = impl->_tmp.J1;
 
     // initialize Jrel with Jbase
     getJacobian(base_id, Jtmp);
@@ -625,10 +626,10 @@ void XBotInterface::getRelativeJacobian(int distal_id, int base_id, MatRef Jrel)
     getJacobian(distal_id, Jrel);
 
     // now Jrel = Jd - Jb_shifted
-    Jrel = Jrel - Jtmp;
+    Jtmp1 = Jrel - Jtmp;
 
     // rotate to base
-    Utils::rotate(Jrel, w_T_b.linear().transpose());
+    Utils::rotate(Jtmp1, w_T_b.linear().transpose(), Jrel);
 }
 
 bool XBotInterface::getRelativeJacobian(string_const_ref distal_name,
@@ -1434,7 +1435,7 @@ void XBotInterface::Impl::parse_ft()
 
 void XBotInterface::Impl::Temporaries::setZero(int nq, int nv)
 {
-    J.setZero(6, nv);
+    J1 = J.setZero(6, nv);
     Jarg.setZero(6, nv);
     v.setZero(nv);
     M.setIdentity(nv, nv);

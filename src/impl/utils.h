@@ -7,7 +7,7 @@
 namespace XBot {
 
 template <typename T1, typename T2>
-inline void check_and_set(const T1& from, T2& to, string_const_ref name)
+inline void check_and_set(const T1& from, T2& to, const char *name)
 {
     if(from.size() == to.size())
     {
@@ -15,11 +15,11 @@ inline void check_and_set(const T1& from, T2& to, string_const_ref name)
         return;
     }
 
-    throw std::out_of_range("size mismatch: " + name);
+    throw std::out_of_range("size mismatch: " + std::string(name));
 }
 
 template <typename T1, typename T2>
-inline void check_mat_size(const T1& from, T2& to, string_const_ref name)
+inline void check_mat_size(const T1& from, T2& to, const char *name)
 {
     if(from.rows() == to.rows() &&
             from.cols() == to.cols())
@@ -27,11 +27,11 @@ inline void check_mat_size(const T1& from, T2& to, string_const_ref name)
         return;
     }
 
-    throw std::out_of_range("mat size mismatch: " + name);
+    throw std::out_of_range("mat size mismatch: " + std::string(name));
 }
 
 template <typename T1>
-inline void check_mat_size(const T1& mat, int rows, int cols, string_const_ref name)
+inline void check_mat_size(const T1& mat, int rows, int cols, const char *name)
 {
     if(mat.rows() == rows &&
             mat.cols() == cols)
@@ -39,7 +39,7 @@ inline void check_mat_size(const T1& mat, int rows, int cols, string_const_ref n
         return;
     }
 
-    throw std::out_of_range("mat size mismatch: " + name);
+    throw std::out_of_range("mat size mismatch: " + std::string(name));
 }
 
 }

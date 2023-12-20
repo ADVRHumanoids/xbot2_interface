@@ -72,6 +72,8 @@ int XBot::ModelInterface2Pin::getLinkId(string_const_ref link_name) const
 
 Eigen::Affine3d ModelInterface2Pin::getPose(int frame_idx) const
 {
+    check_frame_idx_throw(frame_idx);
+
     Eigen::Affine3d ret;
     ret.translation() = _data.oMf.at(frame_idx).translation();
     ret.linear() = _data.oMf.at(frame_idx).rotation();
@@ -80,6 +82,8 @@ Eigen::Affine3d ModelInterface2Pin::getPose(int frame_idx) const
 
 void ModelInterface2Pin::getJacobian(int link_id, MatRef J) const
 {
+    check_frame_idx_throw(link_id);
+
     if(!(_cached_computation & Jacobians))
     {
         pinocchio::computeJointJacobians(_mdl, _data, getJointPosition());
@@ -214,6 +218,14 @@ pinocchio::Index ModelInterface2Pin::get_frame_id(string_const_ref name) const
     return _frame_idx.at(name);
 }
 
+void ModelInterface2Pin::check_frame_idx_throw(int idx) const
+{
+    if(idx < 0 || idx >= _mdl.nframes)
+    {
+        throw std::out_of_range("invalid frame index " + std::to_string(idx));
+    }
+}
+
 void ModelInterface2Pin::Temporaries::resize(int nq, int nv)
 {
     J.setZero(6, nv);
@@ -224,17 +236,24 @@ void ModelInterface2Pin::Temporaries::resize(int nq, int nv)
 
 Eigen::Vector6d XBot::ModelInterface2Pin::getVelocityTwist(int frame_idx) const
 {
+    check_frame_idx_throw(frame_idx);
+
     auto v = pinocchio::getFrameVelocity(_mdl, _data, frame_idx, _world_aligned);
+
     return v;
 }
 
 Eigen::Vector6d ModelInterface2Pin::getAccelerationTwist(int frame_idx) const
 {
+    check_frame_idx_throw(frame_idx);
+
     return pinocchio::getFrameClassicalAcceleration(_mdl, _data, frame_idx, _world_aligned);
 }
 
 Eigen::Vector6d ModelInterface2Pin::getJdotTimesV(int frame_idx) const
 {
+    check_frame_idx_throw(frame_idx);
+
     if(!(_cached_computation & KinematicsNoAcc))
     {
         pinocchio::forwardKinematics(_mdl, _data_no_acc, getJointPosition(), getJointVelocity(), _vzero);

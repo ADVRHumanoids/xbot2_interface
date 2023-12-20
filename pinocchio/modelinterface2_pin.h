@@ -64,6 +64,8 @@ private:
 
     pinocchio::Index get_frame_id(string_const_ref name) const;
 
+    void check_frame_idx_throw(int idx) const;
+
     pinocchio::Model _mdl;
     pinocchio::Model _mdl_zerograv;
     mutable pinocchio::Data _data;
