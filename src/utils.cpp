@@ -1,5 +1,8 @@
 #include <xbot2_interface/common/utils.h>
-
+#include <urdf_parser/urdf_parser.h>
+#include <srdfdom/model.h>
+#include <srdfdom/srdf_writer.h>
+#include <sstream>
 
 Eigen::Matrix3d XBot::Utils::rpyToRotationMatrix(Eigen::Ref<const Eigen::Vector3d> rpy)
 {
@@ -44,4 +47,14 @@ const Eigen::Vector6d& XBot::Utils::rotate(Eigen::Vector6d& vel,
     vel.bottomRows<3>() = R * vel.bottomRows<3>();
     return vel;
 }
+
+
+std::string XBot::Utils::urdfToString(const urdf::ModelInterface &urdf)
+{
+    auto tiXmlDoc(urdf::exportURDF(urdf));
+    TiXmlPrinter printer;
+    tiXmlDoc->Accept(&printer);
+    return printer.Str();
+}
+
 

@@ -4,6 +4,10 @@
 #include <Eigen/Dense>
 #include "types.h"
 
+namespace urdf {
+class ModelInterface;
+}
+
 namespace XBot::Utils {
 
 inline namespace v2 {
@@ -38,6 +42,8 @@ const Eigen::MatrixBase<MatOutput>& rotate(const Eigen::MatrixBase<Mat>& J,
     output.template bottomRows<3>().noalias() = R * J.template bottomRows<3>();
     return output;
 }
+
+XBOT2IFC_API std::string urdfToString(const urdf::ModelInterface& urdf);
 
 }
 
