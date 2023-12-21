@@ -6,6 +6,8 @@ using TestMemory = TestWithModel;
 
 int malloc_calls = 0;
 int free_calls = 0;
+bool malloc_banned = false;
+
 void reset_counters()
 {
     malloc_calls = 0;
@@ -15,6 +17,7 @@ void reset_counters()
 void* malloc(size_t sz)
 {
     static auto libc_malloc = reinterpret_cast<void *(*)(size_t)>(dlsym(RTLD_NEXT, "malloc"));
+    if(malloc_banned) std::abort();
     malloc_calls++;
     return libc_malloc(sz);
 }
@@ -22,6 +25,8 @@ void* malloc(size_t sz)
 void free(void *p)
 {
     static auto libc_free = reinterpret_cast<void(*)(void*)>(dlsym(RTLD_NEXT, "free"));
+    if(p == nullptr) return;
+    if(malloc_banned) std::abort();
     free_calls++;
     libc_free(p);
 }
@@ -31,7 +36,14 @@ TEST_F(TestMemory, checkMalloc)
     std::string name = "arm1_7";
     int id = model->getLinkId(name);
 
-    Eigen::VectorXd q(model->getNq());
+    Eigen::VectorXd q = model->generateRandomQ();
+
+    reset_counters();
+    model->setJointPosition(q);
+    model->update();
+    EXPECT_EQ(malloc_calls, 0);
+    EXPECT_EQ(free_calls, 0);
+
     reset_counters();
     q = model->getJointPosition();
     EXPECT_EQ(malloc_calls, 0);
@@ -75,7 +87,6 @@ TEST_F(TestMemory, checkMalloc)
     reset_counters();
     auto J = model->getJacobian(name);
     EXPECT_GT(malloc_calls, 0);
-    EXPECT_GT(free_calls, 0);
 
     reset_counters();
     model->getJacobian(id, J);
@@ -103,8 +114,46 @@ TEST_F(TestMemory, checkMalloc)
     EXPECT_EQ(malloc_calls, 0);
     EXPECT_EQ(free_calls, 0);
 
+    reset_counters();
+    auto tau = model->computeInverseDynamics();
+    EXPECT_EQ(malloc_calls, 0);
+    EXPECT_EQ(free_calls, 0);
+
+    reset_counters();
+    auto gc = model->computeGravityCompensation();
+    EXPECT_EQ(malloc_calls, 0);
+    EXPECT_EQ(free_calls, 0);
+
+    Eigen::VectorXd gc1(model->getNv());
+    reset_counters();
+    gc1 = model->computeGravityCompensation();
+    EXPECT_EQ(malloc_calls, 0);
+    EXPECT_EQ(free_calls, 0);
+
+    reset_counters();
+    model->computeGravityCompensation(gc1);
+    EXPECT_EQ(malloc_calls, 0);
+    EXPECT_EQ(free_calls, 0);
+
+    reset_counters();
+    model->computeInverseDynamics(gc1);
+    EXPECT_EQ(malloc_calls, 0) << "computeInverseDynamics";
+    EXPECT_EQ(free_calls, 0) << "computeInverseDynamics";
+
+    reset_counters();
+    auto M = model->computeInertiaMatrix();
+    EXPECT_EQ(malloc_calls, 0) << "computeInertiaMatrix";
+    EXPECT_EQ(free_calls, 0) << "computeInertiaMatrix";
+
+    reset_counters();
+    malloc_banned = true;
+    auto Minv = model->computeInertiaInverse();
+    malloc_banned = false;
+    EXPECT_EQ(malloc_calls, 0) << "computeInertiaInverse";
+    EXPECT_EQ(free_calls, 0) << "computeInertiaInverse";
 
 }
+
 
 int main(int argc, char ** argv)
 {

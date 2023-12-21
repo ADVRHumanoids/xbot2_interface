@@ -698,6 +698,7 @@ TEST_F(TestKinematics, checkRneaVsCrba)
 
         TIC();
         Eigen::MatrixXd M = model->computeInertiaMatrix();
+        count++;
         dt += TOC();
 
         Eigen::VectorXd gcomp = model->computeGravityCompensation();
