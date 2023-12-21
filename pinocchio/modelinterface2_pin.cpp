@@ -17,10 +17,15 @@ ModelInterface2Pin::ModelInterface2Pin(const ConfigOptions& opt):
     _world_aligned(pinocchio::ReferenceFrame::LOCAL_WORLD_ALIGNED)
 {
     pinocchio::urdf::buildModel(std::const_pointer_cast<urdf::Model>(getUrdf()), _mdl);
+
     _data = pinocchio::Data(_mdl);
+
     _data_no_acc = pinocchio::Data(_mdl);
 
+    _mdl_orig = _mdl;
+
     _mdl_zerograv = _mdl;
+
     _mdl_zerograv.gravity = decltype(_mdl)::Motion::Zero();
 
     _qneutral = pinocchio::neutral(_mdl);
@@ -30,11 +35,6 @@ ModelInterface2Pin::ModelInterface2Pin(const ConfigOptions& opt):
     _eye.setIdentity(_mdl.nv, _mdl.nv);
 
     _vzero.setZero(_mdl.nv);
-
-    for(auto& f : _mdl.frames)
-    {
-        _frame_idx[f.name] = _mdl.getFrameId(f.name);
-    }
 
     finalize();
 }
@@ -46,6 +46,26 @@ ModelInterface::UniquePtr ModelInterface2Pin::clone()
 
 void ModelInterface2Pin::update_impl()
 {
+    // handle additional bodies
+
+    // add contributions from all additional bodies
+    for(const auto& [unused, ab] : _attached_body_map)
+    {
+        // restore original inertia
+        _mdl.inertias[ab.frame.parent] = _mdl_orig.inertias[ab.frame.parent];
+
+        // update placement
+        _mdl.frames[ab.frame_idx].placement = ab.frame.placement;
+    }
+
+    for(const auto& [unused, ab] : _attached_body_map)
+    {
+        // update inertia
+        _mdl.inertias[ab.frame.parent] += ab.frame.placement.act(ab.frame.inertia);
+
+    }
+
+    // compute fk
     pinocchio::forwardKinematics(_mdl, _data,
                                  getJointPosition(),
                                  getJointVelocity(),
@@ -98,7 +118,7 @@ void ModelInterface2Pin::getJacobian(int link_id, MatRef J) const
 
 MatConstRef ModelInterface2Pin::computeRegressor() const
 {
-    throw std::runtime_error("not implemented");
+    throw NotImplemented(__PRETTY_FUNCTION__);
 }
 
 void ModelInterface2Pin::sum(VecConstRef q0, VecConstRef v, Eigen::VectorXd& q1) const
@@ -110,6 +130,69 @@ void ModelInterface2Pin::sum(VecConstRef q0, VecConstRef v, Eigen::VectorXd& q1)
 void ModelInterface2Pin::difference(VecConstRef q1, VecConstRef q0, Eigen::VectorXd& v) const
 {
     v = pinocchio::difference(_mdl, q0, q1);
+}
+
+int ModelInterface2Pin::addFixedLink(string_const_ref link_name,
+                                     string_const_ref parent_name,
+                                     double mass,
+                                     Eigen::Matrix3d inertia,
+                                     Eigen::Affine3d p_pose)
+{
+    // compute pose w.r.t. parent movable joint
+    auto parent = getUrdf()->links_.at(parent_name);
+
+    auto movable_joint = parent->parent_joint;
+
+    while(movable_joint->type == urdf::Joint::FIXED)
+    {
+        movable_joint = getUrdf()->links_.at(movable_joint->parent_link_name)->parent_joint;
+    }
+
+    Eigen::Affine3d m_T_p = static_cast<XBotInterface*>(this)->getPose(movable_joint->child_link_name, parent_name);
+    auto m_pose = m_T_p * p_pose;
+
+    // exists already
+    if(_mdl.existFrame(link_name))
+    {
+        return get_frame_id(link_name);
+    }
+
+    // add frame
+    pinocchio::Frame frame;
+    frame.parent = _mdl.getJointId(movable_joint->name);
+    frame.placement.translation() = m_pose.translation();
+    frame.placement.rotation() = m_pose.linear();
+    frame.inertia.mass() = mass;
+    frame.inertia.inertia() = pinocchio::Symmetric3(inertia);
+    frame.name = link_name;
+    frame.type = pinocchio::FrameType::BODY;
+    frame.previousFrame = -1;
+
+    AttachedBody ab;
+    ab.frame = frame;
+    ab.frame_idx = _mdl.addBodyFrame(link_name, frame.parent, frame.placement);
+    ab.m_T_p = m_T_p;
+
+    _attached_body_map[ab.frame_idx] = ab;
+
+    _data = pinocchio::Data(_mdl);
+
+    return ab.frame_idx;
+
+}
+
+bool ModelInterface2Pin::updateFixedLink(int link_id, double mass, Eigen::Matrix3d inertia, Eigen::Affine3d pose)
+{
+    auto& ab = _attached_body_map.at(link_id);
+
+    Eigen::Affine3d m_pose = ab.m_T_p * pose;
+
+    ab.frame.inertia.mass() = mass;
+    ab.frame.inertia.inertia() = pinocchio::Symmetric3(inertia);
+    ab.frame.placement.translation() = m_pose.translation();
+    ab.frame.placement.rotation() = m_pose.linear();
+
+    return true;  // TBD check mass and inertia
 }
 
 XBotInterface::JointParametrization
@@ -215,7 +298,21 @@ ModelInterface2Pin::get_joint_parametrization(string_const_ref jname)
 
 pinocchio::Index ModelInterface2Pin::get_frame_id(string_const_ref name) const
 {
-    return _frame_idx.at(name);
+    auto it = _frame_idx.find(name);
+
+    if(it != _frame_idx.end())
+    {
+        return it->second;
+    }
+
+    int idx = _mdl.getFrameId(name);
+
+    check_frame_idx_throw(idx);
+
+    _frame_idx[name] = idx;
+
+    return idx;
+
 }
 
 void ModelInterface2Pin::check_frame_idx_throw(int idx) const

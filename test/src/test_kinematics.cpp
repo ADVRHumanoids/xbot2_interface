@@ -68,20 +68,20 @@ TEST_F(TestKinematics, checkJointFk)
             count++;
 
             auto T = model->getPose(j->getParentLink()).inverse()*
-                    model->getPose(j->getChildLink());
+                     model->getPose(j->getChildLink());
 
             auto v_fk = model->getRelativeVelocityTwist(j->getChildLink(), j->getParentLink());
             XBot::Utils::rotate(v_fk, T.linear().transpose());
 
             EXPECT_TRUE( T.isApprox(T_j) )
-                    << j->getName() << "\n" <<
-                       "T  = \n" << T.matrix().format(3) << "\n" <<
-                       "Tj = \n" << T_j.matrix().format(3) << "\n";
+                << j->getName() << "\n" <<
+                "T  = \n" << T.matrix().format(3) << "\n" <<
+                "Tj = \n" << T_j.matrix().format(3) << "\n";
 
             EXPECT_TRUE( v_fk.isApprox(v_fk_j) )
-                    << j->getName() << "\n" <<
-                       "v_fk  = \n" << v_fk.transpose().format(3) << "\n" <<
-                       "v_fkj = \n" << v_fk_j.transpose().format(3) << "\n";
+                << j->getName() << "\n" <<
+                "v_fk  = \n" << v_fk.transpose().format(3) << "\n" <<
+                "v_fkj = \n" << v_fk_j.transpose().format(3) << "\n";
         }
     }
 
@@ -137,8 +137,8 @@ TEST_F(TestKinematics, checkJacobianNumerical)
 
             Jhat.col(i).head<3>() = dp;
             Jhat.col(i).tail<3>() << dR(2, 1)/h,
-                                     dR(0, 2)/h,
-                                     dR(1, 0)/h;
+                dR(0, 2)/h,
+                dR(1, 0)/h;
 
         }
 
@@ -304,8 +304,8 @@ TEST_F(TestKinematics, checkRelativeJacobian)
 
             Jhat.col(i).head<3>() = dp;
             Jhat.col(i).tail<3>() << dR(2, 1)/h,
-                    dR(0, 2)/h,
-                    dR(1, 0)/h;
+                dR(0, 2)/h,
+                dR(1, 0)/h;
 
         }
 
@@ -316,9 +316,9 @@ TEST_F(TestKinematics, checkRelativeJacobian)
         count++;
 
         EXPECT_LT((J - Jhat).lpNorm<Eigen::Infinity>(), 1e-3)
-                << lname << " -> " << bname << "\n" <<
-                   "Jhat = \n" << Jhat.format(3) << "\n" <<
-                   "J    = \n" << J.format(3) << "\n";
+            << lname << " -> " << bname << "\n" <<
+            "Jhat = \n" << Jhat.format(3) << "\n" <<
+            "J    = \n" << J.format(3) << "\n";
     };
 
     for(int i = 0; i < 1; i++)
@@ -388,7 +388,7 @@ TEST_F(TestKinematics, checkRelativeJdotTimesV)
     double dt = 0;
 
     auto check_jdot_times_v = [this, &count, &dt](std::string lname, std::string bname,
-            Eigen::VectorXd q0, Eigen::VectorXd v)
+                                                  Eigen::VectorXd q0, Eigen::VectorXd v)
     {
         model->setJointPosition(q0);
         model->setJointVelocity(v);
@@ -416,9 +416,9 @@ TEST_F(TestKinematics, checkRelativeJdotTimesV)
         Eigen::Vector6d acc_hat = (vplus - vminus)/h;
 
         EXPECT_LT((acc_hat - acc).lpNorm<Eigen::Infinity>(), 1e-3)
-                << lname << " -> " << bname << "\n" <<
-                   "a0     = " << acc.transpose().format(3) << "\n" <<
-                   "a0_hat = " << acc_hat.transpose().format(3) << "\n";
+            << lname << " -> " << bname << "\n" <<
+            "a0     = " << acc.transpose().format(3) << "\n" <<
+            "a0_hat = " << acc_hat.transpose().format(3) << "\n";
 
 
     };
@@ -447,7 +447,7 @@ TEST_F(TestKinematics, checkAcceleration)
     double dt = 0;
 
     auto check_acc = [this, &count, &dt](std::string lname,
-            Eigen::VectorXd q0, Eigen::VectorXd v, Eigen::VectorXd a)
+                                         Eigen::VectorXd q0, Eigen::VectorXd v, Eigen::VectorXd a)
     {
         model->setJointPosition(q0);
         model->setJointVelocity(v);
@@ -462,7 +462,7 @@ TEST_F(TestKinematics, checkAcceleration)
         Eigen::MatrixXd J;
         ASSERT_TRUE(model->getJacobian(lname, J));
         Eigen::Vector6d acc_J = J*model->getJointAcceleration() +
-                model->getJdotTimesV(lname);
+                                model->getJdotTimesV(lname);
 
         const double h = 1e-4;
 
@@ -513,7 +513,7 @@ TEST_F(TestKinematics, checkRelativeAcceleration)
     double dt = 0;
 
     auto check_acc = [this, &count, &dt](std::string lname, std::string bname,
-            Eigen::VectorXd q0, Eigen::VectorXd v, Eigen::VectorXd a)
+                                         Eigen::VectorXd q0, Eigen::VectorXd v, Eigen::VectorXd a)
     {
         model->setJointPosition(q0);
         model->setJointVelocity(v);
@@ -529,8 +529,8 @@ TEST_F(TestKinematics, checkRelativeAcceleration)
         ASSERT_TRUE(model->getRelativeJacobian(lname, bname, J));
 
         Eigen::Vector6d acc_J = J *
-                model->getJointAcceleration() +
-                model->getRelativeJdotTimesV(lname, bname);
+                                    model->getJointAcceleration() +
+                                model->getRelativeJdotTimesV(lname, bname);
 
         const double h = 1e-4;
 
@@ -708,8 +708,8 @@ TEST_F(TestKinematics, checkRneaVsCrba)
 
         EXPECT_LT(err.lpNorm<Eigen::Infinity>(), 1e-6) <<
             "err = " << err.transpose().format(2) << "\n"
-            << "M*a + g = " << (M*a + gcomp).transpose().format(2) << "\n"
-            << "rnea    = " << (rnea).transpose().format(2) << "\n";
+                                                       << "M*a + g = " << (M*a + gcomp).transpose().format(2) << "\n"
+                                                       << "rnea    = " << (rnea).transpose().format(2) << "\n";
     }
 
     std::cout << "computeInertiaMatrix requires " << dt/count*1e6 << " us \n";
@@ -757,7 +757,135 @@ TEST_F(TestKinematics, checkInertiaInverse)
 
 }
 
+TEST_F(TestKinematics, checkAddBody)
+{
+    auto model_orig = model->clone();
 
+    double mass_old = model->getMass();
+
+    Eigen::Affine3d rel_T;
+    rel_T.linear() = Eigen::Quaterniond(Eigen::Vector4d::Random().normalized()).toRotationMatrix();
+    rel_T.translation().setRandom();
+
+    Eigen::Matrix3d ine;
+    ine.setIdentity();
+
+    double dmass = 100;
+
+    std::string parent = "arm1_4";
+
+    int lid = model->addFixedLink("newlink", parent, dmass, ine, rel_T);
+    model->update();
+
+    EXPECT_DOUBLE_EQ(mass_old + dmass, model->getMass());
+
+    EXPECT_EQ(model->getLinkId("newlink"), lid);
+
+    model->setJointPosition(model->generateRandomQ());
+    model->update();
+
+    auto T = model->getPose("newlink");
+
+    auto Tbase = model->getPose(parent);
+
+    EXPECT_TRUE((Tbase * rel_T).isApprox(T));
+
+    auto create_modified_urdf = [](urdf::ModelConstSharedPtr old_urdf,
+                                   std::string link_name,
+                                   std::string parent_name,
+                                   double mass,
+                                   Eigen::Matrix3d inertia,
+                                   Eigen::Affine3d pose)
+    {
+        // create modified URDF
+        auto durdf = std::make_shared<urdf::Model>();
+        durdf->initString(XBot::Utils::urdfToString(*old_urdf));
+
+        auto djoint = std::make_shared<urdf::Joint>();
+        djoint->name = "aux_joint";
+        djoint->type = urdf::Joint::FIXED;
+        djoint->parent_link_name = parent_name;
+        djoint->child_link_name = link_name ;
+        djoint->parent_to_joint_origin_transform.position.x = pose.translation().x();
+        djoint->parent_to_joint_origin_transform.position.y = pose.translation().y();
+        djoint->parent_to_joint_origin_transform.position.z = pose.translation().z();
+        djoint->parent_to_joint_origin_transform.rotation.setFromQuaternion(
+            Eigen::Quaterniond(pose.linear()).x(),
+            Eigen::Quaterniond(pose.linear()).y(),
+            Eigen::Quaterniond(pose.linear()).z(),
+            Eigen::Quaterniond(pose.linear()).w()
+            );
+
+        auto dlink = std::make_shared<urdf::Link>();
+        dlink->name = "newlink";
+        dlink->inertial = std::make_shared<urdf::Inertial>();
+        dlink->inertial->mass = mass;
+        dlink->inertial->ixx = inertia(0, 0);
+        dlink->inertial->iyy = inertia(1, 1);
+        dlink->inertial->izz = inertia(2, 2);
+        dlink->inertial->ixy = inertia(0, 1);
+        dlink->inertial->iyz = inertia(1, 2);
+        dlink->inertial->ixz = inertia(0, 2);
+        dlink->parent_joint = djoint;
+
+        dlink->setParent(durdf->links_.at(djoint->parent_link_name));
+
+        durdf->links_[dlink->name] = dlink;
+        durdf->joints_[djoint->name] = djoint;
+        durdf->links_.at(djoint->parent_link_name)->child_joints.push_back(djoint);
+        durdf->links_.at(djoint->parent_link_name)->child_links.push_back(dlink);
+
+        return durdf;
+    };
+
+    // new model
+    auto durdf = create_modified_urdf(model_orig->getUrdf(), "newlink", parent, dmass, ine, rel_T);
+    auto dmodel = XBot::ModelInterface::getModel(durdf, model->getSrdf(), model->getType());
+    dmodel->setJointPosition(model->getJointPosition());
+    dmodel->update();
+
+    {
+        auto M = model->computeInertiaMatrix();
+        auto dM = dmodel->computeInertiaMatrix();
+
+        EXPECT_TRUE((M - dM).isMuchSmallerThan(M, 1e-3)) << (M - dM).lpNorm<Eigen::Infinity>();
+    }
+
+    EXPECT_NEAR(dmodel->getMass(), model->getMass(), 1e-3);
+
+    EXPECT_TRUE(dmodel->getPose("newlink").isApprox(model->getPose("newlink"), 1e-3));
+
+    EXPECT_TRUE(dmodel->computeGravityCompensation().isApprox(model->computeGravityCompensation(), 1e-3));
+
+    // test update
+    dmass = 20.0;
+    rel_T.linear() = Eigen::Quaterniond(Eigen::Vector4d::Random().normalized()).toRotationMatrix();
+    rel_T.translation().setRandom();
+    ine.setRandom();
+    ine = ine.transpose() * ine;
+
+    model->updateFixedLink(lid, dmass, ine, rel_T);
+    model->update();
+    auto durdf_upd = create_modified_urdf(model_orig->getUrdf(), "newlink", parent, dmass, ine, rel_T);
+    auto dmodel_upd = XBot::ModelInterface::getModel(durdf_upd, model->getSrdf(), model->getType());
+    dmodel_upd->setJointPosition(model->getJointPosition());
+    dmodel_upd->update();
+
+    {
+        auto M = model->computeInertiaMatrix();
+        auto dM = dmodel_upd->computeInertiaMatrix();
+
+        EXPECT_TRUE((M - dM).isMuchSmallerThan(M, 1e-3)) << (M - dM).lpNorm<Eigen::Infinity>();
+    }
+
+    EXPECT_NEAR(dmodel_upd->getMass(), model->getMass(), 1e-3);
+
+    EXPECT_TRUE(dmodel_upd->getPose("newlink").isApprox(model->getPose("newlink"), 1e-3));
+
+    EXPECT_TRUE(dmodel_upd->computeGravityCompensation().isApprox(model->computeGravityCompensation(), 1e-3));
+
+
+}
 
 
 int main(int argc, char ** argv)

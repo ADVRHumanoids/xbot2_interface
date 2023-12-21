@@ -6,6 +6,8 @@
 #include "impl/joint.hxx"
 #include "impl/load_object.h"
 
+#include <urdf_parser/urdf_parser.h>
+
 using namespace XBot;
 
 XBotInterface::XBotInterface(const XBotInterface::ConfigOptions &opt):
@@ -92,7 +94,10 @@ ModelInterface::UniquePtr ModelInterface::generateReducedModel(
 {
     check_mat_size(q, getNq(), 1, __func__);
 
-    auto urdf = std::make_shared<urdf::Model>(*getUrdf());
+    auto urdf = std::make_shared<urdf::Model>();
+    urdf->initString(Utils::urdfToString(*getUrdf()));
+
+    // note: not a deep copy
     auto srdf = std::make_shared<srdf::Model>(*getSrdf());
 
     for(auto jname : joints_to_fix)
@@ -139,6 +144,16 @@ ModelInterface::UniquePtr ModelInterface::generateReducedModel(
     }
 
     return getModel(urdf, srdf, getType());
+}
+
+int ModelInterface::addFixedLink(string_const_ref link_name, string_const_ref parent_name, double mass, Eigen::Matrix3d inertia, Eigen::Affine3d pose)
+{
+    throw NotImplemented(__PRETTY_FUNCTION__);
+}
+
+bool ModelInterface::updateFixedLink(int link_id, double mass, Eigen::Matrix3d inertia, Eigen::Affine3d pose)
+{
+    throw NotImplemented(__PRETTY_FUNCTION__);
 }
 
 const std::string& XBotInterface::getName() const

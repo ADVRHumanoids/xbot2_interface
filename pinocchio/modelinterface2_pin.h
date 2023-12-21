@@ -55,6 +55,17 @@ public:
 
     void difference(VecConstRef q1, VecConstRef q0, Eigen::VectorXd& v) const override;
 
+    int addFixedLink(string_const_ref link_name,
+                      string_const_ref parent_name,
+                      double mass,
+                      Eigen::Matrix3d inertia,
+                      Eigen::Affine3d pose) override;
+
+    bool updateFixedLink(int link_id,
+                         double mass,
+                         Eigen::Matrix3d inertia,
+                         Eigen::Affine3d pose) override;
+
 
 protected:
 
@@ -66,12 +77,13 @@ private:
 
     void check_frame_idx_throw(int idx) const;
 
+    pinocchio::Model _mdl_orig;
     pinocchio::Model _mdl;
     pinocchio::Model _mdl_zerograv;
     mutable pinocchio::Data _data;
     mutable pinocchio::Data _data_no_acc;
 
-    std::unordered_map<std::string, pinocchio::Index> _frame_idx;
+    mutable std::unordered_map<std::string, pinocchio::Index> _frame_idx;
 
     pinocchio::ReferenceFrame _world_aligned;
 
@@ -102,9 +114,20 @@ private:
     Eigen::MatrixXd _eye;
 
     mutable Temporaries _tmp;
+
     Eigen::VectorXd _qneutral;
 
     Eigen::VectorXd _vzero;
+
+    struct AttachedBody
+    {
+        pinocchio::Frame frame;
+        int frame_idx;
+        Eigen::Affine3d m_T_p;
+    };
+
+    std::unordered_map<int, AttachedBody> _attached_body_map;
+
 
 };
 

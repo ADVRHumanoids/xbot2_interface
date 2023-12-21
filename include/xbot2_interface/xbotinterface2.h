@@ -327,7 +327,20 @@ public:
 
     virtual UniquePtr clone() = 0;
 
+    /* Modified models */
+
     UniquePtr generateReducedModel(VecConstRef q, std::vector<std::string> joints_to_fix) const;
+
+    virtual int addFixedLink(string_const_ref link_name,
+                              string_const_ref parent_name,
+                              double mass,
+                              Eigen::Matrix3d inertia,
+                              Eigen::Affine3d pose);
+
+    virtual bool updateFixedLink(int link_id,
+                                 double mass,
+                                 Eigen::Matrix3d inertia,
+                                 Eigen::Affine3d pose);
 
     ModelJoint::Ptr getJoint(string_const_ref name);
 
