@@ -1658,7 +1658,7 @@ void XBotInterface::Impl::finalize()
             for(int i = 0; i < nq; i++)
             {
                 _cmd.qnames[iq + i] = _state.qnames[iq + i] = jname + "@q" + std::to_string(i);
-                _qname_iq_map[_cmd.qnames[iq + i]] = iq + 1;
+                _qname_iq_map[_cmd.qnames[iq + i]] = iq + i;
             }
         }
 
@@ -1672,7 +1672,7 @@ void XBotInterface::Impl::finalize()
             for(int i = 0; i < nv; i++)
             {
                 _cmd.vnames[iv + i] = _state.vnames[iv + i] = jname + "@v" + std::to_string(i);
-                _vname_iv_map[_cmd.vnames[iv + i]] = iv + 1;
+                _vname_iv_map[_cmd.vnames[iv + i]] = iv + i;
             }
         }
 

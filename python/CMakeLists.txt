@@ -32,8 +32,6 @@ if(${pybind11_FOUND} AND ${COMPILE_PYTHON_BINDINGS})
     install(TARGETS pyaffine3
         DESTINATION ${PYTHON_SITE}/xbot2_interface)
 
-    file(WRITE ${CMAKE_BINARY_DIR}/__init__.py "")
-
-    install(FILES  ${CMAKE_BINARY_DIR}/__init__.py DESTINATION ${PYTHON_SITE}/xbot2_interface)
+    install(FILES __init__.py DESTINATION ${PYTHON_SITE}/xbot2_interface)
 
 endif()

@@ -8,6 +8,7 @@
 
 using namespace XBot;
 namespace py = pybind11;
+using rvp = py::return_value_policy;
 
 PYBIND11_MODULE(pyxbot2_interface, m) {
 
@@ -65,9 +66,9 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
         .def_property_readonly("q0",
                                py::overload_cast<>(&RobotInterface::getNeutralQ, py::const_))
         .def("getQNames",
-             &XBotInterface::getQNames)
+             &XBotInterface::getQNames, rvp::reference_internal)
         .def("getVNames",
-             &XBotInterface::getVNames)
+             &XBotInterface::getVNames, rvp::reference_internal)
         .def("getQIndexFromQName",
              &XBotInterface::getQIndexFromQName)
         .def("getVIndexFromVName",
@@ -91,9 +92,9 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
         .def("getJoint",
              py::overload_cast<string_const_ref>(&XBotInterface::getJoint, py::const_))
         .def("getJoints",
-             py::overload_cast<>(&XBotInterface::getJoints, py::const_))
+             py::overload_cast<>(&XBotInterface::getJoints, py::const_), rvp::reference_internal)
         .def("getJoints",
-             py::overload_cast<>(&XBotInterface::getJoints))
+             py::overload_cast<>(&XBotInterface::getJoints), rvp::reference_internal)
         .def("getJointId",
              py::overload_cast<string_const_ref>(&XBotInterface::getJointId, py::const_))
         .def("getJointInfo",
@@ -115,11 +116,9 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
         .def("difference",
              py::overload_cast<VecConstRef, VecConstRef>(&XBotInterface::difference, py::const_))
         .def("getForceTorque",
-             py::overload_cast<>(&XBotInterface::getForceTorque, py::const_),
-             py::return_value_policy::reference)
+             py::overload_cast<>(&XBotInterface::getForceTorque, py::const_), rvp::reference_internal)
         .def("getImu",
-             py::overload_cast<>(&XBotInterface::getImu, py::const_),
-             py::return_value_policy::reference)
+             py::overload_cast<>(&XBotInterface::getImu, py::const_), rvp::reference_internal)
         .def("getPose",
              py::overload_cast<string_const_ref>(&XBotInterface::getPose, py::const_))
         .def("getPose",
@@ -161,8 +160,8 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
         .def("__str__", [](const XBotInterface& self)
              {
             std::stringstream ss;
-            ss << "model " << self.getName() <<
-                ": nj = " << self.getJointNum() <<
+            ss << "model '" << self.getName() <<
+                "': nj = " << self.getJointNum() <<
                 ", nq = " << self.getNq() <<
                 ", nv = " << self.getNv() <<
                 std::endl;
@@ -178,9 +177,9 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
         .def("update",
              &ModelInterface::update)
         .def("getJoints",
-             py::overload_cast<>(&ModelInterface::getJoints, py::const_))
+             py::overload_cast<>(&ModelInterface::getJoints, py::const_), rvp::reference_internal)
         .def("getJoints",
-             py::overload_cast<>(&ModelInterface::getJoints))
+             py::overload_cast<>(&ModelInterface::getJoints), rvp::reference_internal)
         .def("generateReducedModel",
              &ModelInterface::generateReducedModel)
         .def("setJointPosition",
@@ -250,11 +249,11 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
         .def("move",
              &RobotInterface::move)
         .def("model",
-             &RobotInterface::model, py::return_value_policy::reference_internal)
+             &RobotInterface::model, rvp::reference_internal)
         .def("getJoints",
-             py::overload_cast<>(&RobotInterface::getJoints, py::const_))
+             py::overload_cast<>(&RobotInterface::getJoints, py::const_), rvp::reference_internal)
         .def("getJoints",
-             py::overload_cast<>(&RobotInterface::getJoints))
+             py::overload_cast<>(&RobotInterface::getJoints), rvp::reference_internal)
         .def("getMotorPosition",
              py::overload_cast<>(&RobotInterface::getMotorPosition, py::const_))
         .def("getMotorVelocity",
@@ -355,8 +354,8 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
         .def("getChildLink", &Joint::getChildLink)
         ;
 
-    py::class_<ModelJoint, Joint, ModelJoint::Ptr>(m, "ModelJoint");
+    py::class_<ModelJoint, Joint, ModelJoint::Ptr>(m, "ModelJoint", py::multiple_inheritance());
 
-    py::class_<RobotJoint, Joint, RobotJoint::Ptr>(m, "RobotJoint");
+    py::class_<RobotJoint, Joint, RobotJoint::Ptr>(m, "RobotJoint", py::multiple_inheritance());
 
 }
