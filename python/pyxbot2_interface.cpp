@@ -11,6 +11,35 @@ namespace py = pybind11;
 
 PYBIND11_MODULE(pyxbot2_interface, m) {
 
+
+
+    py::class_<ControlMode> controlMode(m, "ControlMode");
+
+    controlMode
+        .def_static("Position", &ControlMode::Position)
+        .def_static("Velocity", &ControlMode::Velocity)
+        .def_static("Effort", &ControlMode::Effort)
+        .def_static("Stiffness", &ControlMode::Stiffness)
+        .def_static("Damping", &ControlMode::Damping)
+        .def_static("Impedance", &ControlMode::Impedance)
+        .def_static("PosImpedance", &ControlMode::PosImpedance)
+        ;
+
+    py::enum_<ControlMode::Type>(controlMode, "Type")
+        .value("POSITION", ControlMode::Type::POSITION)
+        .value("VELOCITY", ControlMode::Type::VELOCITY)
+        .value("EFFORT", ControlMode::Type::EFFORT)
+        .value("STIFFNESS", ControlMode::Type::STIFFNESS)
+        .value("DAMPING", ControlMode::Type::DAMPING)
+        .value("ACCELERATION", ControlMode::Type::ACCELERATION)
+        .value("ALL", ControlMode::Type::ALL)
+        .export_values();
+
+    py::enum_<Sync>(m, "Sync")
+        .value("LinkSide", Sync::LinkSide)
+        .value("MotorSide", Sync::MotorSide)
+        .export_values();
+
     m.def("computeOrientationError",
           py::overload_cast<const Eigen::Matrix3d&, const Eigen::Matrix3d&>(Utils::computeOrientationError));
 
@@ -187,7 +216,14 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
              py::arg("inertia") = Eigen::Matrix3d::Zero().eval(),
              py::arg("pose") = Eigen::Affine3d::Identity())
         .def("syncFrom",
-             py::overload_cast<const XBotInterface&, ControlMode::Type>(&ModelInterface::syncFrom))
+             py::overload_cast<const RobotInterface&, ControlMode::Type, Sync>(&ModelInterface::syncFrom),
+             py::arg("model"),
+             py::arg("ctrl_mask") = ControlMode::ALL,
+             py::arg("sync") = Sync::LinkSide)
+        .def("syncFrom",
+             py::overload_cast<const XBotInterface&, ControlMode::Type>(&ModelInterface::syncFrom),
+             py::arg("robot"),
+             py::arg("ctrl_mask") = ControlMode::ALL)
         .def_property("q",
                       py::overload_cast<>(&ModelInterface::getJointPosition, py::const_),
                       py::overload_cast<VecConstRef>(&ModelInterface::setJointPosition))
@@ -286,6 +322,8 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
             return ss.str();
         })
         ;
+
+
 
     py::class_<Sensor>(m, "Sensor")
         .def("getName",
