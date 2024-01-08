@@ -14,9 +14,6 @@ class Joint::Impl
 
 public:
 
-
-    XBOT_DECLARE_SMART_PTR(Joint)
-
     Impl(detail::StateView sv,
          detail::CommandView cv,
          urdf::JointConstSharedPtr urdf_joint,

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(xbot2_interface LANGUAGES CXX VERSION 0.1.0)
+project(xbot2_interface LANGUAGES CXX VERSION 1.0.0)
 
 option(XBOT2_IFC_BUILD_PINOCCHIO "Build Pinocchio implementation" ON)
 option(XBOT2_IFC_BUILD_RBDL "Build RBDL implementation" ON)
@@ -33,7 +33,9 @@ add_library(xbot2_interface SHARED
     src/utils.cpp
     src/sensor.cpp
     src/imu.cpp
-    src/force_torque.cpp)
+    src/force_torque.cpp
+    src/logger.cpp
+)
 
 add_library(xbot2_interface::xbot2_interface ALIAS xbot2_interface)
 
@@ -93,6 +95,7 @@ add_subdirectory(python)
 add_executable(test_main main.cpp)
 target_link_libraries(test_main xbot2_interface)
 
+enable_testing()
 add_subdirectory(test)
 
 include(cmake/ExportProject.cmake)

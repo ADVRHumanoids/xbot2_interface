@@ -35,6 +35,21 @@ const JointInfo& Joint::getJointInfo() const
     return impl->_jinfo;
 }
 
+int Joint::getQIndex() const
+{
+    return impl->_jinfo.iq;
+}
+
+int Joint::getVIndex() const
+{
+    return impl->_jinfo.iv;
+}
+
+int Joint::getId() const
+{
+    return impl->_jinfo.id;
+}
+
 VecRef Joint::getJointPositionMinimal() const
 {
     positionToMinimal(getJointPosition(), impl->_q_minimal);
@@ -128,6 +143,10 @@ void Joint::inverseKinematics(const Eigen::Affine3d &p_T_c,
     v.resize(getNv());
 
     impl->fn_inv_kin(p_T_c, c_vc, q, v);
+}
+
+Joint::~Joint()
+{
 
 }
 
@@ -240,4 +259,9 @@ VecConstRef RobotJoint::getPositionReferenceFeedbackMinimal() const
 {
     positionToMinimal(getPositionReferenceFeedback(), impl->_qref_minimal);
     return impl->_qref_minimal;
+}
+
+bool Joint::isPassive() const
+{
+    return impl->_jinfo.passive;
 }

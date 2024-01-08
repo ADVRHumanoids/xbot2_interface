@@ -58,6 +58,18 @@ int ReadStateInterface<Derived>::getNv() const
     return derived().impl->_state.vlink.size();
 }
 
+template<class Derived>
+const std::vector<std::string> &ReadStateInterface<Derived>::getQNames() const
+{
+    return derived().impl->_state.qnames;
+}
+
+template<class Derived>
+const std::vector<std::string> &ReadStateInterface<Derived>::getVNames() const
+{
+    return derived().impl->_state.vnames;
+}
+
 // template <class Derived>
 // VecConstRef ReadStateInterface<Derived>::getJointPosition() const
 // {
@@ -312,6 +324,22 @@ CtrlModeVectorConstRef ReadCmdInterface<Derived>::getControlMode() const
 }
 
 template<class Derived>
+void ReadCmdInterface<Derived>::getControlMode(CtrlModeMap& ctrl) const
+{
+    detail::jToMap(derived().impl->_cmd,
+                   derived().impl->_cmd.ctrlmode,
+                   ctrl);
+}
+
+template<class Derived>
+void ReadCmdInterface<Derived>::getControlMode(CtrlModeTypeMap& ctrl) const
+{
+    detail::jToMap(derived().impl->_cmd,
+                   derived().impl->_cmd.ctrlmode,
+                   ctrl);
+}
+
+template<class Derived>
 void ReadCmdInterface<Derived>::setControlMode(CtrlModeVectorConstRef ctrl)
 {
     check_and_set(ctrl, derived().impl->_cmd.ctrlmode, __func__);
@@ -321,6 +349,22 @@ template<class Derived>
 void ReadCmdInterface<Derived>::setControlMode(ControlMode::Type ctrl)
 {
     derived().impl->_cmd.ctrlmode.setConstant(ctrl);
+}
+
+template<class Derived>
+void ReadCmdInterface<Derived>::setControlMode(CtrlModeMap ctrl)
+{
+    detail::mapToJ(derived().impl->_cmd,
+                   ctrl,
+                   derived().impl->_cmd.ctrlmode);
+}
+
+template<class Derived>
+void ReadCmdInterface<Derived>::setControlMode(CtrlModeTypeMap ctrl)
+{
+    detail::mapToJ(derived().impl->_cmd,
+                   ctrl,
+                   derived().impl->_cmd.ctrlmode);
 }
 
 template<class Derived>
@@ -437,6 +481,8 @@ template struct ReadStateInterface<Joint>;
 template struct WriteStateInterface<ModelJoint>;
 template struct ReadCmdInterface<RobotJoint>;
 template struct WriteCmdInterface<UniversalJoint>;
+
+template struct ReadStateInterface<Chain>;
 
 template struct ReadStateInterface<XBotInterface>;
 template struct WriteStateInterface<ModelInterface>;

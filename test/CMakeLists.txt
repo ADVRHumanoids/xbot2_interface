@@ -49,3 +49,6 @@ add_test_executable(test_parser)
 add_test_executable(test_parametrization)
 add_test_executable(test_kinematics)
 add_test_executable(test_memory)
+
+add_executable(eigen_ref_calls_free src/eigen_ref_calls_free.cpp)
+target_link_libraries(eigen_ref_calls_free Eigen3::Eigen dl)

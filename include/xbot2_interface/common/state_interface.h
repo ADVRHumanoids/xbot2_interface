@@ -1,5 +1,5 @@
-#ifndef STATE_INTERFACE_H
-#define STATE_INTERFACE_H
+#ifndef XBOT2IFC_STATE_INTERFACE_H
+#define XBOT2IFC_STATE_INTERFACE_H
 
 #include "types.h"
 
@@ -11,10 +11,13 @@ template <class Derived>
 struct XBOT2IFC_API ReadStateInterface
 {
 
-
     int getNq() const;
 
     int getNv() const;
+
+    const std::vector<std::string>& getQNames() const;
+
+    const std::vector<std::string>& getVNames() const;
 
     VecConstRef getJointPosition() const;
 
@@ -144,8 +147,14 @@ struct XBOT2IFC_API ReadCmdInterface
     void setDamping(VecConstRef q);  // sets cmd to this interface
 
     CtrlModeVectorConstRef getControlMode() const;
+    void getControlMode(CtrlModeMap& ctrl) const;
+    void getControlMode(CtrlModeTypeMap& ctrl) const;
+
     void setControlMode(CtrlModeVectorConstRef ctrl);
     void setControlMode(ControlMode::Type ctrl);
+    void setControlMode(CtrlModeMap ctrl);
+    void setControlMode(CtrlModeTypeMap ctrl);
+
     CtrlModeVectorConstRef getValidCommandMask() const;
     void clearCommandMask();
 

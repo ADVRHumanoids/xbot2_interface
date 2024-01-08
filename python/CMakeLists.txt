@@ -25,6 +25,13 @@ if(${pybind11_FOUND} AND ${COMPILE_PYTHON_BINDINGS})
     install(TARGETS pyxbot2_interface
         DESTINATION ${PYTHON_SITE}/xbot2_interface)
 
+    pybind11_add_module(pyaffine3 pyaffine3.cpp)
+
+    target_link_libraries(pyaffine3 PUBLIC Eigen3::Eigen)
+
+    install(TARGETS pyaffine3
+        DESTINATION ${PYTHON_SITE}/xbot2_interface)
+
     file(WRITE ${CMAKE_BINARY_DIR}/__init__.py "")
 
     install(FILES  ${CMAKE_BINARY_DIR}/__init__.py DESTINATION ${PYTHON_SITE}/xbot2_interface)

@@ -17,7 +17,7 @@ class RobotInterface::Impl
 public:
 
     Impl(RobotInterface& api,
-         std::unique_ptr<XBotInterface> model);
+         std::unique_ptr<ModelInterface> model);
 
     friend RobotInterface;
 
@@ -27,7 +27,7 @@ private:
     RobotInterface& _api;
 
     // model
-    std::unique_ptr<XBotInterface> _model;
+    std::shared_ptr<ModelInterface> _model;
 
 };
 

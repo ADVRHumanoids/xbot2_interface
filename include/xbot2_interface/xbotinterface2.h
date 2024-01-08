@@ -1,9 +1,11 @@
 #ifndef XBOTINTERFACE2_H
 #define XBOTINTERFACE2_H
 
+#include <any>
 #include <urdf_model/model.h>
 #include <srdfdom/model.h>
 
+#include "chain.h"
 #include "joint.h"
 #include "imu.h"
 #include "force_torque.h"
@@ -27,18 +29,27 @@ public:
     struct ConfigOptions
     {
         urdf::ModelConstSharedPtr urdf;
+
         srdf::ModelConstSharedPtr srdf;
+
+        std::map<std::string, std::any> params;
 
         bool set_urdf(std::string urdf_string);
 
         bool set_srdf(std::string srdf_string);
 
+        bool set_urdf_path(std::string urdf_path);
+
+        bool set_srdf_path(std::string srdf_path);
+
+        template <typename ParameterType>
+        bool get_parameter(std::string key, ParameterType& value) const;
+
+        template <typename ParameterType>
+        bool set_parameter(std::string key, const ParameterType& value);
     };
 
-    explicit XBotInterface(const ConfigOptions& opt);
-
-    XBotInterface(urdf::ModelConstSharedPtr urdf,
-                  srdf::ModelConstSharedPtr srdf = nullptr);
+    XBotInterface(const XBotInterface&) = delete;
 
     XBotInterface(XBotInterface&&) = default;
 
@@ -47,6 +58,10 @@ public:
     urdf::ModelConstSharedPtr getUrdf() const;
 
     srdf::ModelConstSharedPtr getSrdf() const;
+
+    std::string getUrdfString() const;
+
+    std::string getSrdfString() const;
 
     ConfigOptions getConfigOptions() const;
 
@@ -57,6 +72,10 @@ public:
     bool getRobotState(string_const_ref name, Eigen::VectorXd& q) const;
 
     int getJointNum() const;
+
+    int getActuatedNq() const;
+
+    int getActuatedNv() const;
 
     bool hasJoint(string_const_ref name) const;
 
@@ -72,11 +91,31 @@ public:
 
     int getDofIndex(string_const_ref joint_name) const;
 
+    int getQIndex(string_const_ref joint_name) const;
+
+    int getVIndex(string_const_ref joint_name) const;
+
+    int getQIndexFromQName(string_const_ref q_name) const;
+
+    int getVIndexFromVName(string_const_ref v_name) const;
+
     const std::vector<std::string>& getJointNames() const;
 
     const std::vector<Joint::Ptr>& getJoints();
 
     const std::vector<Joint::ConstPtr>& getJoints() const;
+
+    bool hasChain(string_const_ref name) const;
+
+    Chain::ConstPtr getChain(string_const_ref name) const;
+
+    Chain::Ptr getChain(string_const_ref name);
+
+    const std::vector<std::string>& getChainNames() const;
+
+    const std::vector<Chain::Ptr>& getChains();
+
+    const std::vector<Chain::ConstPtr>& getChains() const;
 
     void update();
 
@@ -84,9 +123,9 @@ public:
 
     /* Eigen/map conversions */
 
-    void qToMap(VecConstRef q, JointNameMap& qmap);
+    void qToMap(VecConstRef q, JointNameMap& qmap) const;
 
-    void vToMap(VecConstRef v, JointNameMap& vmap);
+    void vToMap(VecConstRef v, JointNameMap& vmap) const;
 
     void mapToQ(const JointNameMap& qmap, Eigen::VectorXd& q) const;
 
@@ -128,22 +167,40 @@ public:
     /* Jacobians */
 
     // absolute
-    virtual void getJacobian(int link_id, MatRef J) const = 0;
+    virtual void getJacobian(int link_id,
+                             MatRef J) const = 0;
 
-    bool getJacobian(string_const_ref link_name, MatRef J) const;
+    bool getJacobian(string_const_ref link_name,
+                     MatRef J) const;
 
-    bool getJacobian(string_const_ref link_name, Eigen::MatrixXd& J) const;
+    bool getJacobian(string_const_ref link_name,
+                     Eigen::MatrixXd& J) const;
+
+    bool getJacobian(string_const_ref link_name,
+                     const Eigen::Vector3d& p,
+                     Eigen::MatrixXd& J) const;
+
+    void getJacobian(int link_id,
+                     const Eigen::Vector3d& p,
+                     Eigen::MatrixXd& J) const;
 
     Eigen::MatrixXd getJacobian(string_const_ref link_name) const;
 
     // relative
-    virtual void getRelativeJacobian(int distal_id, int base_id, MatRef J) const;
+    virtual void getRelativeJacobian(int distal_id,
+                                     int base_id,
+                                     MatRef J) const;
 
-    bool getRelativeJacobian(string_const_ref distal_name, string_const_ref base_name, MatRef J) const;
+    bool getRelativeJacobian(string_const_ref distal_name,
+                             string_const_ref base_name,
+                             MatRef J) const;
 
-    bool getRelativeJacobian(string_const_ref distal_name, string_const_ref base_name, Eigen::MatrixXd& J) const;
+    bool getRelativeJacobian(string_const_ref distal_name,
+                             string_const_ref base_name,
+                             Eigen::MatrixXd& J) const;
 
-    Eigen::MatrixXd getRelativeJacobian(string_const_ref distal_name, string_const_ref base_name) const;
+    Eigen::MatrixXd getRelativeJacobian(string_const_ref distal_name,
+                                        string_const_ref base_name) const;
 
     /* Forward kinematics */
 
@@ -152,49 +209,71 @@ public:
 
     Eigen::Affine3d getPose(string_const_ref link_name) const;
 
-    bool getPose(string_const_ref link_name, Eigen::Affine3d& w_T_l) const;
+    bool getPose(string_const_ref link_name,
+                 Eigen::Affine3d& w_T_l) const;
+
+    bool getOrientation(string_const_ref link_name,
+                        Eigen::Matrix3d& w_R_l) const;
 
     // pose (relative)
     Eigen::Affine3d getPose(int distal_id, int base_id) const;
 
-    Eigen::Affine3d getPose(string_const_ref distal_name, string_const_ref base_name) const;
+    Eigen::Affine3d getPose(string_const_ref distal_name,
+                            string_const_ref base_name) const;
 
-    bool getPose(string_const_ref distal_name, string_const_ref base_name, Eigen::Affine3d& w_T_l) const;
+    bool getPose(string_const_ref distal_name,
+                 string_const_ref base_name,
+                 Eigen::Affine3d& b_T_l) const;
+
+    bool getOrientation(string_const_ref distal_name,
+                        string_const_ref base_name,
+                        Eigen::Affine3d& b_R_l) const;
 
     // velocity twist (absolute)
     virtual Eigen::Vector6d getVelocityTwist(int link_id) const;
 
     Eigen::Vector6d getVelocityTwist(string_const_ref link_name) const;
 
-    bool getVelocityTwist(string_const_ref link_name, Eigen::Vector6d& v) const;
+    bool getVelocityTwist(string_const_ref link_name,
+                          Eigen::Vector6d& v) const;
 
     // acceleration twist (absolute)
     virtual Eigen::Vector6d getAccelerationTwist(int link_id) const;
 
     Eigen::Vector6d getAccelerationTwist(string_const_ref link_name) const;
 
-    bool getAccelerationTwist(string_const_ref link_name, Eigen::Vector6d& a) const;
+    bool getAccelerationTwist(string_const_ref link_name,
+                              Eigen::Vector6d& a) const;
 
     //
     virtual Eigen::Vector6d getJdotTimesV(int link_id) const;
 
     Eigen::Vector6d getJdotTimesV(string_const_ref link_name) const;
 
-    bool getJdotTimesV(string_const_ref link_name, Eigen::Vector6d& a) const;
+    bool getJdotTimesV(string_const_ref link_name,
+                       Eigen::Vector6d& a) const;
 
     // velocity twist (relative)
-    Eigen::Vector6d getRelativeVelocityTwist(int distal_id, int base_id) const;
+    Eigen::Vector6d getRelativeVelocityTwist(int distal_id,
+                                             int base_id) const;
 
-    Eigen::Vector6d getRelativeVelocityTwist(string_const_ref distal_name, string_const_ref base_name) const;
+    Eigen::Vector6d getRelativeVelocityTwist(string_const_ref distal_name,
+                                             string_const_ref base_name) const;
 
-    bool getRelativeVelocityTwist(string_const_ref distal_name, string_const_ref base_name, Eigen::Vector6d& v) const;
+    bool getRelativeVelocityTwist(string_const_ref distal_name,
+                                  string_const_ref base_name,
+                                  Eigen::Vector6d& v) const;
 
     // acceleration twist (relative)
-    Eigen::Vector6d getRelativeAccelerationTwist(int distal_id, int base_id) const;
+    Eigen::Vector6d getRelativeAccelerationTwist(int distal_id,
+                                                 int base_id) const;
 
-    Eigen::Vector6d getRelativeAccelerationTwist(string_const_ref distal_name, string_const_ref base_name) const;
+    Eigen::Vector6d getRelativeAccelerationTwist(string_const_ref distal_name,
+                                                 string_const_ref base_name) const;
 
-    bool getRelativeAccelerationTwist(string_const_ref distal_name, string_const_ref base_name, Eigen::Vector6d& v) const;
+    bool getRelativeAccelerationTwist(string_const_ref distal_name,
+                                      string_const_ref base_name,
+                                      Eigen::Vector6d& v) const;
 
     // com
 
@@ -206,13 +285,22 @@ public:
 
     Eigen::MatrixXd getCOMJacobian() const;
 
+    virtual Eigen::Vector3d getCOMJdotTimesV() const = 0;
+
+    virtual Eigen::Vector3d getCOMVelocity() const;
+
+    virtual Eigen::Vector3d getCOMAcceleration() const = 0;
+
 
     //
     Eigen::Vector6d getRelativeJdotTimesV(int distal_id, int base_id) const;
 
-    Eigen::Vector6d getRelativeJdotTimesV(string_const_ref distal_name, string_const_ref base_name) const;
+    Eigen::Vector6d getRelativeJdotTimesV(string_const_ref distal_name,
+                                          string_const_ref base_name) const;
 
-    bool getRelativeJdotTimesV(string_const_ref distal_name, string_const_ref base_name, Eigen::Vector6d& v) const;
+    bool getRelativeJdotTimesV(string_const_ref distal_name,
+                               string_const_ref base_name,
+                               Eigen::Vector6d& v) const;
 
     // dynamics
     virtual double getMass() const = 0;
@@ -221,9 +309,13 @@ public:
 
     virtual VecConstRef computeGravityCompensation() const = 0;
 
+    virtual VecConstRef computeNonlinearTerm() const = 0;
+
     void computeInverseDynamics(Eigen::VectorXd& rnea) const;
 
     void computeGravityCompensation(Eigen::VectorXd& gcomp) const;
+
+    void computeNonlinearTerm(Eigen::VectorXd& h) const;
 
     virtual VecConstRef computeForwardDynamics() const = 0;
 
@@ -231,14 +323,32 @@ public:
 
     virtual MatConstRef computeInertiaInverse() const;
 
+    virtual MatConstRef computeCentroidalMomentumMatrix() const = 0;
+
+    void computeCentroidalMomentumMatrix(Eigen::MatrixXd& Ag) const;
+
+    virtual Eigen::Vector6d computeCentroidalMomentum() const;
+
+    void computeForwardDynamics(Eigen::VectorXd& fd) const;
+
+    void computeInertiaMatrix(Eigen::MatrixXd& M) const;
+
+    void computeInertiaInverse(Eigen::MatrixXd& Minv) const;
+
     // manifold operations
-    virtual void sum(VecConstRef q0, VecConstRef v, Eigen::VectorXd& q1) const = 0;
+    virtual void sum(VecConstRef q0,
+                     VecConstRef v,
+                     Eigen::VectorXd& q1) const = 0;
 
-    virtual void difference(VecConstRef q1, VecConstRef q0, Eigen::VectorXd& v) const = 0;
+    virtual void difference(VecConstRef q1,
+                            VecConstRef q0,
+                            Eigen::VectorXd& v) const = 0;
 
-    Eigen::VectorXd sum(VecConstRef q0, VecConstRef v) const;
+    Eigen::VectorXd sum(VecConstRef q0,
+                        VecConstRef v) const;
 
-    Eigen::VectorXd difference(VecConstRef q1, VecConstRef q0) const;
+    Eigen::VectorXd difference(VecConstRef q1,
+                               VecConstRef q0) const;
 
     //
     virtual ~XBotInterface();
@@ -250,6 +360,11 @@ public:
     friend RobotInterface;
 
 protected:
+
+    explicit XBotInterface(const ConfigOptions& opt);
+
+    XBotInterface(urdf::ModelConstSharedPtr urdf,
+                  srdf::ModelConstSharedPtr srdf = nullptr);
 
     virtual void update_impl() = 0;
 
@@ -280,9 +395,9 @@ protected:
 
     virtual JointParametrization get_joint_parametrization(string_const_ref jname);
 
-    std::map<std::string, ImuSensor::Ptr> getImu();
+    std::map<std::string, ImuSensor::Ptr> getImuNonConst();
 
-    std::map<std::string, ForceTorqueSensor::Ptr> getForceTorque();
+    std::map<std::string, ForceTorqueSensor::Ptr> getForceTorqueNonConst();
 
 
 protected:
@@ -308,7 +423,7 @@ public:
 
     XBOT_DECLARE_SMART_PTR(ModelInterface);
 
-    using XBotInterface::XBotInterface;
+    static UniquePtr getModel(ConfigOptions opt);
 
     static UniquePtr getModel(std::string urdf_string,
                               std::string type);
@@ -321,11 +436,18 @@ public:
                               srdf::ModelConstSharedPtr srdf,
                               std::string type);
 
-    void syncFrom(const XBotInterface& other);
+    void syncFrom(const XBotInterface& other,
+                  ControlMode::Type mask = ControlMode::Type::ALL);
+
+    void syncFrom(const RobotInterface& other,
+                  ControlMode::Type mask = ControlMode::Type::ALL,
+                  Sync flag = Sync::LinkSide);
+
+    void syncSensors(const XBotInterface& other);
 
     std::string getType() const;
 
-    virtual UniquePtr clone() = 0;
+    virtual UniquePtr clone() const = 0;
 
     /* Modified models */
 
@@ -356,19 +478,35 @@ public:
 
     /* Floating base */
 
+    Eigen::Affine3d getFloatingBasePose() const;
+
+    Eigen::Vector6d getFloatingBaseTwist() const;
+
+    bool getFloatingBasePose(Eigen::Affine3d& w_T_b) const;
+
+    bool getFloatingBaseTwist(Eigen::Vector6d& w_T_b) const;
+
     bool setFloatingBaseState(const Eigen::Affine3d& w_T_b, const Eigen::Vector6d& v);
 
     bool setFloatingBaseState(const ImuSensor& imu);
 
     bool setFloatingBasePose(const Eigen::Affine3d& w_T_b);
 
+    bool setFloatingBaseOrientation(const Eigen::Matrix3d& w_R_b);
+
     bool setFloatingBaseTwist(const Eigen::Vector6d& v);
 
     virtual ~ModelInterface();
 
+protected:
+
+    using XBotInterface::XBotInterface;
+
 };
 
 using ConfigOptions = XBotInterface::ConfigOptions;
+
+#include "impl/config_options.hxx"
 
 }
 

@@ -1,0 +1,83 @@
+<?xml version="1.0" ?>
+<robot name="test_robot" version="1.0">
+  <link name="pelvis">
+    <inertial>
+      <origin rpy="0 0 0" xyz="-0.0016320207 0.0026534004 0.079167428"/>
+      <mass value="26.584529"/>
+      <inertia ixx="0.39195477" ixy="0.024781259" ixz="0.017108607" iyy="1.0000709" iyz="0.0052627106" izz="1.0679989"/>
+    </inertial>
+    <visual>
+      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+      <geometry>
+        <mesh filename="package://centauro_urdf/meshes/v2/pelvis.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="3.14158470812 1.54787296367 3.14158452386" xyz="-0.005085 2.00284e-07 0.03057945"/>
+      <geometry>
+        <cylinder length="0.385941397914" radius="0.213204"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="3.14158470812 1.54787296367 3.14158452386" xyz="-0.198005 0.000000 0.035003"/>
+      <geometry>
+        <sphere radius="0.213204"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="3.14158470812 1.54787296367 3.14158452386" xyz="0.187835 0.000000 0.026156"/>
+      <geometry>
+        <sphere radius="0.213204"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="imu_link"/>
+  <joint name="imu_joint" type="fixed">
+    <origin rpy="0.0 0.0 0.0" xyz="0.248316 0.0 0.015"/>
+    <parent link="pelvis"/>
+    <child link="imu_link"/>
+  </joint>
+  <joint name="base_joint" type="fixed">
+    <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+    <parent link="pelvis"/>
+    <child link="base_link"/>
+  </joint>
+  <link name="torso_2">
+    <inertial>
+      <origin rpy="0 0 0" xyz="-0.019497794 0.0045317835 0.13768283"/>
+      <mass value="12.553731"/>
+      <inertia ixx="0.063643392" ixy="8.939e-05" ixz="-0.00086873" iyy="0.02680235" iyz="-4.657e-05" izz="0.04743015"/>
+    </inertial>
+    <visual>
+      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+      <geometry>
+        <mesh filename="package://centauro_urdf/meshes/link1_no_head.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="1.56663911131 -0.0158814665843 -0.0158155835138" xyz="-3.2165e-05 9.785e-05 0.07465275"/>
+      <geometry>
+        <cylinder length="0.0954367599085" radius="0.158224"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="1.56663911131 -0.0158814665843 -0.0158155835138" xyz="0.000726 0.047810 0.074454"/>
+      <geometry>
+        <sphere radius="0.158224"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="1.56663911131 -0.0158814665843 -0.0158155835138" xyz="-0.000790 -0.047614 0.074851"/>
+      <geometry>
+        <sphere radius="0.158224"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="torso_yaw" type="revolute">
+    <origin rpy="0 0 0" xyz="0.2 0.0 0.256"/>
+    <axis xyz="0.0 0.0 1.0"/>
+    <parent link="pelvis"/>
+    <child link="torso_2"/>
+    <limit effort="147.0" lower="-2.618" upper="2.618" velocity="5.7"/>
+  </joint>
+</robot>

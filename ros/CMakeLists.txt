@@ -18,5 +18,19 @@ target_link_libraries(robotinterface2_ros
     ${eigen_conversions_LIBRARIES}
     xbot2_interface)
 
-install(TARGETS robotinterface2_ros
+target_compile_options(robotinterface2_ros
+    PUBLIC
+    PRIVATE
+    -fvisibility-inlines-hidden
+    -fvisibility=hidden)
+
+install(
+    TARGETS
+    robotinterface2_ros
     DESTINATION lib)
+
+install(
+    FILES
+    config_from_param.hpp
+    DESTINATION include/${PROJECT_NAME}/${PROJECT_NAME}/ros
+)

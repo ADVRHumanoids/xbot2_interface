@@ -57,4 +57,93 @@ std::string XBot::Utils::urdfToString(const urdf::ModelInterface &urdf)
     return printer.Str();
 }
 
+std::string XBot::Utils::srdfToString(const urdf::ModelInterface &urdf, const srdf::Model &srdf)
+{
+    srdf::SRDFWriter writer;
+    writer.initModel(urdf, srdf);
+    return writer.getSRDFString();
+}
 
+void XBot::Utils::computeOrientationError(const Eigen::Matrix3d &ref,
+                             const Eigen::Matrix3d &actual,
+                             Eigen::Vector3d &error)
+{
+
+    Eigen::Quaterniond q(actual), q_d(ref);
+
+    if(q.dot(q_d) < 0){
+        q.x() *= -1;
+        q.y() *= -1;
+        q.z() *= -1;
+        q.w() *= -1;
+    }
+
+    error = q.w()*q_d.vec() - q_d.w()*q.vec() - q_d.vec().cross(q.vec());
+
+}
+
+Eigen::Vector3d XBot::Utils::computeOrientationError(const Eigen::Matrix3d &ref,
+                                                     const Eigen::Matrix3d &actual)
+{
+    Eigen::Vector3d ret;
+    computeOrientationError(ref, actual, ret);
+    return ret;
+}
+
+Eigen::Matrix6d XBot::Utils::adjointFromRotation(const Eigen::Matrix3d &R) {
+
+    Eigen::Matrix6d I;
+    I.setZero();
+
+    I.block<3, 3>(0, 0) = R;
+    I.block<3, 3>(3, 3) = R;
+
+    return I;
+}
+
+double XBot::Utils::v2::quinticSpline(double tau)
+{
+    // quintic poly 6t^5 - 15t^4 + 10t^3
+    if(tau < 0) return 0;
+    if(tau > 1) return 1;
+    return ((6*tau - 15)*tau + 10)*tau*tau*tau;
+}
+
+double XBot::Utils::v2::quinticSpline(double t0, double tf, double time)
+{
+    double tau = (time - t0)/(tf - t0);
+    return quinticSpline(tau);
+}
+
+std::tuple<double, double, double> XBot::Utils::v2::quinticSplineDerivatives(double tau)
+{
+    if(tau < 0) return {0, 0, 0};
+    if(tau > 1) return {1, 0, 0};
+    return {
+        quinticSpline(tau),
+        30*(-1 + tau)*(-1 + tau)*tau*tau,
+        60*tau*(1 - 3*tau + 2*tau*tau)
+    };
+}
+
+std::tuple<double, double, double> XBot::Utils::v2::quinticSplineDerivatives(double t0,
+                                                                             double tf,
+                                                                             double time)
+{
+    double dt = tf - t0;
+    double tau = (time - t0)/dt;
+    auto [y, dy, ddy] =  quinticSplineDerivatives(tau);
+    dy /= dt;
+    ddy /= (dt*dt);
+    return {y, dy, ddy};
+}
+
+XBot::ControlMode::Type XBot::operator|(ControlMode::Type a, ControlMode::Type b)
+{
+    return static_cast<ControlMode::Type>(static_cast<int>(a) | static_cast<int>(b));
+}
+
+XBot::ControlMode::Type XBot::operator&(ControlMode::Type a, ControlMode::Type b)
+{
+    return static_cast<ControlMode::Type>(static_cast<int>(a) & static_cast<int>(b));
+}

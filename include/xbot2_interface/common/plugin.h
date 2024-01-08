@@ -1,5 +1,5 @@
-#ifndef PLUGIN_H
-#define PLUGIN_H
+#ifndef XBOT2IFC_PLUGIN_H
+#define XBOT2IFC_PLUGIN_H
 
 #include "visibility.h"
 
@@ -33,7 +33,7 @@
 #define XBOT2_REGISTER_ROBOT_PLUGIN(Class, Type) \
     extern "C" XBOT2IFC_HELPER_DLL_EXPORT \
     XBOT2IFC_API ::XBot::RobotInterface * XBOT2_ROBOT_PLUGIN_FACTORY(Type)( \
-                            ::std::unique_ptr<::XBot::XBotInterface> model \
+                            ::std::unique_ptr<::XBot::ModelInterface> model \
                             ) \
     { \
        return new Class(std::move(model)); \

@@ -49,6 +49,8 @@ private:
 
     void parse_imu();
 
+    void parse_chains();
+
     // type
     std::string _type;
 
@@ -68,7 +70,9 @@ private:
     detail::Command _cmd;
 
     // joint name -> joint id
-    std::map<std::string, int, std::less<>> _name_id_map;
+    std::map<std::string, int> _name_id_map;
+    std::map<std::string, int> _qname_iq_map;
+    std::map<std::string, int> _vname_iv_map;
 
     // joint id -> conf dim, tangent dim
     std::vector<JointInfo> _joint_info;
@@ -87,6 +91,9 @@ private:
 
     // chains
     std::map<std::string, Chain::Ptr> _chain_map;
+    std::vector<Chain::Ptr> _chains_xbi;
+    std::vector<Chain::ConstPtr> _chains_xbi_const;
+    std::vector<std::string> _chain_names;
 
     // sensors
     std::map<std::string, Sensor::Ptr> _sensor_map;

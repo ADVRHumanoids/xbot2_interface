@@ -23,7 +23,7 @@ class RobotInterface2Ros : public RobotInterface
 
 public:
 
-    RobotInterface2Ros(std::unique_ptr<XBotInterface> model);
+    RobotInterface2Ros(std::unique_ptr<ModelInterface> model);
 
     bool sense_impl() override;
 

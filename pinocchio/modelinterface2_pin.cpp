@@ -39,7 +39,7 @@ ModelInterface2Pin::ModelInterface2Pin(const ConfigOptions& opt):
     finalize();
 }
 
-ModelInterface::UniquePtr ModelInterface2Pin::clone()
+ModelInterface::UniquePtr ModelInterface2Pin::clone() const
 {
     return std::make_unique<ModelInterface2Pin>(getConfigOptions());
 }
@@ -219,6 +219,26 @@ ModelInterface2Pin::get_joint_parametrization(string_const_ref jname)
     // urdf joint
     auto jptr = getUrdf()->joints_.at(std::string(jname));
 
+    auto jorigin = jptr->parent_to_joint_origin_transform;
+
+    Eigen::Affine3d p_T_origin;
+
+    p_T_origin.translation() <<
+        jorigin.position.x,
+        jorigin.position.y,
+        jorigin.position.z;
+
+    Eigen::Quaterniond p_q_origin;
+
+    jorigin.rotation.getQuaternion(
+                        p_q_origin.x(),
+                        p_q_origin.y(),
+                        p_q_origin.z(),
+                        p_q_origin.w()
+        );
+
+    p_T_origin.linear() = p_q_origin.toRotationMatrix();
+
     // tell base class about how to set q from its minimal
     // and maximal representations
 
@@ -266,13 +286,14 @@ ModelInterface2Pin::get_joint_parametrization(string_const_ref jname)
         };
 
         // SE(3) forward kinematics
-        ret.fn_fwd_kin = [](VecConstRef q, VecConstRef v,
+        ret.fn_fwd_kin = [p_T_origin](VecConstRef q, VecConstRef v,
                 Eigen::Affine3d* p_T_c, Eigen::Vector6d* c_vc)
         {
             if(p_T_c)
             {
                 p_T_c->translation() = q.head<3>();
                 p_T_c->linear() = Eigen::Quaterniond(q.tail<4>()).toRotationMatrix();
+                *p_T_c = p_T_origin * *p_T_c;
             }
 
             if(c_vc)
@@ -282,11 +303,12 @@ ModelInterface2Pin::get_joint_parametrization(string_const_ref jname)
         };
 
         // SE(3) inverse kinematics
-        ret.fn_inv_kin =  [](const Eigen::Affine3d& p_T_c, const Eigen::Vector6d& c_vc,
+        ret.fn_inv_kin =  [p_T_origin](const Eigen::Affine3d& p_T_c, const Eigen::Vector6d& c_vc,
                 VecRef q, VecRef v)
         {
-            q.head<3>() = p_T_c.translation();
-            q.tail<4>() = Eigen::Quaterniond(p_T_c.linear()).coeffs();
+            Eigen::Affine3d origin_T_c = p_T_origin.inverse() * p_T_c;
+            q.head<3>() = origin_T_c.translation();
+            q.tail<4>() = Eigen::Quaterniond(origin_T_c.linear()).coeffs();
             v = c_vc;
         };
 
@@ -327,7 +349,7 @@ void ModelInterface2Pin::Temporaries::resize(int nq, int nv)
 {
     J.setZero(6, nv);
     qsum.setZero(nq);
-    rnea.setZero(nv);
+    h = gcomp = rnea.setZero(nv);
     qdiff.setZero(nv);
 }
 
@@ -369,16 +391,55 @@ Eigen::Vector3d ModelInterface2Pin::getCOM() const
 {
     if(!(_cached_computation & Com))
     {
-        pinocchio::centerOfMass(_mdl, _data, false);
+        pinocchio::centerOfMass(_mdl, _data, pinocchio::KinematicLevel::ACCELERATION, false);
         _cached_computation |= Com;
     }
 
     return _data.com[0];
 }
 
+Eigen::Vector3d ModelInterface2Pin::getCOMVelocity() const
+{
+    if(!(_cached_computation & Com))
+    {
+        pinocchio::centerOfMass(_mdl, _data, pinocchio::KinematicLevel::ACCELERATION, false);
+        _cached_computation |= Com;
+    }
+
+    return _data.vcom[0];
+}
+
+Eigen::Vector3d ModelInterface2Pin::getCOMAcceleration() const
+{
+    if(!(_cached_computation & Com))
+    {
+        pinocchio::centerOfMass(_mdl, _data, pinocchio::KinematicLevel::ACCELERATION, false);
+        _cached_computation |= Com;
+    }
+
+    return _data.acom[0];
+}
+
 void ModelInterface2Pin::getCOMJacobian(MatRef J) const
 {
     J = pinocchio::jacobianCenterOfMass(_mdl, _data, false);
+}
+
+Eigen::Vector3d ModelInterface2Pin::getCOMJdotTimesV() const
+{
+    if(!(_cached_computation & KinematicsNoAcc))
+    {
+        pinocchio::forwardKinematics(_mdl, _data_no_acc, getJointPosition(), getJointVelocity(), _vzero);
+        _cached_computation |= KinematicsNoAcc;
+    }
+
+    if(!(_cached_computation & ComNoAcc))
+    {
+        pinocchio::centerOfMass(_mdl, _data_no_acc, pinocchio::KinematicLevel::ACCELERATION, false);
+        _cached_computation |= ComNoAcc;
+    }
+
+    return _data.acom[0];
 }
 
 XBOT2_REGISTER_MODEL_PLUGIN(ModelInterface2Pin, pin);

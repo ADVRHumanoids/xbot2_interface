@@ -17,9 +17,11 @@ public:
 
     XBOT_DECLARE_SMART_PTR(RobotInterface);
 
-    virtual bool sense();
+    virtual bool sense(bool update_model = true);
 
     virtual bool move();
+
+    static UniquePtr getRobot(ConfigOptions opt);
 
     static UniquePtr getRobot(urdf::ModelConstSharedPtr urdf,
                               srdf::ModelConstSharedPtr srdf,
@@ -35,9 +37,17 @@ public:
                               std::string robot_type,
                               std::string model_type);
 
+    const ModelInterface& model() const;
+
+    ModelInterface::ConstPtr modelSharedPtr() const;
+
     RobotJoint::Ptr getJoint(string_const_ref name);
 
     RobotJoint::Ptr getJoint(int i);
+
+    RobotJoint::ConstPtr getJoint(string_const_ref name) const;
+
+    RobotJoint::ConstPtr getJoint(int i) const;
 
     const std::vector<RobotJoint::Ptr>& getJoints();
 
@@ -63,7 +73,7 @@ protected:
 
     std::unique_ptr<Impl> r_impl;
 
-    RobotInterface(std::unique_ptr<XBotInterface> model);
+    RobotInterface(std::unique_ptr<ModelInterface> model);
 
     virtual bool sense_impl() = 0;
 
@@ -82,7 +92,10 @@ public:
     using XBotInterface::getPose;
     Eigen::Affine3d getPose(int link_id) const override;
 
+    using XBotInterface::sum;
     void sum(VecConstRef q0, VecConstRef v, Eigen::VectorXd& q1) const override;
+
+    using XBotInterface::difference;
     void difference(VecConstRef q1, VecConstRef q0, Eigen::VectorXd& v) const override;
 
     using XBotInterface::getVelocityTwist;
@@ -94,21 +107,47 @@ public:
     using XBotInterface::getJdotTimesV;
     Eigen::Vector6d getJdotTimesV(int link_id) const override;
 
+    using XBotInterface::getCOM;
     Eigen::Vector3d getCOM() const override;
 
+    using XBotInterface::getCOMJacobian;
     void getCOMJacobian(MatRef J) const override;
 
+    using XBotInterface::getCOMJdotTimesV;
+    Eigen::Vector3d getCOMJdotTimesV() const override;
+
+    using XBotInterface::getCOMVelocity;
+    Eigen::Vector3d getCOMVelocity() const override;
+
+    using XBotInterface::getCOMAcceleration;
+    Eigen::Vector3d getCOMAcceleration() const override;
+
+    using XBotInterface::getMass;
     double getMass() const override;
 
+    using XBotInterface::computeInverseDynamics;
     VecConstRef computeInverseDynamics() const override;
 
+    using XBotInterface::computeGravityCompensation;
     VecConstRef computeGravityCompensation() const override;
 
+    using XBotInterface::computeForwardDynamics;
     VecConstRef computeForwardDynamics() const override;
 
+    using XBotInterface::computeInertiaMatrix;
     MatConstRef computeInertiaMatrix() const override;
 
+    using XBotInterface::computeInertiaInverse;
     MatConstRef computeInertiaInverse() const override;
+
+    using XBotInterface::computeNonlinearTerm;
+    VecConstRef computeNonlinearTerm() const override;
+
+    using XBotInterface::computeCentroidalMomentumMatrix;
+    MatConstRef computeCentroidalMomentumMatrix() const override;
+
+    using XBotInterface::computeCentroidalMomentum;
+    Eigen::Vector6d computeCentroidalMomentum() const override;
 
 protected:
 

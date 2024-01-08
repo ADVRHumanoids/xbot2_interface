@@ -17,7 +17,7 @@ public:
 
     ModelInterface2Pin(const ConfigOptions& opt);
 
-    UniquePtr clone() override;
+    UniquePtr clone() const override;
 
     void update_impl() override;
 
@@ -37,7 +37,13 @@ public:
 
     Eigen::Vector3d getCOM() const override;
 
+    Eigen::Vector3d getCOMVelocity() const override;
+
+    Eigen::Vector3d getCOMAcceleration() const override;
+
     void getCOMJacobian(MatRef J) const override;
+
+    Eigen::Vector3d getCOMJdotTimesV() const override;
 
     VecConstRef computeInverseDynamics() const override;
 
@@ -47,7 +53,13 @@ public:
 
     MatConstRef computeInertiaMatrix() const override;
 
+    MatConstRef computeCentroidalMomentumMatrix() const override;
+
+    Eigen::Vector6d computeCentroidalMomentum() const override;
+
     MatConstRef computeInertiaInverse() const override;
+
+    VecConstRef computeNonlinearTerm() const override;
 
     MatConstRef computeRegressor() const;
 
@@ -95,7 +107,12 @@ private:
         Jacobians = 4,
         Rnea = 8,
         Gcomp = 16,
-        Com = 32
+        NonlinearEffects = 32,
+        Com = 64,
+        ComNoAcc = 128,
+        Crba = 256,
+        Minv = 512,
+        CCrba = 1024
     };
 
     mutable uint16_t _cached_computation;
@@ -107,6 +124,7 @@ private:
         Eigen::VectorXd qdiff;
         Eigen::VectorXd rnea;
         Eigen::VectorXd gcomp;
+        Eigen::VectorXd h;
 
         void resize(int nq, int nv);
     };

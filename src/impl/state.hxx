@@ -22,7 +22,7 @@ struct StateTemplate
         qmin, qmax, vmax, taumax,
         qneutral;
 
-    std::vector<std::string> qnames, vnames;
+    std::vector<std::string> qnames, vnames, jnames;
 
     const std::vector<Vec*> qs = {&qmot, &qlink, &qref, &qneutral};
     const std::vector<Vec*> vs = {&vmot, &vlink, &a, &tau, &k, &d, &vref, &tauref, &qmin, &qmax, &vmax, &taumax};
@@ -41,7 +41,7 @@ struct CommandTemplate
     VecInt ctrlmode;
     VecInt ctrlset;
 
-    std::vector<std::string> qnames, vnames;
+    std::vector<std::string> qnames, vnames, jnames;
 
     const std::vector<Vec*> qs = {&qcmd};
     const std::vector<Vec*> vs = {&vcmd, &taucmd, &kcmd, &dcmd};
@@ -103,6 +103,60 @@ void mapToV(const Container& cnt, const JointNameMap& vmap, VecRef v)
     }
 }
 
+template<class Container>
+void jToMap(const Container& cnt, CtrlModeVectorConstRef ctrl, CtrlModeTypeMap &ctrlmap)
+{
+    for(int i = 0; i < cnt.jnames.size(); i++)
+    {
+        ctrlmap[cnt.jnames[i]] = ControlMode::Type(ctrl[i]);
+    }
+}
+
+template<class Container>
+void jToMap(const Container& cnt, CtrlModeVectorConstRef ctrl, CtrlModeMap &ctrlmap)
+{
+    for(int i = 0; i < cnt.jnames.size(); i++)
+    {
+        ctrlmap[cnt.jnames[i]] = ControlMode::Type(ctrl[i]);
+    }
+}
+
+template<class Container>
+void mapToJ(const Container& cnt, const CtrlModeMap& ctrlmap, CtrlModeVectorRef ctrl)
+{
+    check_mat_size(ctrl, cnt.jnames.size(), 1, __func__);
+
+    for(int i = 0; i < cnt.vnames.size(); i++)
+    {
+        try
+        {
+            ctrl[i] = ctrlmap.at(cnt.vnames[i]);
+        }
+        catch (std::out_of_range&)
+        {
+
+        }
+    }
+}
+
+template<class Container>
+void mapToJ(const Container& cnt, const CtrlModeTypeMap& ctrlmap, CtrlModeVectorRef ctrl)
+{
+    check_mat_size(ctrl, cnt.jnames.size(), 1, __func__);
+
+    for(int i = 0; i < cnt.vnames.size(); i++)
+    {
+        try
+        {
+            ctrl[i] = ctrlmap.at(cnt.vnames[i]);
+        }
+        catch (std::out_of_range&)
+        {
+
+        }
+    }
+}
+
 template <typename T>
 void resize(T& cnt, int nq, int nv, int nj)
 {
@@ -125,12 +179,15 @@ void resize(T& cnt, int nq, int nv, int nj)
 
     cnt.vnames.assign(nv, "");
 
+    cnt.jnames.assign(nj, "");
+
 }
 
 template <typename Vec>
 typename StateTemplate<Vec>::ViewContainer createView(StateTemplate<Vec>& cnt,
                                                       int iq, int nq,
-                                                      int iv, int nv)
+                                                      int iv, int nv,
+                                                      int ij, int nj)
 {
     typename StateTemplate<Vec>::ViewContainer ret {
         cnt.qmot.segment(iq, nq),
@@ -155,6 +212,8 @@ typename StateTemplate<Vec>::ViewContainer createView(StateTemplate<Vec>& cnt,
 
     ret.vnames.assign(cnt.vnames.begin() + iv, cnt.vnames.begin() + iv + nv);
 
+    ret.jnames.assign(cnt.jnames.begin() + ij, cnt.jnames.begin() + ij + nj);
+
     return ret;
 }
 
@@ -177,6 +236,8 @@ typename CommandTemplate<Vec, VecInt>::ViewContainer createView(CommandTemplate<
     ret.qnames.assign(cnt.qnames.begin() + iq, cnt.qnames.begin() + iq + nq);
 
     ret.vnames.assign(cnt.vnames.begin() + iv, cnt.vnames.begin() + iv + nv);
+
+    ret.jnames.assign(cnt.jnames.begin() + ij, cnt.jnames.begin() + ij + nj);
 
     return ret;
 }

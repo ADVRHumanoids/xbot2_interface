@@ -141,16 +141,24 @@ TEST_F(TestMemory, checkMalloc)
     EXPECT_EQ(free_calls, 0) << "computeInverseDynamics";
 
     reset_counters();
+    model->computeForwardDynamics(gc1);
+    EXPECT_EQ(malloc_calls, 0) << "computeForwardDynamics";
+    EXPECT_EQ(free_calls, 0) << "computeForwardDynamics";
+
+    reset_counters();
     auto M = model->computeInertiaMatrix();
     EXPECT_EQ(malloc_calls, 0) << "computeInertiaMatrix";
     EXPECT_EQ(free_calls, 0) << "computeInertiaMatrix";
 
     reset_counters();
-    malloc_banned = true;
     auto Minv = model->computeInertiaInverse();
-    malloc_banned = false;
     EXPECT_EQ(malloc_calls, 0) << "computeInertiaInverse";
     EXPECT_EQ(free_calls, 0) << "computeInertiaInverse";
+
+    reset_counters();
+    auto Ag = model->computeCentroidalMomentumMatrix();
+    EXPECT_EQ(malloc_calls, 0) << "computeCentroidalMomentumMatrix";
+    EXPECT_EQ(free_calls, 0) << "computeCentroidalMomentumMatrix";
 
 }
 

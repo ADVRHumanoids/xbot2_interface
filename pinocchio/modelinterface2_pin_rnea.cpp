@@ -27,7 +27,7 @@ VecConstRef ModelInterface2Pin::computeGravityCompensation() const
     if(!(_cached_computation & Gcomp))
     {
 
-        _tmp.rnea = pinocchio::computeGeneralizedGravity(_mdl, _data,
+        _tmp.gcomp = pinocchio::computeGeneralizedGravity(_mdl, _data,
                                                          getJointPosition());
 
 
@@ -35,5 +35,19 @@ VecConstRef ModelInterface2Pin::computeGravityCompensation() const
 
     }
 
-    return _tmp.rnea;
+    return _tmp.gcomp;
+}
+
+VecConstRef ModelInterface2Pin::computeNonlinearTerm() const
+{
+    if(!(_cached_computation & NonlinearEffects))
+    {
+        _tmp.h = pinocchio::nonLinearEffects(_mdl, _data,
+                                             getJointPosition(), getJointVelocity());
+
+        _cached_computation |= NonlinearEffects;
+
+    }
+
+    return _tmp.h;
 }

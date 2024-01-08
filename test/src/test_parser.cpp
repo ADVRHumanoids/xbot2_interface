@@ -1,4 +1,5 @@
 #include "common.h"
+#include <xbot2_interface/logger.h>
 
 using TestParser = TestCommon;
 
@@ -219,23 +220,23 @@ TEST_F(TestParser, checkJointLimits)
 
         if(jptr->type == urdf::Joint::CONTINUOUS)
         {
-            EXPECT_EQ(-M_PI, xbj->getJointLimits().first[0]);
-            EXPECT_EQ(M_PI, xbj->getJointLimits().second[0]);
+            EXPECT_GE(-1000, xbj->getJointLimits().first[0]);
+            EXPECT_LE(1000, xbj->getJointLimits().second[0]);
             EXPECT_EQ(jptr->limits->velocity, xbj->getVelocityLimits()[0]);
             EXPECT_EQ(jptr->limits->effort, xbj->getEffortLimits()[0]);
 
-            EXPECT_EQ(-M_PI, qmin[jinfo.iv]);
-            EXPECT_EQ(M_PI, qmax[jinfo.iv]);
+            EXPECT_GE(-1000, qmin[jinfo.iv]);
+            EXPECT_LE(1000, qmax[jinfo.iv]);
             EXPECT_EQ(jptr->limits->velocity, vmax[jinfo.iv]);
             EXPECT_EQ(jptr->limits->effort, taumax[jinfo.iv]);
         }
 
         if(jptr->type == urdf::Joint::FLOATING)
         {
-            EXPECT_TRUE((xbj->getJointLimits().first.head<3>().array() < 1e6).all());
-            EXPECT_TRUE((xbj->getJointLimits().second.head<3>().array() > 1e6).all());
-            EXPECT_TRUE((xbj->getJointLimits().first.tail<3>().array() == -M_PI).all());
-            EXPECT_TRUE((xbj->getJointLimits().second.tail<3>().array() == M_PI).all());
+            EXPECT_TRUE((xbj->getJointLimits().first.head<3>().array() <= -1000).all());
+            EXPECT_TRUE((xbj->getJointLimits().second.head<3>().array() >= 1000).all());
+            EXPECT_TRUE((xbj->getJointLimits().first.tail<3>().array() <= -1000).all());
+            EXPECT_TRUE((xbj->getJointLimits().second.tail<3>().array() >= 1000).all());
         }
 
     }
@@ -331,6 +332,86 @@ TEST_F(TestParser, checkMapConversions)
     EXPECT_EQ(vmap1, vmap);
     vmap1.clear();
 
+}
+
+TEST_F(TestParser, checkChains)
+{
+    auto model = XBot::ModelInterface::getModel(urdf,
+                                                srdf,
+                                                model_type);
+
+    std::set<std::string> real_chains = {"front_left_leg",
+                                            "front_right_leg",
+                                            "rear_right_leg",
+                                            "rear_left_leg",
+                                            "left_arm",
+                                            "right_arm",
+                                            "torso",
+                                            "velodyne",
+                                            "d435_head"};
+
+    EXPECT_EQ(model->getChainNames().size(),
+              real_chains.size());
+
+    for(auto rc : real_chains)
+    {
+        EXPECT_TRUE(model->hasChain(rc));
+    }
+
+    for(auto c : model->getChainNames())
+    {
+        EXPECT_TRUE(real_chains.contains(c));
+
+        EXPECT_TRUE(model->getChain(c) != nullptr);
+
+        auto chain = model->getChain(c);
+
+        EXPECT_EQ(chain->getName(), c);
+
+        EXPECT_EQ(chain->getJointNum(), chain->getJoints().size());
+
+        EXPECT_EQ(chain->getJointNum(), chain->getJointNames().size());
+
+        for(auto jn : chain->getJointNames())
+        {
+            model->hasJoint(jn);
+        }
+
+        int exp_iq = chain->getQIndex();
+        int exp_iv = chain->getVIndex();
+        int exp_nq = chain->getNq();
+        int exp_nv = chain->getNv();
+
+        for(auto jn : chain->getJointNames())
+        {
+            auto j = model->getJoint(jn);
+
+            EXPECT_EQ(j->getQIndex(), exp_iq);
+            EXPECT_EQ(j->getVIndex(), exp_iv);
+
+            exp_iq += j->getNq();
+            exp_iv += j->getNv();
+
+            exp_nq -= j->getNq();
+            exp_nv -= j->getNv();
+        }
+
+        EXPECT_EQ(exp_nq, 0);
+        EXPECT_EQ(exp_nv, 0);
+
+    }
+}
+
+TEST_F(TestParser, checkChainsGetSet)
+{
+    auto model = XBot::ModelInterface::getModel(urdf,
+                                                srdf,
+                                                model_type);
+
+    for(auto c : model->getChains())
+    {
+
+    }
 }
 
 int main(int argc, char ** argv)

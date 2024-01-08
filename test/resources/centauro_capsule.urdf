@@ -2679,5 +2679,6 @@
   <joint name="reference" type="floating">
     <parent link="world"/>
     <child link="pelvis"/>
+    <origin rpy="0 0 1.57" xyz="0.0 0.0 1.0"/>
   </joint>
 </robot>

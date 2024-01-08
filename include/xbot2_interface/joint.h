@@ -33,9 +33,17 @@ public:
 
     int getType() const;
 
+    bool isPassive() const;
+
     urdf::JointConstSharedPtr getUrdfJoint() const;
 
     const JointInfo& getJointInfo() const;
+
+    int getQIndex() const;
+
+    int getVIndex() const;
+
+    int getId() const;
 
     VecRef getJointPositionMinimal() const;
 
@@ -69,6 +77,8 @@ public:
                            const Eigen::Vector6d& c_vc,
                            Eigen::VectorXd& q,
                            Eigen::VectorXd& v) const;
+
+    ~Joint();
 
     friend class XBotInterface;
     friend ReadStateInterface<Joint>;

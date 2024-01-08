@@ -7,12 +7,23 @@ Eigen::Scalard XBot::from_value(double value)
     return Eigen::Scalard{value};
 }
 
-JointInfo::JointInfo():
-    id(-1),
-    iq(-1),
-    iv(-1),
-    nq(-1),
-    nv(-1)
+std::pair<int, int> JointInfo::iqv() const
+{
+    return {iq, iv};
+}
+
+std::pair<int, int> JointInfo::nqv() const
+{
+    return {nq, nv};
+}
+
+JointInfo::JointInfo()
+    : id(-1)
+    , iq(-1)
+    , iv(-1)
+    , nq(-1)
+    , nv(-1)
+    , passive(false)
 
 {
 

@@ -88,6 +88,67 @@ TEST_F(TestKinematics, checkJointFk)
     std::cout << "forwardKinematics requires " << dt/count*1e6 << " us \n";
 }
 
+TEST_F(TestKinematics, checkFloatingBase)
+{
+    auto fb = model->getJoint(0);
+    EXPECT_EQ(model->getFloatingBaseLink(), fb->getChildLink());
+
+    model->setJointPosition(model->generateRandomQ());
+    model->update();
+
+    Eigen::Affine3d T;
+    T.translation().setRandom();
+    T.linear() = Eigen::Quaterniond(Eigen::Vector4d::Random().normalized()).toRotationMatrix();
+
+    ASSERT_TRUE(model->setFloatingBasePose(T));
+    model->update();
+
+    EXPECT_TRUE(model->getFloatingBasePose().isApprox(T, 1e-4));
+
+    EXPECT_TRUE(model->getPose(fb->getChildLink()).isApprox(T, 1e-4));
+
+    Eigen::Vector6d v;
+    v.setRandom();
+    ASSERT_TRUE(model->setFloatingBaseState(T, v));
+    model->update();
+
+    EXPECT_TRUE(model->getPose(fb->getChildLink()).isApprox(T, 1e-4));
+    EXPECT_TRUE(model->getVelocityTwist(fb->getChildLink()).isApprox(v, 1e-4)) <<
+        model->getVelocityTwist(fb->getChildLink()).transpose() << "\n" <<
+        v.transpose();
+
+}
+
+TEST_F(TestKinematics, checkFloatingBaseImu)
+{
+    auto imu = std::const_pointer_cast<XBot::ImuSensor>(model->getImu("imu_link"));
+
+    for(int i = 0; i < 1000; i++)
+    {
+
+        Eigen::Vector3d omega;
+        omega.setRandom();
+
+        Eigen::Quaterniond w_R_imu = Eigen::Quaterniond(
+            Eigen::Vector4d::Random().normalized());
+
+        imu->setMeasurement(omega,
+                            Eigen::Vector3d::Zero(),
+                            w_R_imu,
+                            XBot::wall_time::clock::now());
+
+        ASSERT_TRUE(model->setFloatingBaseState(*imu));
+
+        model->update();
+
+        EXPECT_TRUE(model->getFloatingBasePose().linear().isApprox(w_R_imu.toRotationMatrix(), 1e-4));
+
+        EXPECT_TRUE(model->getFloatingBaseTwist().tail<3>().isApprox(omega, 1e-4));
+
+    }
+
+}
+
 TEST_F(TestKinematics, checkJacobianNumerical)
 {
     int count = 0;
@@ -99,7 +160,9 @@ TEST_F(TestKinematics, checkJacobianNumerical)
     int count_pose = 0;
     double dt_pose = 0;
 
-    auto check_jac = [&](std::string lname, Eigen::VectorXd q0)
+    auto check_jac = [&](std::string lname,
+                         Eigen::VectorXd q0,
+                         Eigen::Vector3d offset = Eigen::Vector3d::Zero().eval())
     {
         model->setJointPosition(q0);
         TIC(upd);
@@ -116,6 +179,10 @@ TEST_F(TestKinematics, checkJacobianNumerical)
 
         Eigen::MatrixXd Jhat(6, model->getNv());
 
+        Eigen::Affine3d T_offset;
+        T_offset.setIdentity();
+        T_offset.translation() << offset;
+
         for(int i = 0; i < model->getNv(); i++)
         {
             auto vi = Eigen::VectorXd::Unit(model->getNv(), i);
@@ -126,11 +193,11 @@ TEST_F(TestKinematics, checkJacobianNumerical)
 
             model->setJointPosition(qplus);
             model->update();
-            auto Tplus = model->getPose(lname);
+            auto Tplus = model->getPose(lname)*T_offset;
 
             model->setJointPosition(qminus);
             model->update();
-            auto Tminus = model->getPose(lname);
+            auto Tminus = model->getPose(lname)*T_offset;
 
             Eigen::Vector3d dp = (Tplus.translation() - Tminus.translation())/h;
             Eigen::Matrix3d dR = (Tplus.linear() - Tminus.linear())*T.linear().transpose();
@@ -144,7 +211,14 @@ TEST_F(TestKinematics, checkJacobianNumerical)
 
         TIC();
         Eigen::MatrixXd J;
-        ASSERT_TRUE(model->getJacobian(lname, J));
+        if(offset.isZero())
+        {
+            ASSERT_TRUE(model->getJacobian(lname, J));
+        }
+        else
+        {
+            ASSERT_TRUE(model->getJacobian(lname, offset, J));
+        }
         dt += TOC();
         count++;
 
@@ -160,7 +234,10 @@ TEST_F(TestKinematics, checkJacobianNumerical)
 
         for(auto [lname, lptr] : model->getUrdf()->links_)
         {
+            Eigen::Vector3d offset;
+            offset.setRandom();
             check_jac(lname, q);
+            check_jac(lname, q, offset);
         }
     }
 
@@ -754,6 +831,105 @@ TEST_F(TestKinematics, checkInertiaInverse)
 
     std::cout << "computeInertiaInverseTimesMatrix requires " << dt_minv/count*1e6 << " us \n";
     std::cout << "computeForwardDynamics requires " << dt_fd/count*1e6 << " us \n";
+
+}
+
+TEST_F(TestKinematics, checkCmmVsCm)
+{
+    int count = 0;
+    double dt_cmm = 0;
+    double dt_cm = 0;
+    double dt_cm_cached = 0;
+
+    for(int i = 0; i < 1000; i++)
+    {
+        model->setJointPosition(model->generateRandomQ());
+        Eigen::VectorXd v;
+        v.setRandom(model->getNv());
+        model->setJointVelocity(v);
+        model->update();
+
+        TIC();
+        auto cm1 = model->computeCentroidalMomentum();
+        dt_cm += TOC();
+
+        TIC(cmm);
+        auto cmm = model->computeCentroidalMomentumMatrix();
+        Eigen::Vector6d cm2;
+        cm2.noalias() = cmm*v;
+        dt_cmm += TOC(cmm);
+
+        TIC(cm_cached);
+        auto cmc = model->computeCentroidalMomentum();
+        dt_cm_cached += TOC(cm_cached);
+
+        EXPECT_LT((cm2-cm1).lpNorm<Eigen::Infinity>(), 1e-3);
+        EXPECT_LT((cm1-cmc).lpNorm<Eigen::Infinity>(), 1e-6);
+
+        count++;
+
+    }
+
+    std::cout << "computeCentroidalMomentum requires " << dt_cm/count*1e6 << " us \n";
+    std::cout << "computeCentroidalMomentumMatrix times V requires " << dt_cmm/count*1e6 << " us \n";
+    std::cout << "computeCentroidalMomentum cached requires  " << dt_cm_cached/count*1e6 << " us \n";
+}
+
+TEST_F(TestKinematics, checkCmm)
+{
+    int count = 0;
+    double dt_cmm = 0;
+
+    for(int i = 0; i < 1000; i++)
+    {
+        model->setJointPosition(model->generateRandomQ());
+        model->update();
+        Eigen::VectorXd q = model->getJointPosition();
+
+        Eigen::VectorXd tau;
+        tau.setRandom(model->getNv());
+        tau.head<6>().setZero();
+
+        Eigen::Vector6d F;
+        F.setRandom();
+
+        Eigen::VectorXd v;
+        v.setZero(model->getNv());
+
+        Eigen::MatrixXd J = model->getJacobian("base_link");
+        Eigen::Vector3d p_world;
+        p_world.setRandom();
+        XBot::Utils::changeRefPoint(J, p_world - model->getPose("base_link").translation());
+
+        Eigen::Vector3d com = model->getCOM();
+
+        Eigen::Vector6d dmom;
+        dmom << F.head<3>(), F.tail<3>() + (p_world - com).cross(F.head<3>());
+
+        dmom.head<3>() += Eigen::Vector3d(0, 0, -9.81)*model->getMass();
+
+        model->setJointEffort(tau + J.transpose()*F);
+
+        TIC();
+        auto Ag = model->computeCentroidalMomentumMatrix();
+        dt_cmm += TOC();
+        count++;
+
+        auto a = model->computeForwardDynamics();
+
+        double dt = 0.0001;
+
+        Eigen::VectorXd qnew = model->sum(q, 0.5*a*dt*dt);
+        Eigen::VectorXd vnew = a*dt;
+
+        // variation in momentum at zero initial velocity must equal
+        // the applied wrench at the com
+        EXPECT_LT((Ag*a - dmom).lpNorm<Eigen::Infinity>(), 1e-3) << "computeCentroidalMomentumMatrix \ns"
+            << (Ag*a).transpose() << std::endl
+            << (dmom).transpose() << std::endl;
+    }
+
+    std::cout << "computeCentroidalMomentumMatrix requires " << dt_cmm/count*1e6 << " us \n";
 
 }
 

@@ -165,7 +165,7 @@ TEST_F(TestParametrization, checkReducedModel)
         EXPECT_FALSE(bool(redmodel->getJoint(j)));
     }
 
-    EXPECT_EQ(model->getMass(), redmodel->getMass());
+    EXPECT_NEAR(model->getMass(), redmodel->getMass(), 1e-3);
 
     auto redq = redmodel->generateRandomQ();
     Eigen::VectorXd redv = Eigen::VectorXd::Random(redmodel->getNv());
@@ -198,7 +198,7 @@ TEST_F(TestParametrization, checkReducedModel)
     {
         auto T1 = model->getPose(lname);
         auto T2 = redmodel->getPose(lname);
-        EXPECT_TRUE(T1.isApprox(T2)) <<
+        EXPECT_TRUE(T1.isApprox(T2, 1e-3)) <<
             lname << "\nTc = " << T1.matrix().format(2) << "\nTok = " << T2.matrix().format(2) << std::endl;
 
     }

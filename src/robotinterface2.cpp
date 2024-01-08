@@ -5,14 +5,24 @@
 
 using namespace XBot;
 
-bool RobotInterface::sense()
+bool RobotInterface::sense(bool update_model)
 {
     for(auto& item : XBotInterface::impl->_sensor_map)
     {
         item.second->clear();
     }
 
-    return sense_impl();
+    if(!sense_impl())
+    {
+        return false;
+    }
+
+    if(update_model)
+    {
+        r_impl->_model->update();
+    }
+
+    return true;
 }
 
 bool RobotInterface::move()
@@ -20,6 +30,22 @@ bool RobotInterface::move()
     return move_impl();
 }
 
+RobotInterface::UniquePtr RobotInterface::getRobot(ConfigOptions opt)
+{
+    auto mdl = ModelInterface::getModel(opt);
+
+    std::string robot_type = "ros";
+
+    opt.get_parameter("robot_type", robot_type);
+
+    auto rob = CallFunction<RobotInterface*>(
+        "librobotinterface2_" + robot_type + ".so",
+        "xbot2_create_robot_plugin_" + robot_type,
+        std::move(mdl)
+        );
+
+    return UniquePtr(rob);
+}
 
 RobotInterface::UniquePtr RobotInterface::getRobot(urdf::ModelConstSharedPtr urdf,
                                               srdf::ModelConstSharedPtr srdf,
@@ -28,15 +54,13 @@ RobotInterface::UniquePtr RobotInterface::getRobot(urdf::ModelConstSharedPtr urd
 {
     XBotInterface::ConfigOptions opt { urdf, srdf };
 
-    auto mdl = ModelInterface::getModel(urdf, srdf, model_type);
+    opt.set_parameter("model_type", model_type);
 
-    auto rob = CallFunction<RobotInterface*>(
-                "librobotinterface2_" + robot_type + ".so",
-                "xbot2_create_robot_plugin_" + robot_type,
-                std::move(mdl)
-                );
+    opt.set_parameter("robot_type", robot_type);
 
-    return UniquePtr(rob);
+    auto mdl = ModelInterface::getModel(opt);
+
+    return getRobot(opt);
 }
 
 RobotInterface::UniquePtr RobotInterface::getRobot(std::string urdf_string,
@@ -61,6 +85,16 @@ RobotInterface::UniquePtr RobotInterface::getRobot(std::string urdf_string,
     return getRobot(opt.urdf, opt.srdf, robot_type, model_type);
 }
 
+const ModelInterface &RobotInterface::model() const
+{
+    return *(r_impl->_model);
+}
+
+ModelInterface::ConstPtr RobotInterface::modelSharedPtr() const
+{
+    return r_impl->_model;
+}
+
 RobotJoint::Ptr RobotInterface::getJoint(string_const_ref name)
 {
     return getUniversalJoint(name);
@@ -69,6 +103,16 @@ RobotJoint::Ptr RobotInterface::getJoint(string_const_ref name)
 RobotJoint::Ptr RobotInterface::getJoint(int i)
 {
     return getUniversalJoint(i);
+}
+
+RobotJoint::ConstPtr RobotInterface::getJoint(string_const_ref name) const
+{
+    return const_cast<RobotInterface&>(*this).getUniversalJoint(name);
+}
+
+RobotJoint::ConstPtr RobotInterface::getJoint(int i) const
+{
+    return const_cast<RobotInterface&>(*this).getUniversalJoint(i);
 }
 
 const std::vector<RobotJoint::Ptr> &RobotInterface::getJoints()
@@ -138,7 +182,7 @@ RobotInterface::~RobotInterface()
 
 }
 
-RobotInterface::RobotInterface(std::unique_ptr<XBotInterface> model):
+RobotInterface::RobotInterface(std::unique_ptr<ModelInterface> model):
     XBotInterface(model->impl)  // trick: share state between internal model and robot
 {
     r_impl = std::make_unique<Impl>(*this, std::move(model));
@@ -183,7 +227,7 @@ XBotInterface::JointParametrization XBot::RobotInterface::get_joint_parametrizat
 // impl
 
 RobotInterface::Impl::Impl(RobotInterface &api,
-                            std::unique_ptr<XBotInterface> model):
+                            std::unique_ptr<ModelInterface> model):
     _api(api),
     _model(std::move(model))
 {
@@ -215,6 +259,21 @@ void RobotInterface::getCOMJacobian(MatRef J) const
     return r_impl->_model->getCOMJacobian(J);
 }
 
+Eigen::Vector3d RobotInterface::getCOMJdotTimesV() const
+{
+    return r_impl->_model->getCOMJdotTimesV();
+}
+
+Eigen::Vector3d RobotInterface::getCOMVelocity() const
+{
+    return r_impl->_model->getCOMVelocity();
+}
+
+Eigen::Vector3d RobotInterface::getCOMAcceleration() const
+{
+    return r_impl->_model->getCOMAcceleration();
+}
+
 double RobotInterface::getMass() const
 {
     return r_impl->_model->getMass();
@@ -243,4 +302,19 @@ MatConstRef RobotInterface::computeInertiaMatrix() const
 MatConstRef RobotInterface::computeInertiaInverse() const
 {
     return r_impl->_model->computeInertiaInverse();
+}
+
+VecConstRef RobotInterface::computeNonlinearTerm() const
+{
+    return r_impl->_model->computeNonlinearTerm();
+}
+
+MatConstRef RobotInterface::computeCentroidalMomentumMatrix() const
+{
+    return r_impl->_model->computeCentroidalMomentumMatrix();
+}
+
+Eigen::Vector6d RobotInterface::computeCentroidalMomentum() const
+{
+    return r_impl->_model->computeCentroidalMomentum();
 }

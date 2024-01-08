@@ -1,10 +1,11 @@
 #include "robotinterface2_ros.h"
+#include "config_from_param.hpp"
 #include <xbot2_interface/common/plugin.h>
 #include <eigen_conversions/eigen_msg.h>
 
 using namespace XBot;
 
-RobotInterface2Ros::RobotInterface2Ros(std::unique_ptr<XBotInterface> model):
+RobotInterface2Ros::RobotInterface2Ros(std::unique_ptr<ModelInterface> model):
     RobotInterface(std::move(model)),
     _nh("xbotcore"),
     _js_received(false)
@@ -36,7 +37,7 @@ RobotInterface2Ros::RobotInterface2Ros(std::unique_ptr<XBotInterface> model):
     }
 
     // imu
-    auto imu_map = getImu();
+    auto imu_map = getImuNonConst();
 
     for(auto [name, imu] : imu_map)
     {
@@ -63,7 +64,7 @@ RobotInterface2Ros::RobotInterface2Ros(std::unique_ptr<XBotInterface> model):
     }
 
     // ft
-    auto ft_map = getForceTorque();
+    auto ft_map = getForceTorqueNonConst();
 
     for(auto [name, ft] : ft_map)
     {
