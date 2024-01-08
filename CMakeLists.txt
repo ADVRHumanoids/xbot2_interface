@@ -23,6 +23,9 @@ include_directories(include/
 
 add_definitions(-DBOOST_BIND_GLOBAL_PLACEHOLDERS)
 
+# internal fmt
+add_subdirectory(external/fmt-10.2.1 EXCLUDE_FROM_ALL)
+
 add_library(xbot2_interface SHARED
     src/state_interface.cpp
     src/xbotinterface2.cpp
@@ -43,7 +46,9 @@ target_link_libraries(xbot2_interface
     PUBLIC
     ${urdf_LIBRARIES}
     ${srdfdom_LIBRARIES}
-    Eigen3::Eigen)
+    Eigen3::Eigen
+    PRIVATE
+    fmt::fmt-header-only)
 
 target_compile_options(xbot2_interface
     PUBLIC

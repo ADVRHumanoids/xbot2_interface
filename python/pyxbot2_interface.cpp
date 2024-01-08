@@ -65,6 +65,14 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
                                &XBotInterface::getNv)
         .def_property_readonly("q0",
                                py::overload_cast<>(&RobotInterface::getNeutralQ, py::const_))
+        .def_property_readonly("qrand",
+                               py::overload_cast<>(&RobotInterface::generateRandomQ, py::const_))
+        .def_property_readonly("qlim",
+                               py::overload_cast<>(&RobotInterface::getJointLimits, py::const_))
+        .def_property_readonly("vlim",
+                               py::overload_cast<>(&RobotInterface::getVelocityLimits, py::const_))
+        .def_property_readonly("taulim",
+                               py::overload_cast<>(&RobotInterface::getEffortLimits, py::const_))
         .def("getQNames",
              &XBotInterface::getQNames, rvp::reference_internal)
         .def("getVNames",

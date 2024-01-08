@@ -5,21 +5,21 @@ This package replaces the good ole' XBotInterface
 ## TODO List
  - [x] IMU
  - [x] FT
- - [ ] chain APIs
- - [ ] getModel/getRobot with ConfigOptions param
+ - [x] chain APIs
+ - [x] getModel/getRobot with ConfigOptions param
  - [x] isFloatingBase
  - [x] setFloatingBasePose
- - [ ] setFloatingBaseOrientation
+ - [x] setFloatingBaseOrientation
  - [x] setFloatingBaseTwist
  - [ ] setFloatingBaseAngularVelocity
  - [x] setFloatingBaseState
  - [x] getFloatingBaseLink
  - [x] getCOM
  - [x] getCOMJacobian
- - [ ] getCOMVelocity
- - [ ] getCOMAcceleration
- - [ ] getCentroidalMomentum
- - [ ] getCentroidalMomentumMatrix
+ - [x] getCOMVelocity
+ - [x] getCOMAcceleration
+ - [x] getCentroidalMomentum
+ - [x] getCentroidalMomentumMatrix
  - [x] getMass
  - [ ] getGravity
  - [ ] setGravity
@@ -30,5 +30,5 @@ This package replaces the good ole' XBotInterface
  - [x] computeGravityCompensation
  - [x] get/set joint limits
  - [x] eigen2map / map2eigen
- - [ ] syncFrom / setReferenceFrom
+ - [x] syncFrom / setReferenceFrom
  
