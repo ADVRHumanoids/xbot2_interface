@@ -70,7 +70,7 @@ void Joint::minimalToPosition(VecConstRef q_minimal, VecRef q) const
     }
 
     // otherwise just fill the buffer
-    check_and_set(q_minimal, q, __func__);
+    q = q_minimal;
 }
 
 void Joint::minimalToPosition(VecConstRef q_minimal, Eigen::VectorXd &q) const
@@ -105,7 +105,7 @@ void Joint::positionToMinimal(VecConstRef q, VecRef q_minimal) const
     }
 
     // otherwise just fill the buffer
-    check_and_set(q, q_minimal, __func__);
+    q_minimal = q;
 }
 
 void Joint::positionToMinimal(VecConstRef q, Eigen::VectorXd &q_minimal) const

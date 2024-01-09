@@ -251,6 +251,20 @@ bool ModelInterface::updateFixedLink(int link_id, double mass, Eigen::Matrix3d i
     throw NotImplemented(__PRETTY_FUNCTION__);
 }
 
+void ModelInterface::setJointPositionMinimal(VecConstRef q)
+{
+    minimalToPosition(q, impl->_state.qlink);
+}
+
+void ModelInterface::setJointPositionMinimal(const JointNameMap &qmap)
+{
+    getJointPositionMinimal(impl->_tmp.v);
+
+    mapToV(qmap, impl->_tmp.v);
+
+    setJointPositionMinimal(impl->_tmp.v);
+}
+
 const std::string& XBotInterface::getName() const
 {
     return getUrdf()->name_;
@@ -835,6 +849,71 @@ bool XBotInterface::addSensor(Sensor::Ptr s)
     }
 
     return true;
+}
+
+void XBotInterface::getJointPositionMinimal(Eigen::VectorXd &q) const
+{
+    positionToMinimal(getJointPosition(), q);
+}
+
+Eigen::VectorXd XBotInterface::getJointPositionMinimal() const
+{
+    Eigen::VectorXd ret;
+
+    getJointPositionMinimal(ret);
+
+    return ret;
+}
+
+void XBotInterface::minimalToPosition(VecConstRef q_minimal, VecRef q) const
+{
+    check_mat_size(q_minimal, getNv(), 1, __func__);
+    check_mat_size(q, getNq(), 1, __func__);
+
+    for(auto& j : impl->_joints)
+    {
+        j->minimalToPosition(q_minimal.segment(j->getVIndex(), j->getNv()),
+                             q.segment(j->getQIndex(), j->getNq()));
+    }
+}
+
+void XBotInterface::minimalToPosition(VecConstRef q_minimal, Eigen::VectorXd &q) const
+{
+    q.resize(getNq());
+    minimalToPosition(q_minimal, VecRef(q));
+}
+
+Eigen::VectorXd XBotInterface::minimalToPosition(VecConstRef q_minimal) const
+{
+    Eigen::VectorXd ret;
+    minimalToPosition(q_minimal, ret);
+    return ret;
+}
+
+void XBotInterface::positionToMinimal(VecConstRef q, VecRef q_minimal) const
+{
+    check_mat_size(q_minimal, getNv(), 1, __func__);
+    check_mat_size(q, getNq(), 1, __func__);
+
+    for(auto& j : impl->_joints)
+    {
+        j->positionToMinimal(q.segment(j->getQIndex(), j->getNq()),
+                             q_minimal.segment(j->getVIndex(), j->getNv()));
+    }
+}
+
+void XBotInterface::positionToMinimal(VecConstRef q,
+                                      Eigen::VectorXd &q_minimal) const
+{
+    q_minimal.resize(getNv());
+    positionToMinimal(q, VecRef(q_minimal));
+}
+
+Eigen::VectorXd XBotInterface::positionToMinimal(VecConstRef q) const
+{
+    Eigen::VectorXd ret;
+    positionToMinimal(q, ret);
+    return ret;
 }
 
 bool XBotInterface::isFloatingBase() const

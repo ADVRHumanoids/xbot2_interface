@@ -64,15 +64,21 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
         .def_property_readonly("nv",
                                &XBotInterface::getNv)
         .def_property_readonly("q0",
-                               py::overload_cast<>(&RobotInterface::getNeutralQ, py::const_))
+                               py::overload_cast<>(&XBotInterface::getNeutralQ, py::const_))
+        .def_property_readonly("qminimal",
+                               py::overload_cast<>(&XBotInterface::getJointPositionMinimal, py::const_))
         .def_property_readonly("qrand",
-                               py::overload_cast<>(&RobotInterface::generateRandomQ, py::const_))
+                               py::overload_cast<>(&XBotInterface::generateRandomQ, py::const_))
         .def_property_readonly("qlim",
-                               py::overload_cast<>(&RobotInterface::getJointLimits, py::const_))
+                               py::overload_cast<>(&XBotInterface::getJointLimits, py::const_))
         .def_property_readonly("vlim",
-                               py::overload_cast<>(&RobotInterface::getVelocityLimits, py::const_))
+                               py::overload_cast<>(&XBotInterface::getVelocityLimits, py::const_))
         .def_property_readonly("taulim",
-                               py::overload_cast<>(&RobotInterface::getEffortLimits, py::const_))
+                               py::overload_cast<>(&XBotInterface::getEffortLimits, py::const_))
+        .def("minimalToPosition",
+             py::overload_cast<VecConstRef>(&XBotInterface::minimalToPosition, py::const_))
+        .def("positionToMinimal",
+             py::overload_cast<VecConstRef>(&XBotInterface::positionToMinimal, py::const_))
         .def("getQNames",
              &XBotInterface::getQNames, rvp::reference_internal)
         .def("getVNames",
@@ -91,6 +97,8 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
              py::overload_cast<string_const_ref>(&XBotInterface::getRobotState, py::const_))
         .def("getJointPosition",
              py::overload_cast<>(&XBotInterface::getJointPosition, py::const_))
+        .def("getJointPositionMinimal",
+             py::overload_cast<>(&XBotInterface::getJointPositionMinimal, py::const_))
         .def("getJointEffort",
              py::overload_cast<>(&XBotInterface::getJointEffort, py::const_))
         .def("getJointAcceleration",
@@ -192,12 +200,22 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
              &ModelInterface::generateReducedModel)
         .def("setJointPosition",
              py::overload_cast<VecConstRef>(&ModelInterface::setJointPosition))
+        .def("setJointPosition",
+             py::overload_cast<const JointNameMap&>(&ModelInterface::setJointPosition))
+        .def("setJointPositionMinimal",
+             py::overload_cast<VecConstRef>(&ModelInterface::setJointPositionMinimal))
         .def("setJointVelocity",
              py::overload_cast<VecConstRef>(&ModelInterface::setJointVelocity))
+        .def("setJointVelocity",
+             py::overload_cast<const JointNameMap&>(&ModelInterface::setJointVelocity))
         .def("setJointAcceleration",
              py::overload_cast<VecConstRef>(&ModelInterface::setJointAcceleration))
+        .def("setJointAcceleration",
+             py::overload_cast<const JointNameMap&>(&ModelInterface::setJointAcceleration))
         .def("setJointEffort",
              py::overload_cast<VecConstRef>(&ModelInterface::setJointEffort))
+        .def("setJointEffort",
+             py::overload_cast<const JointNameMap&>(&ModelInterface::setJointEffort))
         .def("setJointLimits",
              &ModelInterface::setJointLimits)
         .def("setVelocityLimits",

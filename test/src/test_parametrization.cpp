@@ -147,6 +147,39 @@ TEST_F(TestParametrization, checkJointMinimalParam)
     }
 }
 
+TEST_F(TestParametrization, checkRobotMinimalParam)
+{
+    double dtset = 0, dtget = 0;
+    int count = 1000;
+
+    auto m2 = model->clone();
+
+    for(int i = 0; i < count; i++)
+    {
+
+        model->setJointPosition(model->generateRandomQ());
+        model->update();
+
+        TIC(get);
+        auto qmin = model->getJointPositionMinimal();
+        dtget += TOC(get);
+
+        ASSERT_EQ(qmin.size(), model->getNv());
+
+        TIC(set);
+        m2->setJointPositionMinimal(qmin);
+        dtset += TOC(set);
+        m2->update();
+
+        checkConfigurationIsEqual(*model, *m2);
+
+    }
+
+    std::cout << "getJointPositionMinimal requires " << dtget/count*1e6 << " us \n";
+    std::cout << "setJointPositionMinimal requires " << dtset/count*1e6 << " us \n";
+
+}
+
 TEST_F(TestParametrization, checkReducedModel)
 {
     auto qfix = model->generateRandomQ();

@@ -59,6 +59,18 @@ protected:
 
     XBot::ModelInterface::Ptr model;
 
+    void checkConfigurationIsEqual(const XBot::ModelInterface& m1,
+                                   const XBot::ModelInterface& m2)
+    {
+        for(auto [lname, lptr] : m1.getUrdf()->links_)
+        {
+            auto T1 = m1.getPose(lname);
+            auto T2 = m2.getPose(lname);
+            EXPECT_TRUE(T1.isApprox(T2, 1e-4)) <<
+                lname << "\n" << T1.matrix() << "\n" << T2.matrix() << "\n";
+        }
+    }
+
     virtual void SetUp()
     {
         TestCommon::SetUp();

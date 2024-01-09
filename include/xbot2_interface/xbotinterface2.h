@@ -155,6 +155,29 @@ public:
     bool addSensor(Sensor::Ptr s);
 
 
+    /* Minimal representation */
+
+    void getJointPositionMinimal(Eigen::VectorXd& q) const;
+
+    Eigen::VectorXd getJointPositionMinimal() const;
+
+    void minimalToPosition(VecConstRef q_minimal,
+                           VecRef q) const;
+
+    void minimalToPosition(VecConstRef q_minimal,
+                           Eigen::VectorXd& q) const;
+
+    Eigen::VectorXd minimalToPosition(VecConstRef q_minimal) const;
+
+    void positionToMinimal(VecConstRef q,
+                           VecRef q_minimal) const;
+
+    void positionToMinimal(VecConstRef q,
+                           Eigen::VectorXd& q_minimal) const;
+
+    Eigen::VectorXd positionToMinimal(VecConstRef q) const;
+
+
     /* Floating base */
 
     bool isFloatingBase() const;
@@ -463,6 +486,12 @@ public:
                                  double mass,
                                  Eigen::Matrix3d inertia,
                                  Eigen::Affine3d pose);
+
+    /* */
+
+    void setJointPositionMinimal(VecConstRef q);
+
+    void setJointPositionMinimal(const JointNameMap& qmap);
 
     ModelJoint::Ptr getJoint(string_const_ref name);
 
