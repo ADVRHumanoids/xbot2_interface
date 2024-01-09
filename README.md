@@ -12,7 +12,7 @@ which is also different than the number of elements in the `v` vector.
 
 ### Model object construction
 ```c++
-std::string urdf;
+std::string urdf;  // read urdf file into this string somehow
 auto model = ModelInterface::getModel(urdf, "pin");
 ```
 More constructors are available which take the SRDF file, too.
@@ -23,7 +23,7 @@ and motion vectors.
 ```c++
 
 // the neutral (i.e., zero) configuration 
-// note: this is different than Eigen::VectorXd::Zero(model->getNq()) !!
+// note: this is in general different than Eigen::VectorXd::Zero(model->getNq()) !!
 Eigen::VectorXd qn = model->getNeutralQ();
 
 // its size is model->getNq()
@@ -54,7 +54,7 @@ auto jnames = model->getJointNames();
 assert(jnames.size() == model->getJointNum());
 
 // the i-th joint can have nq and/or nv greater than one;
-// its index inside a configuration or motion is therefore != i
+// its index inside a configuration or motion is therefore != id
 int id = jnames.size()/2;
 
 // this data structure contains indexing information
@@ -77,8 +77,9 @@ auto vj_1 = joint->getJointVelocity(); // same as vj
 
 // similar for effort, acceleration, ...
 
-
 ```
+
+
 
 ### Using the model to perform computations
 ```c++
@@ -92,7 +93,7 @@ model->update();
 Eigen::Affine3d T_1 = model->getPose("my_link");
 Eigen::Affine3d T_12 = model->getPose("my_link", "my_base_link");
 Eigen::Vector6d v_1 = model->getVelocityTwist("my_link");
-Eigen::Vector6d v_12 = model->getVelocityTwist("my_link", "my_base_link");
+Eigen::Vector6d v_12 = model->getRelativeVelocityTwist("my_link", "my_base_link");
 
 // similar for acceleration...
 
