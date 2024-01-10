@@ -43,12 +43,12 @@ add_library(xbot2_interface SHARED
 add_library(xbot2_interface::xbot2_interface ALIAS xbot2_interface)
 
 target_link_libraries(xbot2_interface
+    PRIVATE
+    fmt::fmt-header-only
     PUBLIC
     ${urdf_LIBRARIES}
     ${srdfdom_LIBRARIES}
-    Eigen3::Eigen
-    PRIVATE
-    fmt::fmt-header-only)
+    Eigen3::Eigen)
 
 target_compile_options(xbot2_interface
     PUBLIC
@@ -84,7 +84,7 @@ install(DIRECTORY include/xbot2_interface
 
 
 if(${XBOT2_IFC_BUILD_PINOCCHIO})
-add_subdirectory(pinocchio/)
+    add_subdirectory(pinocchio/)
 endif()
 
 if(${XBOT2_IFC_BUILD_RBDL})
@@ -96,9 +96,6 @@ if(${XBOT2_IFC_BUILD_ROS})
 endif()
 
 add_subdirectory(python)
-
-add_executable(test_main main.cpp)
-target_link_libraries(test_main xbot2_interface)
 
 enable_testing()
 add_subdirectory(test)
