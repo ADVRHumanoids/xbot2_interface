@@ -237,6 +237,7 @@ TEST_F(TestParametrization, checkReducedModel)
     }
 }
 
+
 int main(int argc, char ** argv)
 {
     ::testing::InitGoogleTest(&argc, argv);

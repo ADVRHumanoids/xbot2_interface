@@ -28,6 +28,75 @@ TEST_F(TestKinematics, checkExceptions)
     EXPECT_THROW(model->getRelativeJacobian("not_exist", "not_exist_1"), std::out_of_range);
 }
 
+TEST_F(TestKinematics, checkMapAccessorsWheel)
+{
+    Eigen::VectorXd q0 = model->generateRandomQ();
+    model->setJointPosition(q0);
+
+    // just modify a wheel position
+    XBot::JointNameMap wmap =
+    {
+        {"j_wheel_2", 2.0}
+    };
+
+    model->setJointPositionMinimal(wmap);
+
+    double qexp = model->getJoint(wmap.begin()->first)->getJointPositionMinimal().value();
+
+    EXPECT_NEAR(qexp, wmap.begin()->second, 1e-3);
+
+
+    Eigen::VectorXd q1 = model->getJointPosition();
+
+    auto diff = model->difference(q0, q1);
+    auto [iv, nv] = model->getJointInfo(wmap.begin()->first).inv();
+
+    EXPECT_NEAR( diff.head(iv).norm(), 0, 1e-6);
+    EXPECT_NEAR( diff.tail(model->getNv() - iv - nv).norm(), 0, 1e-6 );
+    EXPECT_GT( diff.segment(iv, nv).norm(), 0 );
+
+
+}
+
+TEST_F(TestKinematics, checkMapMinimalToPosition)
+{
+    Eigen::VectorXd q0 = model->generateRandomQ();
+    Eigen::VectorXd q1 = q0;
+
+    // just modify a wheel position
+    XBot::JointNameMap wmap = {{"reference@v5", 2.0}};
+
+    model->minimalToPosition(wmap, q0);
+
+    auto diff = model->difference(q0, q1);
+    auto [iv, nv] = model->getJointInfo("reference").inv();
+
+    EXPECT_NEAR( diff.head(iv).norm(), 0, 1e-6);
+    EXPECT_NEAR( diff.tail(model->getNv() - iv - nv).norm(), 0, 1e-6 );
+    EXPECT_GT( diff.segment(iv, nv).norm(), 0 );
+
+}
+
+TEST_F(TestKinematics, checkComInertia)
+{
+
+    Eigen::MatrixXd Jcom = model->getCOMJacobian();
+
+    Eigen::Matrix3d Lcom = (Jcom * model->computeInertiaInverse() * Jcom.transpose()).inverse();
+
+    EXPECT_NEAR(Lcom(0, 0), model->getMass(), 1e-3);
+    EXPECT_NEAR(Lcom(1, 1), model->getMass(), 1e-3);
+    EXPECT_NEAR(Lcom(2, 2), model->getMass(), 1e-3);
+
+    Lcom.diagonal().setZero();
+    EXPECT_LT(Lcom.norm(), 1e-6);
+
+    // J*Minv*S
+    Eigen::MatrixXd JMinvS = (Jcom*model->computeInertiaInverse()).rightCols(model->getActuatedNv());
+    EXPECT_LT(JMinvS.norm(), 1e-6) << JMinvS.format(2);
+
+}
+
 TEST_F(TestKinematics, checkJointFk)
 {
     double dt = 0;
@@ -831,6 +900,45 @@ TEST_F(TestKinematics, checkInertiaInverse)
 
     std::cout << "computeInertiaInverseTimesMatrix requires " << dt_minv/count*1e6 << " us \n";
     std::cout << "computeForwardDynamics requires " << dt_fd/count*1e6 << " us \n";
+
+}
+
+TEST_F(TestKinematics, checkInertiaInverse1)
+{
+    int count = 0;
+    double dt_m_inv = 0;
+    double dt_minv = 0;
+
+    for(int i = 0; i < 1000; i++)
+    {
+        model->setJointPosition(model->generateRandomQ());
+        Eigen::VectorXd tau;
+        tau.setRandom(model->getNv());
+        model->setJointEffort(tau);
+        model->update();
+
+        Eigen::MatrixXd eye, Minv1, Minv;
+        eye.setIdentity(model->getNv(), model->getNv());
+        Minv.resizeLike(eye);
+        Minv1.resizeLike(Minv);
+
+        TIC();
+        Minv = model->computeInertiaInverse();
+        dt_minv += TOC();
+
+        TIC(1);
+        Minv1 = model->computeInertiaMatrix().inverse();
+        dt_m_inv += TOC(1);
+
+        count++;
+
+
+        EXPECT_LT((Minv - Minv1).lpNorm<Eigen::Infinity>(), 1e-3) <<
+            "err = " << (Minv - Minv1).lpNorm<Eigen::Infinity>();
+    }
+
+    std::cout << "computeInertiaInverse()          requires " << dt_minv/count*1e6 << " us \n";
+    std::cout << "computeInertiaMatrix().inverse() requires " << dt_m_inv/count*1e6 << " us \n";
 
 }
 
