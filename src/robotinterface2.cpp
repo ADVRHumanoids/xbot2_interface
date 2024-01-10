@@ -38,6 +38,11 @@ RobotInterface::UniquePtr RobotInterface::getRobot(ConfigOptions opt)
 
     opt.get_parameter("robot_type", robot_type);
 
+    if(const char * robot_type_env = getenv("XBOT2IFC_ROBOT_TYPE"))
+    {
+        robot_type = robot_type_env;
+    }
+
     auto rob = CallFunction<RobotInterface*>(
         "librobotinterface2_" + robot_type + ".so",
         "xbot2_create_robot_plugin_" + robot_type,

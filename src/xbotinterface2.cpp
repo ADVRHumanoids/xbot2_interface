@@ -42,6 +42,11 @@ ModelInterface::UniquePtr ModelInterface::getModel(ConfigOptions opt)
 
     opt.get_parameter("model_type", type);
 
+    if(const char * model_type_env = getenv("XBOT2IFC_MODEL_TYPE"))
+    {
+        type = model_type_env;
+    }
+
     auto mdl = CallFunction<ModelInterface*>("libmodelinterface2_" + type + ".so",
                                               "xbot2_create_model_plugin_" + type,
                                               opt);
