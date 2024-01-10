@@ -263,6 +263,7 @@ void ModelInterface::setJointPositionMinimal(const JointNameMap &qmap)
     mapToV(qmap, impl->_tmp.v);
 
     setJointPositionMinimal(impl->_tmp.v);
+
 }
 
 const std::string& XBotInterface::getName() const
@@ -856,6 +857,12 @@ void XBotInterface::getJointPositionMinimal(Eigen::VectorXd &q) const
     positionToMinimal(getJointPosition(), q);
 }
 
+void XBotInterface::getJointPositionMinimal(JointNameMap &q) const
+{
+    getJointPositionMinimal(impl->_tmp.v);
+    vToMap(impl->_tmp.v, q);
+}
+
 Eigen::VectorXd XBotInterface::getJointPositionMinimal() const
 {
     Eigen::VectorXd ret;
@@ -883,6 +890,14 @@ void XBotInterface::minimalToPosition(VecConstRef q_minimal, Eigen::VectorXd &q)
     minimalToPosition(q_minimal, VecRef(q));
 }
 
+void XBotInterface::minimalToPosition(const JointNameMap &q_minimal,
+                                      Eigen::VectorXd &q) const
+{
+    positionToMinimal(q, impl->_tmp.v);
+    mapToV(q_minimal, impl->_tmp.v);
+    minimalToPosition(impl->_tmp.v, q);
+}
+
 Eigen::VectorXd XBotInterface::minimalToPosition(VecConstRef q_minimal) const
 {
     Eigen::VectorXd ret;
@@ -900,6 +915,12 @@ void XBotInterface::positionToMinimal(VecConstRef q, VecRef q_minimal) const
         j->positionToMinimal(q.segment(j->getQIndex(), j->getNq()),
                              q_minimal.segment(j->getVIndex(), j->getNv()));
     }
+}
+
+void XBotInterface::positionToMinimal(VecConstRef q, JointNameMap &q_minimal) const
+{
+    positionToMinimal(q, impl->_tmp.v);
+    vToMap(impl->_tmp.v, q_minimal);
 }
 
 void XBotInterface::positionToMinimal(VecConstRef q,
