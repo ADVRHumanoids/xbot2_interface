@@ -12,8 +12,6 @@ using rvp = py::return_value_policy;
 
 PYBIND11_MODULE(pyxbot2_interface, m) {
 
-
-
     py::class_<ControlMode> controlMode(m, "ControlMode");
 
     controlMode
@@ -24,9 +22,11 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
         .def_static("Damping", &ControlMode::Damping)
         .def_static("Impedance", &ControlMode::Impedance)
         .def_static("PosImpedance", &ControlMode::PosImpedance)
+        .def("type", &ControlMode::type)
+        .def(py::self + py::self)
         ;
 
-    py::enum_<ControlMode::Type>(controlMode, "Type")
+    py::enum_<ControlMode::Type>(controlMode, "Type", py::arithmetic())
         .value("POSITION", ControlMode::Type::POSITION)
         .value("VELOCITY", ControlMode::Type::VELOCITY)
         .value("EFFORT", ControlMode::Type::EFFORT)
