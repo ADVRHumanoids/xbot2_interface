@@ -4,6 +4,7 @@
 #include <srdfdom/srdf_writer.h>
 #include <sstream>
 
+
 Eigen::Matrix3d XBot::Utils::rpyToRotationMatrix(Eigen::Ref<const Eigen::Vector3d> rpy)
 {
     Eigen::AngleAxisd rollAngle(rpy[0], Eigen::Vector3d::UnitX());

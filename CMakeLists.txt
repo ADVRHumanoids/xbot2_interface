@@ -18,9 +18,6 @@ find_package(Eigen3 REQUIRED)
 
 include(GNUInstallDirs)
 
-include_directories(include/
-    ${srdfdom_INCLUDE_DIRS})
-
 add_definitions(-DBOOST_BIND_GLOBAL_PLACEHOLDERS)
 
 # internal fmt
@@ -67,6 +64,11 @@ target_include_directories(xbot2_interface
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}>
+    )
+
+target_include_directories(xbot2_interface
+    SYSTEM PUBLIC
+    ${srdfdom_INCLUDE_DIRS}
     )
 
 set_target_properties(xbot2_interface PROPERTIES
