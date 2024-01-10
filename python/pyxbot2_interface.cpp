@@ -336,6 +336,8 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
         .def_readonly("nv", &JointInfo::nv)
         .def("iqv", &JointInfo::iqv)
         .def("nqv", &JointInfo::nqv)
+        .def("inq", &JointInfo::inq)
+        .def("inv", &JointInfo::inv)
         .def("__repr__", [](JointInfo& self)
              {
             std::stringstream ss;

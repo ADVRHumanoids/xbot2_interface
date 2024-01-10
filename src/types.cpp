@@ -17,6 +17,16 @@ std::pair<int, int> JointInfo::nqv() const
     return {nq, nv};
 }
 
+std::pair<int, int> JointInfo::inq() const
+{
+    return {iq, nq};
+}
+
+std::pair<int, int> JointInfo::inv() const
+{
+    return {iv, nv};
+}
+
 JointInfo::JointInfo()
     : id(-1)
     , iq(-1)
