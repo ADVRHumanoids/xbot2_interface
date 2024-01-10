@@ -80,7 +80,7 @@ inline std::string GetLibPath(std::string lib_name)
 template <typename RetType, typename... Args>
 RetType CallFunction(std::string lib_name,
                      std::string function_name,
-                     Args&&... args)
+                     Args... args)
 {
 
     void * lib_handle = nullptr;
@@ -104,7 +104,7 @@ RetType CallFunction(std::string lib_name,
     }
 
     /* Typedef for the factory type */
-    typedef RetType (*FactoryType)(Args&&... args);
+    typedef RetType (*FactoryType)(Args... args);
 
     /* Try to obtain the address of the factory */
     dlerror();  // clear errors
@@ -118,7 +118,7 @@ RetType CallFunction(std::string lib_name,
         throw std::runtime_error("symbol '" + function_name + "' not found in " + lib_name);
     }
 
-    return function(std::forward<Args>(args)...);
+    return function(args...);
 
 }
 
