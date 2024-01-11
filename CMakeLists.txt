@@ -99,6 +99,8 @@ endif()
 
 add_subdirectory(python)
 
+add_subdirectory(examples)
+
 enable_testing()
 add_subdirectory(test)
 

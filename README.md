@@ -8,6 +8,8 @@ and therefore the number of joints is
 in general different than the number of element in the `q` vector, 
 which is also different than the number of elements in the `v` vector.
 
+
+
 ## Quick guide
 
 ### Model object construction
