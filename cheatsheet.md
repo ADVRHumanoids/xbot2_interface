@@ -15,8 +15,8 @@
 | `m->eigenToMap(x, xmap)`    | `m->eigenToQ(q, qmap)` OR `m->eigenToV(v, vmap)`    | Depends on whether `x` is a configuration or a motion/effort  |
 | `q += qdot*dt` | `q = m->sum(q, v*dt)` |  |
 | `qdot = (q1 - q0)/dt` | `qdot = m->difference(q1, q0)/dt` | |
-| `m->syncFrom(*m1, Sync::Position, Sync::Velocity)` | `m->syncFrom(*m1, ControlMode::POSITION|ControlMode::VELOCITY)` | |
-| `m->syncFrom(*r, Sync::Position, Sync::Velocity, Sync::MotorSide)` | `m->syncFrom(*r, ControlMode::POSITION|ControlMode::VELOCITY, Sync::MotorSide)` | |
+| `m->syncFrom(*m1, Sync::Position, Sync::Velocity)` | `m->syncFrom(*m1, ControlMode::POSITION\|ControlMode::VELOCITY` | |
+| `m->syncFrom(*r, Sync::Position, Sync::Velocity, Sync::MotorSide)` | `m->syncFrom(*r, ControlMode::POSITION\|ControlMode::VELOCITY, Sync::MotorSide)` | |
 | `m->getInertiaMatrix(M)` | `m->computeInertiaMatrix(M)` | | 
 | `m->getCentroidalMomentumMatrix(A)` | `m->computeCentroidalMomentumMatrix(A)` | | 
 | `m->getVelocityTwist("distal", "base", v)` | `m->getRelativeVelocityTwist("distal", "base", v)` | | 
