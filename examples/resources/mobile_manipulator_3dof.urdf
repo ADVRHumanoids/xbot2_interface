@@ -1,0 +1,113 @@
+
+<?xml version="1.0"?>
+
+<robot name="mobile_base_with_arm">
+
+  <link name="world"/>
+
+  <joint name="world_to_base" type="floating">
+      <parent link="world"/>
+      <child link="base_link"/>
+  </joint>
+
+  <!-- Mobile Base -->
+  <link name="base_link">
+    <visual>
+      <geometry>
+        <cylinder length="0.1" radius="0.3"/>
+      </geometry>
+    </visual>
+    <inertial>
+      <mass value="5.0"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia ixx="0.1" ixy="0" ixz="0" iyy="0.1" iyz="0" izz="0.1"/>
+    </inertial>
+  </link>
+
+  <link name="wheel_link">
+    <visual>
+      <geometry>
+        <cylinder length="0.05" radius="0.1"/>
+      </geometry>
+    </visual>
+    <inertial>
+      <mass value="1.0"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia ixx="0.02" ixy="0" ixz="0" iyy="0.02" iyz="0" izz="0.02"/>
+    </inertial>
+  </link>
+
+  <!-- Arm Links -->
+  <link name="arm_link1">
+    <visual>
+      <geometry>
+        <box size="0.1 0.1 0.5"/>
+      </geometry>
+    </visual>
+    <inertial>
+      <mass value="2.0"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia ixx="0.015" ixy="0" ixz="0" iyy="0.015" iyz="0" izz="0.015"/>
+    </inertial>
+  </link>
+
+  <link name="arm_link2">
+    <visual>
+      <geometry>
+        <box size="0.1 0.1 0.4"/>
+      </geometry>
+    </visual>
+    <inertial>
+      <mass value="1.5"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01"/>
+    </inertial>
+  </link>
+
+  <link name="arm_link3">
+    <visual>
+      <geometry>
+        <box size="0.1 0.1 0.3"/>
+      </geometry>
+    </visual>
+    <inertial>
+      <mass value="1.0"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia ixx="0.005" ixy="0" ixz="0" iyy="0.005" iyz="0" izz="0.005"/>
+    </inertial>
+  </link>
+
+  <!-- Mobile Base Joint -->
+  <joint name="base_to_wheel" type="continuous">
+    <parent link="base_link"/>
+    <child link="wheel_link"/>
+    <origin xyz="0 0 0.05" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+  </joint>
+
+  <!-- Arm Joints -->
+  <joint name="base_to_arm_link1" type="revolute">
+    <parent link="base_link"/>
+    <child link="arm_link1"/>
+    <origin xyz="0 0 0.1" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-3.1416" upper="3.1416" effort="10" velocity="1"/>
+  </joint>
+
+  <joint name="arm_link1_to_arm_link2" type="revolute">
+    <parent link="arm_link1"/>
+    <child link="arm_link2"/>
+    <origin xyz="0 0 0.25" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-3.1416" upper="3.1416" effort="10" velocity="1"/>
+  </joint>
+
+  <joint name="arm_link2_to_arm_link3" type="revolute">
+    <parent link="arm_link2"/>
+    <child link="arm_link3"/>
+    <origin xyz="0 0 0.25" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-3.1416" upper="3.1416" effort="10" velocity="1"/>
+  </joint>
+
+</robot>
