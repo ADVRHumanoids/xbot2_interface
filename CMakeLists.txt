@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.5)
 project(xbot2_interface LANGUAGES CXX VERSION 1.0.0)
 
 option(XBOT2_IFC_BUILD_PINOCCHIO "Build Pinocchio implementation" ON)
-option(XBOT2_IFC_BUILD_RBDL "Build RBDL implementation" ON)
+option(XBOT2_IFC_BUILD_RBDL "Build RBDL implementation" OFF)
 option(XBOT2_IFC_BUILD_ROS "Build ROS implementation" ON)
 
 set(CMAKE_CXX_STANDARD 20)
