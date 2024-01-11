@@ -156,3 +156,8 @@ Eigen::Vector6d XBot::Utils::computePoseError(const Eigen::Affine3d &ref, const 
         computeOrientationError(ref.linear(), actual.linear());
     return ret;
 }
+
+Eigen::Matrix3d XBot::Utils::skewSymmetricMatrix(const Eigen::Vector3d &r)
+{
+    return skew(r);
+}

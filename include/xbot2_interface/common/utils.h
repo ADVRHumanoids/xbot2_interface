@@ -24,6 +24,8 @@ XBOT2IFC_API Eigen::Vector3d rotationMatrixToRpy(const Eigen::Matrix3d& R);
 
 XBOT2IFC_API Eigen::Matrix3d skew(const Eigen::Vector3d& r);
 
+XBOT2IFC_API Eigen::Matrix3d skewSymmetricMatrix(const Eigen::Vector3d& r);
+
 XBOT2IFC_API Eigen::Matrix6d adjointFromRotation(const Eigen::Matrix3d &R);
 
 template <typename Mat>
