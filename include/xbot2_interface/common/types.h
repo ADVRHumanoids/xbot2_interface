@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <chrono>
+#include <unordered_map>
 
 #include <Eigen/Dense>
 

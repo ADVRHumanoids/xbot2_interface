@@ -12,6 +12,23 @@ which is also different than the number of elements in the `v` vector.
 
 ## Quick guide
 
+### Build the library
+
+After installing the required dependencies (TBD)
+
+```c++
+mkdir build && cd build
+cmake ..
+make
+make install
+```
+
+### Use the library in your project
+```cmake
+find_package(xbot2_interface REQUIRED)
+target_link_libraries(mytarget xbot2_interface::xbot2_interface)
+```
+
 ### Model object construction
 ```c++
 std::string urdf;  // read urdf file into this string somehow
@@ -80,7 +97,6 @@ auto vj_1 = joint->getJointVelocity(); // same as vj
 // similar for effort, acceleration, ...
 
 ```
-
 
 
 ### Using the model to perform computations
