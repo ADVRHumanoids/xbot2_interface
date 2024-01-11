@@ -148,3 +148,11 @@ XBot::ControlMode::Type XBot::operator&(ControlMode::Type a, ControlMode::Type b
 {
     return static_cast<ControlMode::Type>(static_cast<int>(a) & static_cast<int>(b));
 }
+
+Eigen::Vector6d XBot::Utils::computePoseError(const Eigen::Affine3d &ref, const Eigen::Affine3d &actual)
+{
+    Eigen::Vector6d ret;
+    ret << ref.translation() - actual.translation(),
+        computeOrientationError(ref.linear(), actual.linear());
+    return ret;
+}

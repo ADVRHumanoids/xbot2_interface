@@ -53,6 +53,8 @@ public:
 
     XBotInterface(XBotInterface&&) = default;
 
+    std::ostream& print(std::ostream& os) const;
+
     const std::string& getName() const;
 
     urdf::ModelConstSharedPtr getUrdf() const;
@@ -512,6 +514,9 @@ public:
     const std::vector<ModelJoint::Ptr>& getJoints();
 
     const std::vector<ModelJoint::ConstPtr>& getJoints() const;
+
+    /* */
+    void integrateJointPosition(VecConstRef v);
 
     /* Floating base */
 

@@ -107,7 +107,7 @@ private:
     struct Temporaries
     {
         Eigen::MatrixXd J, J1, Jarg;
-        Eigen::VectorXd v;
+        Eigen::VectorXd q, v;
 
 
         // inertia matrix ldlt

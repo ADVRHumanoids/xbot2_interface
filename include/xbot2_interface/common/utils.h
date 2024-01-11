@@ -65,6 +65,9 @@ XBOT2IFC_API void computeOrientationError(const Eigen::Matrix3d &ref,
 XBOT2IFC_API Eigen::Vector3d computeOrientationError(const Eigen::Matrix3d &ref,
                                                      const Eigen::Matrix3d &actual);
 
+XBOT2IFC_API Eigen::Vector6d computePoseError(const Eigen::Affine3d &ref,
+                                              const Eigen::Affine3d &actual);
+
 XBOT2IFC_API std::string urdfToString(const urdf::ModelInterface& urdf);
 
 XBOT2IFC_API std::string srdfToString(const urdf::ModelInterface &urdf, const srdf::Model &srdf);

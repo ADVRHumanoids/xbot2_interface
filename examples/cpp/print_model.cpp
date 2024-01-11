@@ -1,12 +1,8 @@
-#include <xbot2_interface/xbotinterface2.h>
-#include <fmt/format.h>
-#include <cmrc/cmrc.hpp>
-
-CMRC_DECLARE(example_resources);
+#include "common.h"
 
 int main(int argc, char **argv)
 {
-    auto urdf_file = cmrc::example_resources::get_filesystem().open("resources/mobile_manipulator_3dof.urdf");
+    auto urdf_file = resources.open("resources/mobile_manipulator_3dof.urdf");
     std::string urdf(urdf_file.begin(), urdf_file.end());
 
     auto model = XBot::ModelInterface::getModel(urdf, "pin");
@@ -25,9 +21,8 @@ int main(int argc, char **argv)
     {
         auto jinfo = j->getJointInfo();
 
-        std::cout << " - "
-                  << j->getName() << " iq = " << jinfo.iq << " iv = " << jinfo.iv
-                  << " nq = " << jinfo.nq << " nv = " << jinfo.nv << "\n";
+        fmt::print(" - {:<25}: iq = {}\tiv = {}\tnq = {}\tnv = {} \n",
+                   j->getName(), jinfo.iq, jinfo.iv, jinfo.nq, jinfo.nv);
     }
 
     std::cout << "\n";
@@ -41,8 +36,8 @@ int main(int argc, char **argv)
     std::cout << "v names: " << fmt::format("{} \n\n", fmt::join(model->getVNames(), ", "));
 
     auto qrand = model->generateRandomQ();
-    std::cout << "q_random          : " << qrand.transpose().format(2) << "\n\n";
+    std::cout << "q_random           : " << qrand.transpose().format(2) << "\n\n";
 
-    std::cout << "q_random (minimal): " << model->positionToMinimal(qrand).transpose().format(2) << "\n\n";
+    std::cout << "q_random (minimal) : " << model->positionToMinimal(qrand).transpose().format(2) << "\n\n";
 
 }

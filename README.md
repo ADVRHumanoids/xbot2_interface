@@ -106,7 +106,11 @@ if(!model->getJacobian("my_link", J))
 {
     std::cerr << "error: bad link name \n";
 }
-
-
 ```
 
+
+### Examples
+Check [this small collection](examples) of commented examples
+
+### Porting from XBotInterface v1
+Check [the cheatsheet](cheatsheet.md)
