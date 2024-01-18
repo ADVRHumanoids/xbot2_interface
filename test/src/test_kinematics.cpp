@@ -1,5 +1,6 @@
 #include "common.h"
 
+
 using TestKinematics = TestWithModel;
 
 TEST_F(TestKinematics, checkExceptions)
@@ -38,6 +39,8 @@ TEST_F(TestKinematics, checkMapAccessorsWheel)
     {
         {"j_wheel_2", 2.0}
     };
+
+    ASSERT_TRUE(model->hasJoint(wmap.begin()->first));
 
     model->setJointPositionMinimal(wmap);
 
@@ -191,6 +194,8 @@ TEST_F(TestKinematics, checkFloatingBase)
 TEST_F(TestKinematics, checkFloatingBaseImu)
 {
     auto imu = std::const_pointer_cast<XBot::ImuSensor>(model->getImu("imu_link"));
+
+    ASSERT_TRUE(bool(imu));
 
     for(int i = 0; i < 1000; i++)
     {

@@ -5,6 +5,7 @@ project(xbot2_interface LANGUAGES CXX VERSION 1.0.0)
 option(XBOT2_IFC_BUILD_PINOCCHIO "Build Pinocchio implementation" ON)
 option(XBOT2_IFC_BUILD_RBDL "Build RBDL implementation" OFF)
 option(XBOT2_IFC_BUILD_ROS "Build ROS implementation" ON)
+option(XBOT2_IFC_BUILD_COLLISION "Build collision support (required hpp-fcl)" ON)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -95,6 +96,10 @@ endif()
 
 if(${XBOT2_IFC_BUILD_ROS})
     add_subdirectory(ros/)
+endif()
+
+if(${XBOT2_IFC_BUILD_COLLISION})
+    add_subdirectory(src/collision/)
 endif()
 
 add_subdirectory(python)
