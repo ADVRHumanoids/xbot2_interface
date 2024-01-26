@@ -13,22 +13,16 @@
 
 using namespace XBot;
 
-XBotInterface::XBotInterface(const XBotInterface::ConfigOptions &opt):
-    XBotInterface(opt.urdf, opt.srdf)
+XBotInterface::XBotInterface(const XBotInterface::ConfigOptions &opt)
 {
-
-}
-
-XBotInterface::XBotInterface(urdf::ModelConstSharedPtr urdf,
-                             srdf::ModelConstSharedPtr srdf)
-{
-    if(!urdf)
+    if(!opt.urdf)
     {
         throw std::invalid_argument("urdf is null");
     }
 
-    impl = std::make_shared<Impl>(urdf, srdf, *this);
+    impl = std::make_shared<Impl>(opt, *this);
 }
+
 
 XBotInterface::XBotInterface(std::shared_ptr<Impl> _impl):
     impl(_impl)
@@ -336,10 +330,7 @@ std::string XBotInterface::getSrdfString() const
 
 XBotInterface::ConfigOptions XBotInterface::getConfigOptions() const
 {
-    ConfigOptions cfg;
-    cfg.urdf = getUrdf();
-    cfg.srdf = getSrdf();
-    return cfg;
+    return impl->_opt;
 }
 
 bool XBotInterface::hasRobotState(string_const_ref name) const
@@ -683,9 +674,14 @@ int XBotInterface::getVIndexFromVName(string_const_ref v_name) const
     }
 }
 
+const std::vector<std::string> &XBotInterface::get1DofJointNames() const
+{
+    return impl->_1dof_joint_names;
+}
+
 const std::vector<std::string> &XBotInterface::getJointNames() const
 {
-    return impl->_joint_name;
+    return impl->_joint_names;
 }
 
 const std::vector<Joint::Ptr> &XBotInterface::getJoints()
@@ -732,6 +728,11 @@ void XBotInterface::update()
 {
     impl->_tmp.setDirty();
     update_impl();
+}
+
+string_const_ref XBotInterface::getLinkName(int id) const
+{
+    return impl->_link_id_to_name.at(id);
 }
 
 void XBotInterface::qToMap(VecConstRef q, JointNameMap& qmap) const
@@ -1580,12 +1581,12 @@ XBotInterface::~XBotInterface()
 }
 
 // impl
-XBotInterface::Impl::Impl(urdf::ModelConstSharedPtr urdf,
-                           srdf::ModelConstSharedPtr srdf,
-                           XBotInterface& api):
+XBotInterface::Impl::Impl(const ConfigOptions& opt,
+                          XBotInterface& api):
     _api(&api),
-    _urdf(urdf),
-    _srdf(srdf)
+    _opt(opt),
+    _urdf(opt.urdf),
+    _srdf(opt.srdf)
 {
     parse_imu();
 
@@ -1714,7 +1715,12 @@ void XBotInterface::Impl::finalize()
         jparam.info.id = nj;
 
         // save id, nq, nv, iq, iv, name, whole param
-        _joint_name.push_back(jname);
+        _joint_names.push_back(jname);
+
+        if(nv == 1)
+        {
+            _1dof_joint_names.push_back(jname);
+        }
 
         _joint_info.push_back(jparam.info);
 
@@ -1777,7 +1783,7 @@ void XBotInterface::Impl::finalize()
     for(int i = 0; i < nj; i++)
     {
         _state.qneutral.segment(_joint_info[i].iq,
-                                _joint_info[i].nq) = jparam_map[_joint_name[i]].q0;
+                                _joint_info[i].nq) = jparam_map[_joint_names[i]].q0;
     }
 
     // use it to initialize cmd and state
@@ -1786,7 +1792,7 @@ void XBotInterface::Impl::finalize()
     // construct internal joints
     for(int i = 0; i < nj; i++)
     {
-        auto jname = _joint_name[i];
+        auto jname = _joint_names[i];
         auto jptr = _urdf->joints_.at(jname);
 
         auto [id, iq, iv, nq, nv, passive] = _joint_info[i];
@@ -1856,7 +1862,7 @@ void XBotInterface::Impl::finalize()
         }
 
         // create private implementation of joint
-        auto jimpl = std::make_unique<Joint::Impl>(sv, cv, jptr, _joint_info[i]);
+        auto jimpl = std::make_unique<Joint::Impl>(sv, cv, jptr, _joint_info[i], _api);
 
         // inject mappings
         auto& jparam = jparam_map.at(jname);
@@ -1911,6 +1917,8 @@ void XBotInterface::Impl::finalize()
         _joints_rob.push_back(j);
         _joints_rob_const.push_back(j);
 
+        // if building robot, save it int
+
         // set joint limits
         auto lims = jptr->limits;
 
@@ -1950,6 +1958,20 @@ void XBotInterface::Impl::finalize()
     if(_srdf)
     {
         parse_chains();
+    }
+
+    // fill link id -> name map
+    for(auto [lname, lptr] : _urdf->links_)
+    {
+        int id = _api->getLinkId(lname);
+
+        if(id < 0)
+        {
+            std::cerr << "urdf link '" << lname << "' not defined by model library \n";
+            continue;
+        }
+
+        _link_id_to_name[id] = lname;
     }
 
     // resize temporaries

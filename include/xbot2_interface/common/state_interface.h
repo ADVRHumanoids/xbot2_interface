@@ -125,35 +125,59 @@ struct XBOT2IFC_API ReadCmdInterface
     friend Derived;
 
     VecConstRef getMotorPosition() const;
+    void getMotorPosition(Eigen::VectorXd& q) const;
+
     VecConstRef getPositionReference() const;  // from this interface
+    void getPositionReference(Eigen::VectorXd& q) const;
+
     VecConstRef getPositionReferenceFeedback() const;  // real posref from robot
+    void getPositionReferenceFeedback(Eigen::VectorXd& q) const;
+
     void setPositionReference(VecConstRef q);  // sets cmd to this interface
 
     VecConstRef getMotorVelocity() const;
+    void getMotorVelocity(Eigen::VectorXd& q) const;
+
     VecConstRef getVelocityReference() const;  // from this interface
+    void getVelocityReference(Eigen::VectorXd& q) const;
+
     VecConstRef getVelocityReferenceFeedback() const;  // real posref from robot
+    void getVelocityReferenceFeedback(Eigen::VectorXd& q) const;
+
     void setVelocityReference(VecConstRef q);  // sets cmd to this interface
 
     VecConstRef getEffortReference() const;  // from this interface
+    void getEffortReference(Eigen::VectorXd& q) const;
+
     VecConstRef getEffortReferenceFeedback() const;  // real posref from robot
+    void getEffortReferenceFeedback(Eigen::VectorXd& q) const;
+
     void setEffortReference(VecConstRef q);  // sets cmd to this interface
 
     VecConstRef getStiffnessDesired() const;  // from this interface
+    void getStiffnessDesired(Eigen::VectorXd& q) const;
+
     VecConstRef getStiffness() const;  // real gain from robot
+    void getStiffness(Eigen::VectorXd& q) const;
+
     void setStiffness(VecConstRef q);  // sets cmd to this interface
 
     VecConstRef getDampingDesired() const;  // from this interface
+    void getDampingDesired(Eigen::VectorXd& q) const;
+
     VecConstRef getDamping() const;  // real gain from robot
+    void getDamping(Eigen::VectorXd& q) const;
+
     void setDamping(VecConstRef q);  // sets cmd to this interface
 
     CtrlModeVectorConstRef getControlMode() const;
     void getControlMode(CtrlModeMap& ctrl) const;
     void getControlMode(CtrlModeTypeMap& ctrl) const;
 
-    void setControlMode(CtrlModeVectorConstRef ctrl);
-    void setControlMode(ControlMode::Type ctrl);
-    void setControlMode(CtrlModeMap ctrl);
-    void setControlMode(CtrlModeTypeMap ctrl);
+    bool setControlMode(CtrlModeVectorConstRef ctrl);
+    bool setControlMode(ControlMode::Type ctrl);
+    bool setControlMode(CtrlModeMap ctrl);
+    bool setControlMode(CtrlModeTypeMap ctrl);
 
     CtrlModeVectorConstRef getValidCommandMask() const;
     void clearCommandMask();

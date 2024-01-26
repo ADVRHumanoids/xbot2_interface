@@ -126,11 +126,11 @@ void mapToJ(const Container& cnt, const CtrlModeMap& ctrlmap, CtrlModeVectorRef 
 {
     check_mat_size(ctrl, cnt.jnames.size(), 1, __func__);
 
-    for(int i = 0; i < cnt.vnames.size(); i++)
+    for(int i = 0; i < cnt.jnames.size(); i++)
     {
         try
         {
-            ctrl[i] = ctrlmap.at(cnt.vnames[i]);
+            ctrl[i] = ctrlmap.at(cnt.jnames[i]);
         }
         catch (std::out_of_range&)
         {
@@ -144,11 +144,11 @@ void mapToJ(const Container& cnt, const CtrlModeTypeMap& ctrlmap, CtrlModeVector
 {
     check_mat_size(ctrl, cnt.jnames.size(), 1, __func__);
 
-    for(int i = 0; i < cnt.vnames.size(); i++)
+    for(int i = 0; i < cnt.jnames.size(); i++)
     {
         try
         {
-            ctrl[i] = ctrlmap.at(cnt.vnames[i]);
+            ctrl[i] = ctrlmap.at(cnt.jnames[i]);
         }
         catch (std::out_of_range&)
         {

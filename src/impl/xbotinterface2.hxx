@@ -25,8 +25,7 @@ public:
     friend WriteCmdInterface<RobotInterface>;
     friend WriteStateInterface<ModelInterface>;
 
-    Impl(urdf::ModelConstSharedPtr urdf,
-         srdf::ModelConstSharedPtr srdf,
+    Impl(const ConfigOptions& opt,
          XBotInterface& api);
 
     Eigen::VectorXd getRobotState(string_const_ref name) const;
@@ -51,6 +50,9 @@ private:
 
     void parse_chains();
 
+    // options
+    ConfigOptions _opt;
+
     // type
     std::string _type;
 
@@ -62,6 +64,9 @@ private:
 
     // srdf dom
     srdf::ModelConstSharedPtr _srdf;
+
+    // link id to name
+    std::map<int, std::string> _link_id_to_name;
 
     // model state
     detail::State _state;
@@ -78,7 +83,10 @@ private:
     std::vector<JointInfo> _joint_info;
 
     // joint id -> name
-    std::vector<std::string> _joint_name;
+    std::vector<std::string> _joint_names;
+
+    // 1dof joints
+    std::vector<std::string> _1dof_joint_names;
 
     // joints
     std::vector<UniversalJoint::Ptr> _joints;

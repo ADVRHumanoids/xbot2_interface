@@ -195,16 +195,17 @@ void RobotInterface2Ros::on_js_recv(xbot_msgs::JointStateConstPtr msg)
         }
 
         // nq could be =2 for SO(2), so we use "minimal" versions
-        j->setJointPositionMinimal(from_value(msg->link_position[i]));
-        j->setPositionReferenceFeedbackMinimal(from_value(msg->position_reference[i]));
+        j->setJointPositionMinimal(msg->link_position[i]);
 
-        j->setJointVelocity(from_value(msg->link_velocity[i]));
+        j->setPositionReferenceFeedbackMinimal(msg->position_reference[i]);
 
-        j->setJointEffort(from_value(msg->effort[i]));
+        j->setJointVelocity(msg->link_velocity[i]);
 
-        j->setStiffnessFeedback(from_value(msg->stiffness[i]));
+        j->setJointEffort(msg->effort[i]);
 
-        j->setDampingFeedback(from_value(msg->damping[i]));
+        j->setStiffnessFeedback(msg->stiffness[i]);
+
+        j->setDampingFeedback(msg->damping[i]);
 
 
     }

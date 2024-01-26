@@ -3,6 +3,7 @@
 
 #include <xbot2_interface/common/types.h>
 #include <xbot2_interface/joint.h>
+#include "robotinterface2.hxx"
 
 #include "state.hxx"
 
@@ -17,7 +18,8 @@ public:
     Impl(detail::StateView sv,
          detail::CommandView cv,
          urdf::JointConstSharedPtr urdf_joint,
-         JointInfo jinfo);
+         JointInfo jinfo,
+         XBotInterface* xbotifc);
 
     std::function<void(VecConstRef, VecRef)> fn_minimal_to_q;
 
@@ -53,6 +55,12 @@ private:
 
     Joint * _api;
 
+    XBotInterface * _xbotifc;
+
+    ModelInterface * _modelifc;
+
+    RobotInterface * _robotifc;
+
     urdf::JointConstSharedPtr _urdf_joint;
 
     JointInfo _jinfo;
@@ -62,6 +70,15 @@ private:
     detail::CommandView _cmd;
 
     Eigen::VectorXd _q_minimal, _qref_minimal, _qcmd_minimal;
+
+    struct Temporaries
+    {
+        Eigen::VectorXd q;
+
+        void resize(int nq, int nv);
+    };
+
+    Temporaries _tmp;
 
 };
 

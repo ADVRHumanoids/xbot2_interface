@@ -130,15 +130,34 @@ const std::vector<RobotJoint::ConstPtr> &RobotInterface::getJoints() const
     return impl->_joints_rob_const;
 }
 
-void RobotInterface::setControlMode(const std::map<std::string, ControlMode::Type> &ctrl_map)
+bool RobotInterface::setControlMode(const std::map<std::string, ControlMode::Type> &ctrl_map)
 {
+    bool success = true;
+
     for(const auto& [jname, jctrl] : ctrl_map)
     {
         if(auto j = getJoint(jname))
         {
-            j->setControlMode(jctrl);
+            success = j->setControlMode(jctrl) && success;
         }
     }
+
+    return success;
+}
+
+bool RobotInterface::setControlMode(const std::map<std::string, ControlMode> &ctrl_map)
+{
+    bool success = true;
+
+    for(const auto& [jname, jctrl] : ctrl_map)
+    {
+        if(auto j = getJoint(jname))
+        {
+            success = j->setControlMode(jctrl) && success;
+        }
+    }
+
+    return success;
 }
 
 void RobotInterface::setReferenceFrom(const XBotInterface &other,
@@ -191,6 +210,13 @@ RobotInterface::RobotInterface(std::unique_ptr<ModelInterface> model):
     XBotInterface(model->impl)  // trick: share state between internal model and robot
 {
     r_impl = std::make_unique<Impl>(*this, std::move(model));
+}
+
+bool RobotInterface::validateControlMode(string_const_ref jname, ControlMode::Type ctrl)
+{
+    std::cout << jname << " ctrl " << ctrl << "\n";
+
+    return true;
 }
 
 

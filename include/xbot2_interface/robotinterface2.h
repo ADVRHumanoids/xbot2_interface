@@ -55,7 +55,9 @@ public:
 
     using ReadCmdInterface::setControlMode;
 
-    void setControlMode(const std::map<std::string, ControlMode::Type>& ctrl_map);
+    bool setControlMode(const std::map<std::string, ControlMode::Type>& ctrl_map);
+
+    bool setControlMode(const std::map<std::string, ControlMode>& ctrl_map);
 
     void setReferenceFrom(const XBotInterface& other, ControlMode::Type mask = ControlMode::ALL);
 
@@ -66,6 +68,8 @@ public:
     friend WriteCmdInterface<RobotInterface>;
 
     friend WriteStateInterface<RobotInterface>;
+
+    friend RobotJoint;
 
 protected:
 
@@ -78,6 +82,8 @@ protected:
     virtual bool sense_impl() = 0;
 
     virtual bool move_impl() = 0;
+
+    virtual bool validateControlMode(string_const_ref jname, ControlMode::Type ctrl);
 
     // XBotInterface interface
 public:

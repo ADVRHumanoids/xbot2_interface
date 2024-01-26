@@ -340,31 +340,143 @@ void ReadCmdInterface<Derived>::getControlMode(CtrlModeTypeMap& ctrl) const
 }
 
 template<class Derived>
-void ReadCmdInterface<Derived>::setControlMode(CtrlModeVectorConstRef ctrl)
+bool ReadCmdInterface<Derived>::setControlMode(CtrlModeVectorConstRef ctrl)
 {
-    check_and_set(ctrl, derived().impl->_cmd.ctrlmode, __func__);
+    bool success = true;
+
+    static_assert(std::is_same_v<RobotInterface, Derived>||std::is_same_v<RobotJoint, Derived>,
+                  "Derived of unexpected class type");
+
+    if constexpr(std::is_same_v<RobotInterface, Derived>)
+    {
+        for(int i = 0; i < ctrl.size(); i++)
+        {
+            bool ret = derived().validateControlMode(derived().impl->_cmd.jnames[i],
+                                                     static_cast<ControlMode::Type>(ctrl[i]));
+
+            if(ret)
+            {
+                derived().impl->_cmd.ctrlmode[i] = ctrl[i];
+            }
+            else
+            {
+                success = false;
+            }
+        }
+    }
+    else if constexpr(std::is_same_v<RobotJoint, Derived>)
+    {
+        bool ret = derived().validateControlMode(static_cast<ControlMode::Type>(ctrl[0]));
+
+        if(ret)
+        {
+            derived().impl->_cmd.ctrlmode[0] = ctrl[0];
+        }
+        else
+        {
+            success = false;
+        }
+    }
+    else
+    {
+        // unreachable
+
+    }
+
+    return success;
 }
 
 template<class Derived>
-void ReadCmdInterface<Derived>::setControlMode(ControlMode::Type ctrl)
+bool ReadCmdInterface<Derived>::setControlMode(ControlMode::Type ctrl)
 {
-    derived().impl->_cmd.ctrlmode.setConstant(ctrl);
+    return setControlMode(Eigen::CtrlModeVector::Constant(derived().impl->_cmd.ctrlmode.size(), ctrl));
 }
 
 template<class Derived>
-void ReadCmdInterface<Derived>::setControlMode(CtrlModeMap ctrl)
+bool ReadCmdInterface<Derived>::setControlMode(CtrlModeMap ctrlmap)
 {
-    detail::mapToJ(derived().impl->_cmd,
-                   ctrl,
-                   derived().impl->_cmd.ctrlmode);
+    auto& cnt = derived().impl->_cmd;
+    auto& ctrl = derived().impl->_cmd.ctrlmode;
+    bool success = true;
+
+    for(int i = 0; i < cnt.jnames.size(); i++)
+    {
+        try
+        {
+            ControlMode::Type ctrl_candidate = ctrlmap.at(cnt.jnames[i]);
+
+            bool ok = false;
+
+            if constexpr(std::is_same_v<RobotInterface, Derived>)
+            {
+                ok = derived().validateControlMode(cnt.jnames[i],
+                                                   ctrl_candidate);
+            }
+            else if constexpr(std::is_same_v<RobotJoint, Derived>)
+            {
+                ok = derived().validateControlMode(ctrl_candidate);
+            }
+
+            if(ok)
+            {
+                ctrl[i] = ctrl_candidate;
+            }
+            else
+            {
+                success = false;
+            }
+        }
+        catch (std::out_of_range&)
+        {
+
+        }
+    }
+
+    return success;
 }
 
+
 template<class Derived>
-void ReadCmdInterface<Derived>::setControlMode(CtrlModeTypeMap ctrl)
+bool ReadCmdInterface<Derived>::setControlMode(CtrlModeTypeMap ctrlmap)
 {
-    detail::mapToJ(derived().impl->_cmd,
-                   ctrl,
-                   derived().impl->_cmd.ctrlmode);
+    auto& cnt = derived().impl->_cmd;
+    auto& ctrl = derived().impl->_cmd.ctrlmode;
+    bool success = true;
+
+    for(int i = 0; i < cnt.jnames.size(); i++)
+    {
+        try
+        {
+            ControlMode::Type ctrl_candidate = ctrlmap.at(cnt.jnames[i]);
+
+            bool ok = false;
+
+            if constexpr(std::is_same_v<RobotInterface, Derived>)
+            {
+                ok = derived().validateControlMode(cnt.jnames[i],
+                                                   ctrl_candidate);
+            }
+            else if constexpr(std::is_same_v<RobotJoint, Derived>)
+            {
+                ok = derived().validateControlMode(ctrl_candidate);
+            }
+
+            if(ok)
+            {
+                ctrl[i] = ctrl_candidate;
+            }
+            else
+            {
+                success = false;
+            }
+        }
+        catch (std::out_of_range&)
+        {
+
+        }
+    }
+
+    return success;
 }
 
 template<class Derived>
@@ -488,5 +600,77 @@ template struct ReadStateInterface<XBotInterface>;
 template struct WriteStateInterface<ModelInterface>;
 template struct ReadCmdInterface<RobotInterface>;
 template struct WriteCmdInterface<RobotInterface>;
+
+template<class Derived>
+void ReadCmdInterface<Derived>::getMotorPosition(Eigen::VectorXd &q) const
+{
+    q = getMotorPosition();
+}
+
+template<class Derived>
+void ReadCmdInterface<Derived>::getPositionReference(Eigen::VectorXd &q) const
+{
+    q = getPositionReference();
+}
+
+template<class Derived>
+void ReadCmdInterface<Derived>::getPositionReferenceFeedback(Eigen::VectorXd &q) const
+{
+    q = getPositionReferenceFeedback();
+}
+
+template<class Derived>
+void ReadCmdInterface<Derived>::getMotorVelocity(Eigen::VectorXd &q) const
+{
+    q = getMotorVelocity();
+}
+
+template<class Derived>
+void ReadCmdInterface<Derived>::getVelocityReference(Eigen::VectorXd &q) const
+{
+    q = getVelocityReference();
+}
+
+template<class Derived>
+void ReadCmdInterface<Derived>::getVelocityReferenceFeedback(Eigen::VectorXd &q) const
+{
+    q = getVelocityReferenceFeedback();
+}
+
+template<class Derived>
+void ReadCmdInterface<Derived>::getEffortReference(Eigen::VectorXd &q) const
+{
+    q = getEffortReference();
+}
+
+template<class Derived>
+void ReadCmdInterface<Derived>::getEffortReferenceFeedback(Eigen::VectorXd &q) const
+{
+    q = getEffortReferenceFeedback();
+}
+
+template<class Derived>
+void ReadCmdInterface<Derived>::getStiffnessDesired(Eigen::VectorXd &q) const
+{
+    q = getStiffnessDesired();
+}
+
+template<class Derived>
+void ReadCmdInterface<Derived>::getStiffness(Eigen::VectorXd &q) const
+{
+    q = getStiffness();
+}
+
+template<class Derived>
+void ReadCmdInterface<Derived>::getDampingDesired(Eigen::VectorXd &q) const
+{
+    q = getDampingDesired();
+}
+
+template<class Derived>
+void ReadCmdInterface<Derived>::getDamping(Eigen::VectorXd &q) const
+{
+    q = getDamping();
+}
 
 }

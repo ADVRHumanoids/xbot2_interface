@@ -101,6 +101,8 @@ public:
 
     int getVIndexFromVName(string_const_ref v_name) const;
 
+    const std::vector<std::string>& get1DofJointNames() const;
+
     const std::vector<std::string>& getJointNames() const;
 
     const std::vector<Joint::Ptr>& getJoints();
@@ -122,6 +124,8 @@ public:
     void update();
 
     virtual int getLinkId(string_const_ref link_name) const = 0;
+
+    string_const_ref getLinkName(int id) const;
 
     /* Eigen/map conversions */
 
@@ -395,9 +399,6 @@ public:
 protected:
 
     explicit XBotInterface(const ConfigOptions& opt);
-
-    XBotInterface(urdf::ModelConstSharedPtr urdf,
-                  srdf::ModelConstSharedPtr srdf = nullptr);
 
     virtual void update_impl() = 0;
 

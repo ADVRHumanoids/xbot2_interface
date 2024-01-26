@@ -161,10 +161,31 @@ void ModelJoint::setJointPositionMinimal(VecConstRef q)
     minimalToPosition(q, impl->_state.qlink);
 }
 
+void ModelJoint::setJointPositionMinimal(double q)
+{
+    setJointPositionMinimal(Eigen::Scalard(q));
+}
+
+void ModelJoint::setJointPosition(double q)
+{
+    setJointPosition(Eigen::Scalard(q));
+}
+
+void ModelJoint::setJointVelocity(double v)
+{
+    setJointVelocity(Eigen::Scalard(v));
+}
+
+void ModelJoint::setJointEffort(double tau)
+{
+    setJointEffort(Eigen::Scalard(tau));
+}
+
 Joint::Impl::Impl(detail::StateView sv,
                   detail::CommandView cv,
                   urdf::JointConstSharedPtr urdf_joint,
-                  JointInfo jinfo):
+                  JointInfo jinfo,
+                  XBotInterface* xbotifc):
     _urdf_joint(urdf_joint),
     _state(sv),
     _cmd(cv),
@@ -173,6 +194,11 @@ Joint::Impl::Impl(detail::StateView sv,
     _q_minimal.setZero(sv.vlink.size());
     _qref_minimal.setZero(sv.vlink.size());
     _qcmd_minimal.setZero(sv.vlink.size());
+
+    // assign container class pointers
+    _xbotifc = xbotifc;
+    _modelifc = dynamic_cast<ModelInterface*>(xbotifc);
+    _robotifc = dynamic_cast<RobotInterface*>(xbotifc);
 
     // default fw kin for revolute, continuous, prismatic
     fn_fwd_kin = [this](VecConstRef q,
@@ -238,9 +264,44 @@ UniversalJoint::UniversalJoint(std::unique_ptr<Joint::Impl> impl):
 
 }
 
-void UniversalJoint::setPositionReferenceFeedbackMinimal(VecConstRef q)
+void UniversalJoint::setMotorPositionMinimal(double q)
+{
+    minimalToPosition(q, impl->_state.qmot);
+}
+
+void UniversalJoint::setMotorVelocity(double v)
+{
+    setMotorVelocity(Eigen::Scalard(v));
+}
+
+void UniversalJoint::setPositionReferenceFeedback(double q)
+{
+    setPositionReferenceFeedback(Eigen::Scalard(q));
+}
+
+void UniversalJoint::setPositionReferenceFeedbackMinimal(double q)
 {
     minimalToPosition(q, impl->_state.qref);
+}
+
+void UniversalJoint::setVelocityReferenceFeedback(double v)
+{
+    return setPositionReferenceFeedback(Eigen::Scalard(v));
+}
+
+void UniversalJoint::setEffortReferenceFeedback(double tau)
+{
+    return setPositionReferenceFeedback(Eigen::Scalard(tau));
+}
+
+void UniversalJoint::setStiffnessFeedback(double k)
+{
+    return setStiffnessFeedback(Eigen::Scalard(k));
+}
+
+void UniversalJoint::setDampingFeedback(double d)
+{
+    return setDampingFeedback(Eigen::Scalard(d));
 }
 
 void RobotJoint::setPositionReferenceMinimal(VecConstRef q)
@@ -261,7 +322,17 @@ VecConstRef RobotJoint::getPositionReferenceFeedbackMinimal() const
     return impl->_qref_minimal;
 }
 
+bool RobotJoint::validateControlMode(ControlMode::Type ctrl)
+{
+    return impl->_robotifc->validateControlMode(getName(), ctrl);
+}
+
 bool Joint::isPassive() const
 {
     return impl->_jinfo.passive;
+}
+
+void Joint::Impl::Temporaries::resize(int nq, int nv)
+{
+    q.setZero(nq);
 }

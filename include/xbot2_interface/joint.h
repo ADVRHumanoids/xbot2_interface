@@ -105,6 +105,20 @@ public:
 
     void setJointPositionMinimal(VecConstRef q);
 
+    void setJointPositionMinimal(double q);
+
+    using WriteStateInterface<ModelJoint>::setJointPosition;
+
+    void setJointPosition(double q);
+
+    using WriteStateInterface<ModelJoint>::setJointVelocity;
+
+    void setJointVelocity(double v);
+
+    using WriteStateInterface<ModelJoint>::setJointEffort;
+
+    void setJointEffort(double tau);
+
     friend WriteStateInterface<ModelJoint>;
 
 protected:
@@ -131,6 +145,8 @@ public:
 
 protected:
 
+    bool validateControlMode(ControlMode::Type ctrl);
+
     using Joint::Joint;
 
 };
@@ -147,7 +163,33 @@ public:
 
     UniversalJoint(std::unique_ptr<Joint::Impl> impl);
 
-    void setPositionReferenceFeedbackMinimal(VecConstRef q);
+    void setMotorPositionMinimal(double q);
+
+    using WriteCmdInterface<UniversalJoint>::setMotorVelocity;
+
+    void setMotorVelocity(double v);
+
+    using WriteCmdInterface<UniversalJoint>::setPositionReferenceFeedback;
+
+    void setPositionReferenceFeedback(double q);
+
+    void setPositionReferenceFeedbackMinimal(double q);
+
+    using WriteCmdInterface<UniversalJoint>::setVelocityReferenceFeedback;
+
+    void setVelocityReferenceFeedback(double v);  // real posref from robot
+
+    using WriteCmdInterface<UniversalJoint>::setEffortReferenceFeedback;
+
+    void setEffortReferenceFeedback(double tau);  // real posref from robot
+
+    using WriteCmdInterface<UniversalJoint>::setStiffnessFeedback;
+
+    void setStiffnessFeedback(double k);  // real gain from robot
+
+    using WriteCmdInterface<UniversalJoint>::setDampingFeedback;
+
+    void setDampingFeedback(double d);  // real gain from robot
 
     friend WriteCmdInterface<UniversalJoint>;
 };
