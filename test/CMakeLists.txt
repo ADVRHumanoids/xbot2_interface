@@ -46,9 +46,14 @@ endfunction()
 
 ## test suite
 add_test_executable(test_parser)
+
 add_test_executable(test_parametrization)
+
 add_test_executable(test_kinematics)
+
 add_test_executable(test_memory)
+target_link_libraries(test_memory PRIVATE xbot2_interface::collision)
+
 add_test_executable(test_collision)
 target_link_libraries(test_collision PRIVATE xbot2_interface::collision)
 

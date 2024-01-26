@@ -67,6 +67,13 @@ public:
      */
     int getNumCollisionPairs() const;
 
+    /**
+     * @brief addCollisionShape
+     * @param link
+     * @param shape
+     * @param link_T_shape
+     * @return
+     */
     bool addCollisionShape(string_const_ref link,
                            Shape::Variant shape,
                            Eigen::Affine3d link_T_shape);
@@ -83,19 +90,31 @@ public:
      * @brief returns the vector of links that are being taken into accouny by this
      * collision model
      */
-    std::vector<std::pair<std::string, std::string>> getLinkPairs() const;
+    std::set<std::pair<std::string, std::string>> getLinkPairs() const;
 
     /**
      * @brief set the vector of links that are being taken into accouny by this
      * collision model
      * @param pairs
      */
-    void setLinkPairs(std::vector<std::pair<std::string, std::string>> pairs);
+    void setLinkPairs(std::set<std::pair<std::string, std::string>> pairs);
+
+    /**
+     * @brief checkSelfCollision
+     * @return
+     */
+    bool checkSelfCollision(std::vector<int>& coll_pair_ids);
+
+    /**
+     * @brief checkSelfCollision
+     * @return
+     */
+    bool checkSelfCollision();
 
     /**
      * @brief update the collision model with the underlying ModelInterface's state
      */
-    void update(double threshold = -1);
+    void update();
 
     /**
      * @brief returns the vector of all normals, one for each collision pair;
@@ -108,16 +127,25 @@ public:
 
     /**
      * @brief return the vector of witness points, one for each collision pair,
-     * expressed in local link coordinates (as given by getCollisionPairs)
+     * expressed in world coordinates
      */
     std::vector<std::pair<Eigen::Vector3d, Eigen::Vector3d>> getWitnessPoints() const;
 
     void getWitnessPoints(std::vector<std::pair<Eigen::Vector3d, Eigen::Vector3d>>& wp) const;
 
-    Eigen::VectorXd getDistance() const;
+    /**
+     * @brief computeDistance
+     * @param threshold
+     * @return
+     */
+    Eigen::VectorXd computeDistance(double threshold = -1) const;
 
-    void getDistance(Eigen::VectorXd& d) const;
+    void computeDistance(Eigen::VectorXd& d, double threshold = -1) const;
 
+    /**
+     * @brief getDistanceJacobian
+     * @return
+     */
     Eigen::MatrixXd getDistanceJacobian() const;
 
     void getDistanceJacobian(MatRef J) const;

@@ -1,6 +1,7 @@
 #include "collision.hxx"
 #include "../impl/utils.h"
 
+#include <xbot2_interface/common/utils.h>
 #include <geometric_shapes/mesh_operations.h>
 #include <hpp/fcl/BVH/BVH_model.h>
 #include <fmt/format.h>
@@ -39,6 +40,10 @@ CollisionModel::Impl::Impl(ModelInterface::ConstPtr model):
     removeDisabledPairs();
 
     updateCollisionPairData();
+
+    makeCollisionManager();
+
+    _Jtmp.setZero(6, _model->getNv());
 }
 
 /**
@@ -89,7 +94,10 @@ bool CollisionModel::Impl::parseCollisionObjects()
         if(!link->collision)
         {
             std::cout << "collision not defined for link " << link->name << std::endl;
-            _link_collision_map[link->name];
+
+            _link_collision_map[link->name] =
+                std::make_shared<LinkCollision>(*_model, link->name);
+
             continue;
         }
 
@@ -207,10 +215,12 @@ bool CollisionModel::Impl::parseCollisionObjects()
         shape->computeLocalAABB();
 
         // save parsed shapes for this link (TBD support multiple shapes)
-        _link_collision_map[link->name] = LinkCollision{.geom{shape}, .l_T_shape{shape_origin}};
+        _link_collision_map[link->name]
+            = std::make_shared<LinkCollision>(*_model,
+                                              link->name,
+                                              std::vector{shape},
+                                              std::vector{shape_origin});
     }
-
-
 
     return true;
 }
@@ -237,7 +247,7 @@ void CollisionModel::Impl::generateAllPairs()
                 continue;
             }
 
-            _active_link_pairs.emplace_back(links[i]->name, links[j]->name);
+            _active_link_pairs.insert({links[i]->name, links[j]->name});
         }
     }
 }
@@ -292,23 +302,22 @@ void CollisionModel::Impl::updateCollisionPairData()
         auto c1 = _link_collision_map.at(l1);
         auto c2 = _link_collision_map.at(l2);
 
-        for(int i = 0; i < c1.geom.size(); i++)
+        for(int i = 0; i < c1->coll_obj.size(); i++)
         {
-            for(int j = 0; j < c2.geom.size(); j++)
+            for(int j = 0; j < c2->coll_obj.size(); j++)
             {
 
-                CollisionPairData cpd(c1.geom[i], c2.geom[j]);
-                cpd.link1 = l1;
-                cpd.link2 = l2;
+                CollisionPairData cpd(c1->coll_obj[i], c2->coll_obj[j]);
+
+                cpd.link1 = c1;
+                cpd.link2 = c2;
                 cpd.id1 = _model->getLinkId(l1);
                 cpd.id2 = _model->getLinkId(l2);
-                cpd.l_T_shape1 = c1.l_T_shape[i];
-                cpd.l_T_shape2 = c2.l_T_shape[j];
-                cpd.request.enable_nearest_points = true;
+
+                cpd.drequest.enable_nearest_points = true;
+                // cpd.crequest.....
 
                 _collision_pair_data.emplace_back(std::move(cpd));
-
-
 
                 fmt::print("added pair i = {}: {} vs {} \n",
                            pidx++, l1, l2);
@@ -316,6 +325,71 @@ void CollisionModel::Impl::updateCollisionPairData()
             }
         }
     }
+}
+
+void CollisionModel::Impl::makeCollisionManager()
+{
+    // _manager = std::make_unique<fcl::DynamicAABBTreeCollisionManager>();
+
+    // for(auto& [lname, lc] : _link_collision_map)
+    // {
+    //     for(auto& obj : lc.coll_obj)
+    //     {
+    //         _manager->registerObject(&obj);
+    //         obj.setUserData((void*)(&lname));
+    //     }
+    // }
+
+    // _manager->setup();
+}
+
+bool CollisionModel::Impl::checkSelfCollision(std::vector<int>* coll_pair_ids)
+{
+    bool ret = false;
+
+    if(coll_pair_ids)
+    {
+        coll_pair_ids->clear();
+    }
+
+    int id = 0;
+
+    for(auto& cpd : _collision_pair_data)
+    {
+        cpd.compute_collision(*_model);
+
+        if(cpd.cresult.isCollision())
+        {
+            if(coll_pair_ids)
+            {
+                coll_pair_ids->push_back(id);
+                ret = true;
+            }
+            else
+            {
+                return true;
+            }
+        }
+
+        ++id;
+    }
+
+    return ret;
+}
+
+void CollisionModel::Impl::check_distance_called_throw(const char * func)
+{
+    if(!(_cached_computation & Distance))
+    {
+        throw std::runtime_error(
+            fmt::format("{} requires calling getDistance() first",
+                        func));
+    }
+}
+
+void CollisionModel::Impl::set_distance_called()
+{
+    _cached_computation |= Distance;
 }
 
 CollisionModel::CollisionModel(ModelInterface::ConstPtr model):
@@ -334,31 +408,43 @@ std::vector<std::pair<std::string, std::string>> CollisionModel::getCollisionPai
 
     for(const auto& item : impl->_collision_pair_data)
     {
-        ret.emplace_back(item.link1, item.link2);
+        ret.emplace_back(item.link1->link_name, item.link2->link_name);
     }
 
     return ret;
 
 }
 
-std::vector<std::pair<std::string, std::string>> CollisionModel::getLinkPairs() const
+std::set<std::pair<std::string, std::string>> CollisionModel::getLinkPairs() const
 {
     return impl->_active_link_pairs;
 }
 
-void CollisionModel::setLinkPairs(std::vector<std::pair<std::string, std::string>> pairs)
+void CollisionModel::setLinkPairs(std::set<std::pair<std::string, std::string>> pairs)
 {
     impl->_active_link_pairs = pairs;
 
     impl->updateCollisionPairData();
 }
 
-void CollisionModel::update(double threshold)
+bool CollisionModel::checkSelfCollision(std::vector<int>& coll_pair_ids)
 {
-    for(auto& item : impl->_collision_pair_data)
+    return impl->checkSelfCollision(&coll_pair_ids);
+}
+
+bool CollisionModel::checkSelfCollision()
+{
+    return impl->checkSelfCollision(nullptr);
+}
+
+void CollisionModel::update()
+{
+    for(auto& lc : impl->_link_collision_map)
     {
-        item.compute(*impl->_model, threshold);
+        lc.second->update(*impl->_model);
     }
+
+    impl->_cached_computation = 0;
 }
 
 std::vector<Eigen::Vector3d> CollisionModel::getNormals() const
@@ -372,13 +458,15 @@ std::vector<Eigen::Vector3d> CollisionModel::getNormals() const
 
 void CollisionModel::getNormals(std::vector<Eigen::Vector3d> &n) const
 {
+    impl->check_distance_called_throw(__func__);
+
     n.resize(getNumCollisionPairs());
 
     for(int i = 0; i < n.size(); i++)
     {
         const auto& cpd = impl->_collision_pair_data[i];
 
-        n[i] = cpd.result.normal;
+        n[i] = cpd.dresult.normal;
     }
 }
 
@@ -395,33 +483,42 @@ std::vector<std::pair<Eigen::Vector3d, Eigen::Vector3d>> CollisionModel::getWitn
 void CollisionModel::getWitnessPoints(
     std::vector<std::pair<Eigen::Vector3d, Eigen::Vector3d>> &wp) const
 {
+    impl->check_distance_called_throw(__func__);
+
     wp.resize(getNumCollisionPairs());
 
     for(int i = 0; i < wp.size(); i++)
     {
         const auto& cpd = impl->_collision_pair_data[i];
 
-        wp[i].first = cpd.result.nearest_points[0];
-        wp[i].second = cpd.result.nearest_points[1];
+        wp[i].first = cpd.dresult.nearest_points[0];
+        wp[i].second = cpd.dresult.nearest_points[1];
     }
 }
 
-Eigen::VectorXd CollisionModel::getDistance() const
+Eigen::VectorXd CollisionModel::computeDistance(double threshold) const
 {
     Eigen::VectorXd ret;
 
-    getDistance(ret);
+    computeDistance(ret, threshold);
 
     return ret;
 }
 
-void CollisionModel::getDistance(Eigen::VectorXd& d) const
+void CollisionModel::computeDistance(Eigen::VectorXd& d, double threshold) const
 {
+    for(auto& item : impl->_collision_pair_data)
+    {
+        item.compute_distance(*impl->_model, threshold);
+    }
+
+    impl->set_distance_called();
+
     d.resize(getNumCollisionPairs());
 
     for(int i = 0; i < d.size(); i++)
     {
-        d[i] = impl->_collision_pair_data[i].result.min_distance;
+        d[i] = impl->_collision_pair_data[i].dresult.min_distance;
     }
 }
 
@@ -438,19 +535,33 @@ void CollisionModel::getDistanceJacobian(MatRef J) const
 {
     check_mat_size(J, getNumCollisionPairs(), impl->_model->getNv(), __func__);
 
+    impl->check_distance_called_throw(__func__);
+
     auto& model = *impl->_model;
 
-    impl->_Jtmp.resize(6, model.getNv());
+    auto& Jtmp = impl->_Jtmp;
+
+    Jtmp.resize(6, model.getNv());
 
     for(int i = 0; i < J.rows(); i++)
     {
         const auto& cpd = impl->_collision_pair_data[i];
 
-        model.getJacobian(cpd.id1, cpd.result.nearest_points[0], impl->_Jtmp);
-        J.row(i).noalias() = -cpd.result.normal.transpose() * impl->_Jtmp.topRows<3>();
+        // translate J1 to witness point
+        Eigen::Vector3d r = cpd.dresult.nearest_points[0] - cpd.link1->w_T_l.translation();
+        Jtmp = cpd.link1->J;
+        XBot::Utils::changeRefPoint(Jtmp, r);
 
-        model.getJacobian(cpd.id2, cpd.result.nearest_points[1], impl->_Jtmp);
-        J.row(i).noalias() += cpd.result.normal.transpose() * impl->_Jtmp.topRows<3>();
+        // update distance jacobian
+        J.row(i).noalias() = -cpd.dresult.normal.transpose() * Jtmp.topRows<3>();
+
+        // translate J2 to witness point
+        r = cpd.dresult.nearest_points[1] - cpd.link2->w_T_l.translation();
+        Jtmp = cpd.link2->J;
+        XBot::Utils::changeRefPoint(Jtmp, r);
+
+        // update distance jacobian
+        J.row(i).noalias() += cpd.dresult.normal.transpose() * Jtmp.topRows<3>();
 
     }
 
@@ -462,56 +573,129 @@ CollisionModel::~CollisionModel()
 }
 
 CollisionModel::Impl::CollisionPairData::CollisionPairData(
-    std::shared_ptr<fcl::CollisionGeometry> _g1, std::shared_ptr<fcl::CollisionGeometry> _g2):
-    dist(_g1.get(), _g2.get()),
-    g1(_g1), g2(_g2)
+    std::shared_ptr<fcl::CollisionObject> _o1, std::shared_ptr<fcl::CollisionObject> _o2):
+    dist(_o1->collisionGeometryPtr(), _o2->collisionGeometryPtr()),
+    coll(_o1->collisionGeometryPtr(), _o2->collisionGeometryPtr()),
+    o1(_o1), o2(_o2)
 {
 
 }
 
-void CollisionModel::Impl::CollisionPairData::compute(const ModelInterface &model,
-                                                      double threshold)
+void CollisionModel::Impl::CollisionPairData::compute_distance(const ModelInterface &model,
+                                                               double threshold)
 {
-    auto w_T_l1 = model.getPose(id1);
-
-    auto w_T_l2 = model.getPose(id2);
-
-    auto w_T_shape1 = w_T_l1 * l_T_shape1;
-
-    auto w_T_shape2 = w_T_l2 * l_T_shape2;
-
-    Eigen::Vector3d aabb_1 = w_T_shape1*g1->aabb_center;
-    Eigen::Vector3d aabb_2 = w_T_shape2*g2->aabb_center;
+    Eigen::Vector3d aabb_1 = o1->getAABB().center();
+    Eigen::Vector3d aabb_2 = o2->getAABB().center();
     Eigen::Vector3d aabb_21 = aabb_2 - aabb_1;
-    double aabb_dist = aabb_21.norm() - g1->aabb_radius - g2->aabb_radius;
+    double aabb_dist = o1->getAABB().distance(o2->getAABB());
 
-    result.clear();
+    dresult.clear();
 
-    if(threshold >0 && aabb_dist > threshold)
+    if(threshold > 0 && aabb_dist > threshold)
     {
-        result.min_distance = aabb_dist;
-        result.normal = aabb_21.normalized();
-        result.nearest_points[0] = aabb_1 + result.normal;
-        result.nearest_points[1] = aabb_2 - result.normal;
+        dresult.min_distance = aabb_dist;
+        dresult.normal = aabb_21.normalized();
+        dresult.nearest_points[0] = aabb_1 + dresult.normal;
+        dresult.nearest_points[1] = aabb_2 - dresult.normal;
         return;
     }
 
-    dist(tofcl(w_T_shape1),
-         tofcl(w_T_shape2),
-         request,
-         result);
+    /* Crash to be investigated:
+     * D435_head_camera_link vs arm1_4
+     * 0.2893013111227844  0.6620163446598711 -0.8569489983182211   0.3255094250551769 -0.04220620018335156  -0.7014379749636802   0.6326507868841883
+     * 0.3030546655518612  0.6643892127068073 -0.8234177007679618  0.05331201346441317    0.988241826570244  -0.1400101570343576 -0.03054631507551606
+     * test_collision: /home/iit.local/alaurenzi/code/core_ws/src/hpp-fcl/src/narrowphase/gjk.cpp:339: void hpp::fcl::details::getSupportFuncTpl(const MinkowskiDiff&, const hpp::fcl::Vec3f&, bool, hpp::fcl::Vec3f&, hpp::fcl::Vec3f&, hpp::fcl::support_func_guess_t&, MinkowskiDiff::ShapeData*) [with Shape0 = hpp::fcl::Box; Shape1 = hpp::fcl::Capsule; bool TransformIsIdentity = false; hpp::fcl::Vec3f = Eigen::Matrix<double, 3, 1>; hpp::fcl::support_func_guess_t = Eigen::Matrix<int, 2, 1>]: Assertion `NeedNormalizedDir || dir.cwiseAbs().maxCoeff() >= 1e-6' failed.
+     * Aborted (core dumped)
+     */
+
+
+    // std::cout << link1->link_name << " vs " << link2->link_name << "\n" <<
+    //     o1->getTransform().getTranslation().transpose().format(16) << " " << o1->getTransform().getQuatRotation().coeffs().transpose().format(16) << "\n" <<
+    //     o2->getTransform().getTranslation().transpose().format(16) << " " << o2->getTransform().getQuatRotation().coeffs().transpose().format(16) << "\n";
+
+    dist(o1->getTransform(),
+         o2->getTransform(),
+         drequest,
+         dresult);
 
 
     // hack to fix wrong distance when in deep collision
-    if(result.min_distance < 0)
+    if(dresult.min_distance < 0)
     {
-        result.min_distance = -(result.nearest_points[0] - result.nearest_points[1]).norm();
+        dresult.min_distance = -(dresult.nearest_points[0] - dresult.nearest_points[1]).norm();
+    }
+}
+
+void CollisionModel::Impl::CollisionPairData::compute_collision(const ModelInterface &model,
+                                                                double threshold)
+{
+    Eigen::Vector3d aabb_1 = o1->getAABB().center();
+    Eigen::Vector3d aabb_2 = o2->getAABB().center();
+    Eigen::Vector3d aabb_21 = aabb_2 - aabb_1;
+    double aabb_dist = o1->getAABB().distance(o2->getAABB());
+
+    cresult.clear();
+
+    if(threshold > 0 && aabb_dist > threshold)
+    {
+        return;
     }
 
-    // convert witness points to local link frame
-    result.nearest_points[0] = w_T_l1.inverse() * result.nearest_points[0];
-    result.nearest_points[1] = w_T_l2.inverse() * result.nearest_points[1];
+    crequest.num_max_contacts = 1;
 
+    coll(o1->getTransform(),
+         o2->getTransform(),
+         crequest,
+         cresult);
+}
 
+CollisionModel::Impl::LinkCollision::LinkCollision(const ModelInterface &model,
+                                                   string_const_ref link_name,
+                                                   std::vector<CollisionGeometryPtr> geoms,
+                                                   std::vector<Eigen::Affine3d> l_T_shape)
+{
+    this->link_name = link_name;
+
+    link_id = model.getLinkId(link_name);
+
+    if(link_id < 0)
+    {
+        throw std::runtime_error("link '" + link_name + "' undefined");
+    }
+
+    if(geoms.size() != l_T_shape.size())
+    {
+        auto what = fmt::format("internal error: geoms.size() != l_T_shape.size() [{} != {}] "
+                                "while processing link '{}'",
+                                geoms.size(), l_T_shape.size(), link_name);
+
+        throw std::runtime_error(what);
+    }
+
+    this->l_T_shape = l_T_shape;
+
+    for(int i = 0; i < geoms.size(); i++)
+    {
+        auto obj = std::make_shared<fcl::CollisionObject>(geoms[i]);
+        coll_obj.push_back(obj);
+    }
+
+    J = model.getJacobian(link_name);
+}
+
+void CollisionModel::Impl::LinkCollision::update(const ModelInterface &model)
+{
+    w_T_l = model.getPose(link_id);
+
+    model.getJacobian(link_id, J);
+
+    for(int i = 0; i < coll_obj.size(); i++)
+    {
+        auto w_T_shape = w_T_l * l_T_shape[i];
+
+        coll_obj[i]->setTransform(tofcl(w_T_shape));
+
+        coll_obj[i]->computeAABB();
+    }
 
 }
