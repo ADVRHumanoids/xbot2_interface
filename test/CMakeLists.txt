@@ -57,5 +57,3 @@ target_link_libraries(test_memory PRIVATE xbot2_interface::collision)
 add_test_executable(test_collision)
 target_link_libraries(test_collision PRIVATE xbot2_interface::collision)
 
-add_executable(eigen_ref_calls_free src/eigen_ref_calls_free.cpp)
-target_link_libraries(eigen_ref_calls_free Eigen3::Eigen dl)
