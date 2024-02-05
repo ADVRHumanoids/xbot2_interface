@@ -43,6 +43,13 @@ struct XBOT2IFC_API Shape
         std::string filepath;
     };
 
+    struct HeightMap
+    {
+        double dim_x;
+        double dim_y;
+        std::shared_ptr<Eigen::MatrixXf> height;
+    };
+
     using Variant = std::variant<
         Sphere,
         Capsule,
@@ -134,20 +141,38 @@ public:
     void getWitnessPoints(std::vector<std::pair<Eigen::Vector3d, Eigen::Vector3d>>& wp) const;
 
     /**
-     * @brief computeDistance
-     * @param threshold
-     * @return
+     * @brief performs distance computation for all active collision pairs; if the threshold
+     * parameter is greater than zero, this function will only compute cheaper approximate
+     * distance between collision pairs whose distance can be proved to be above the given
+     * thresold, by means of an inexpensive AABB overlap test.
+     * @param threshold: min distance below which exact distance computation is performed
+     * @return vector of distances, one for each collision pair
      */
     Eigen::VectorXd computeDistance(double threshold = -1) const;
 
+    /**
+     * @brief performs distance computation for all active collision pairs; if the threshold
+     * parameter is greater than zero, this function will only compute cheaper approximate
+     * distance between collision pairs whose distance can be proved to be above the given
+     * thresold, by means of an inexpensive AABB overlap test.
+     * @param threshold: min distance below which exact distance computation is performed
+     * @param d (output) vector of distances, one for each collision pair
+     */
     void computeDistance(Eigen::VectorXd& d, double threshold = -1) const;
 
     /**
-     * @brief getDistanceJacobian
-     * @return
+     * @brief return the approximate distance Jacobian; this assumes witness points do not
+     * change with configuration
+     * @note it requires calling update() and computeDistance() first
      */
     Eigen::MatrixXd getDistanceJacobian() const;
 
+    /**
+     * @brief return the approximate distance Jacobian; this assumes witness points do not
+     * change with configuration
+     * @note it requires calling update() and computeDistance() first
+     * @param (output) the distance Jacobian; size must be getNumCollisionPairs() x model->getNv()
+     */
     void getDistanceJacobian(MatRef J) const;
 
     virtual ~CollisionModel();

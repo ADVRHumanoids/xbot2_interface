@@ -44,7 +44,7 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
     m.def("computeOrientationError",
           py::overload_cast<const Eigen::Matrix3d&, const Eigen::Matrix3d&>(Utils::computeOrientationError));
 
-    py::class_<XBotInterface>(m, "XBotInterface2")
+    py::class_<XBotInterface, XBotInterface::Ptr>(m, "XBotInterface2")
         .def("getName",
              &XBotInterface::getName)
         .def("getJointNum",
@@ -185,9 +185,9 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
              })
         ;
 
-    py::class_<ModelInterface, XBotInterface>(m, "ModelInterface2")
-        .def(py::init(py::overload_cast<std::string, std::string>(&ModelInterface::getModel)),
-             py::arg("urdf_string"), py::arg("model_type") = "pin")
+    py::class_<ModelInterface, XBotInterface, ModelInterface::Ptr>(m, "ModelInterface2")
+        .def(py::init(py::overload_cast<std::string, std::string, std::string>(&ModelInterface::getModel)),
+             py::arg("urdf_string"), py::arg("srdf_string") = "", py::arg("model_type") = "pin")
         .def("getType",
              &ModelInterface::getType)
         .def("update",
@@ -263,7 +263,7 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
                       py::overload_cast<VecConstRef>(&ModelInterface::setJointEffort))
         ;
 
-    py::class_<RobotInterface, XBotInterface>(m, "RobotInterface2")
+    py::class_<RobotInterface, XBotInterface, RobotInterface::Ptr>(m, "RobotInterface2")
         .def(py::init(py::overload_cast<std::string, std::string, std::string>(
                  &RobotInterface::getRobot)),
              py::arg("urdf_string"), py::arg("robot_type"), py::arg("model_type") = "pin")
