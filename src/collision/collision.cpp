@@ -584,19 +584,19 @@ CollisionModel::Impl::CollisionPairData::CollisionPairData(
 void CollisionModel::Impl::CollisionPairData::compute_distance(const ModelInterface &model,
                                                                double threshold)
 {
+    dresult.clear();
+
     Eigen::Vector3d aabb_1 = o1->getAABB().center();
     Eigen::Vector3d aabb_2 = o2->getAABB().center();
     Eigen::Vector3d aabb_21 = aabb_2 - aabb_1;
-    double aabb_dist = o1->getAABB().distance(o2->getAABB());
-
-    dresult.clear();
+    double aabb_dist = o1->getAABB().distance(o2->getAABB(),
+                                              &dresult.nearest_points[0],
+                                              &dresult.nearest_points[1]);
 
     if(threshold > 0 && aabb_dist > threshold)
     {
         dresult.min_distance = aabb_dist;
-        dresult.normal = aabb_21.normalized();
-        dresult.nearest_points[0] = aabb_1 + dresult.normal;
-        dresult.nearest_points[1] = aabb_2 - dresult.normal;
+        dresult.normal = (dresult.nearest_points[1]-dresult.nearest_points[0]).normalized();
         return;
     }
 
