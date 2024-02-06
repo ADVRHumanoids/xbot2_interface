@@ -315,6 +315,7 @@ public:
     // com
 
     virtual Eigen::Vector3d getCOM() const = 0;
+    void  getCOM(Eigen::Vector3d& com) const;
 
     virtual void getCOMJacobian(MatRef J) const = 0;
 

@@ -1405,6 +1405,11 @@ bool XBotInterface::getRelativeAccelerationTwist(string_const_ref distal_name, s
     return true;
 }
 
+void XBotInterface::getCOM(Eigen::Vector3d &com) const
+{
+    com = getCOM();
+}
+
 bool XBotInterface::getCOMJacobian(Eigen::MatrixXd &J) const
 {
     J.setZero(3, getNv());
