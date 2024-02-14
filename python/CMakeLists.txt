@@ -34,15 +34,16 @@ if(${pybind11_FOUND} AND ${COMPILE_PYTHON_BINDINGS})
     install(TARGETS pyaffine3
         DESTINATION ${PYTHON_SITE}/xbot2_interface)
 
+    if (${XBOT2_IFC_BUILD_COLLISION})
+        pybind11_add_module(pyxbot2_collision pyxbot2_collision.cpp)
 
-    pybind11_add_module(pyxbot2_collision pyxbot2_collision.cpp)
+        target_link_libraries(pyxbot2_collision PUBLIC xbot2_interface::collision)
 
-    target_link_libraries(pyxbot2_collision PUBLIC xbot2_interface::collision)
-
-    install(TARGETS pyxbot2_collision
-        DESTINATION ${PYTHON_SITE}/xbot2_interface)
+        install(TARGETS pyxbot2_collision
+            DESTINATION ${PYTHON_SITE}/xbot2_interface)
 
 
-    install(FILES __init__.py DESTINATION ${PYTHON_SITE}/xbot2_interface)
+        install(FILES __init__.py DESTINATION ${PYTHON_SITE}/xbot2_interface)
+    endif()
 
 endif()
