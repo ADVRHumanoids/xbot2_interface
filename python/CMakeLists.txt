@@ -41,9 +41,8 @@ if(${pybind11_FOUND} AND ${COMPILE_PYTHON_BINDINGS})
 
         install(TARGETS pyxbot2_collision
             DESTINATION ${PYTHON_SITE}/xbot2_interface)
-
-
-        install(FILES __init__.py DESTINATION ${PYTHON_SITE}/xbot2_interface)
     endif()
+
+    install(FILES __init__.py DESTINATION ${PYTHON_SITE}/xbot2_interface)
 
 endif()
