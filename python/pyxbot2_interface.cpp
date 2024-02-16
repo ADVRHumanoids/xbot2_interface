@@ -186,8 +186,10 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
         ;
 
     py::class_<ModelInterface, XBotInterface, ModelInterface::Ptr>(m, "ModelInterface2")
+        .def(py::init(py::overload_cast<std::string, std::string>(&ModelInterface::getModel)),
+             py::arg("urdf_string"), py::arg("model_type") = "pin")
         .def(py::init(py::overload_cast<std::string, std::string, std::string>(&ModelInterface::getModel)),
-             py::arg("urdf_string"), py::arg("srdf_string") = "", py::arg("model_type") = "pin")
+             py::arg("urdf_string"), py::arg("srdf_string"), py::arg("model_type") = "pin")
         .def("getType",
              &ModelInterface::getType)
         .def("update",
