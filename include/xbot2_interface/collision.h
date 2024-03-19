@@ -175,6 +175,11 @@ public:
      */
     void getDistanceJacobian(MatRef J) const;
 
+    /**
+     * @brief returned the vector of collision pair indices, in ascending distance order
+     */
+    const std::vector<int>& getOrderedCollisionPairIndices() const;
+
     virtual ~CollisionModel();
 
 private:

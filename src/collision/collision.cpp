@@ -282,6 +282,8 @@ void CollisionModel::Impl::updateCollisionPairData()
 {
     _collision_pair_data.clear();
 
+    _ordered_idx.clear();
+
     int pidx = 0;
 
     for(auto [l1, l2] : _active_link_pairs)
@@ -320,7 +322,11 @@ void CollisionModel::Impl::updateCollisionPairData()
                 _collision_pair_data.emplace_back(std::move(cpd));
 
                 fmt::print("added pair i = {}: {} vs {} \n",
-                           pidx++, l1, l2);
+                           pidx, l1, l2);
+
+                _ordered_idx.push_back(pidx);
+
+                pidx++;
 
             }
         }
@@ -564,7 +570,16 @@ void CollisionModel::getDistanceJacobian(MatRef J) const
         J.row(i).noalias() += cpd.dresult.normal.transpose() * Jtmp.topRows<3>();
 
     }
+}
 
+const std::vector<int> &CollisionModel::getOrderedCollisionPairIndices() const
+{
+    std::sort(impl->_ordered_idx.begin(), impl->_ordered_idx.end(), [this](int a, int b) {
+        return impl->_collision_pair_data[a].dresult.min_distance <
+               impl->_collision_pair_data[b].dresult.min_distance;
+    });
+
+    return impl->_ordered_idx;
 }
 
 CollisionModel::~CollisionModel()

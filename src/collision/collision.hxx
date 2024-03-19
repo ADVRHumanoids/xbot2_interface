@@ -106,6 +106,8 @@ private:
 
     std::set<LinkPair> _active_link_pairs;
 
+    std::vector<int> _ordered_idx;
+
 };
 
 }

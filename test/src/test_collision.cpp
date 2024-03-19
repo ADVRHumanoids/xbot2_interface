@@ -174,8 +174,43 @@ TEST_F(TestCollision, checkWpNormals)
         check_wp_normals();
     }
 
+}
+
+
+TEST_F(TestCollision, checkOrderedIndices)
+{
+
+    auto check_ordered_idx = [&]()
+    {
+        auto qrand = model->sum(model->getNeutralQ(), 3*Eigen::VectorXd::Random(model->getNv()));
+        model->setJointPosition(qrand);
+        model->update();
+
+        cm->update();
+
+        auto d = cm->computeDistance();
+
+        auto ordered_idx = cm->getOrderedCollisionPairIndices();
+
+        ASSERT_EQ(ordered_idx.size(), cm->getNumCollisionPairs());
+
+        for(int i = 0; i < cm->getNumCollisionPairs() - 1; i++)
+        {
+            EXPECT_LE(d(ordered_idx[i]), d(ordered_idx[i+1]));
+        }
+
+    };
+
+    int count = 1001;
+
+    for(int i = 0; i < count; i++)
+    {
+        check_ordered_idx();
+    }
+
 
 }
+
 
 TEST_F(TestCollision, checkJacobian)
 {
