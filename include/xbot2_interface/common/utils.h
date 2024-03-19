@@ -82,6 +82,8 @@ XBOT2IFC_API std::tuple<double, double, double> quinticSplineDerivatives(double 
 
 XBOT2IFC_API std::tuple<double, double, double> quinticSplineDerivatives(double t0, double tf, double time);
 
+XBOT2IFC_API std::string echo(std::string text, std::string workdir = ".");
+
 template <typename SignalType>
 /**
  * @brief SecondOrderFilter implements a canonical continuous-time

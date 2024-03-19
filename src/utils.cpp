@@ -161,3 +161,58 @@ Eigen::Matrix3d XBot::Utils::skewSymmetricMatrix(const Eigen::Vector3d &r)
 {
     return skew(r);
 }
+
+/**
+ * @brief exec runs a command inside the shell, and returns the output
+ */
+std::string exec(const char* cmd)
+{
+    FILE* pipe = popen(cmd, "r");
+
+    if (!pipe)
+    {
+        throw std::runtime_error("popen() failed");
+    }
+
+    std::string result;
+
+    try
+    {
+        char buffer[128];
+
+        while(fgets(buffer, sizeof buffer, pipe) != NULL)
+        {
+            result += buffer;
+        }
+    }
+    catch(...)
+    {
+        pclose(pipe);
+        throw;
+    }
+
+    int retcode = pclose(pipe);
+
+    if(retcode != 0)
+    {
+        throw std::runtime_error("child process '" + std::string(cmd) + "' exited with code " + std::to_string(retcode));
+    }
+
+    return result;
+}
+
+std::string XBot::Utils::echo(std::string text, std::string workdir)
+{
+
+    // define shell command
+    std::string cmd = "set -eu; cd " + workdir + "; /bin/echo " + text;
+
+    // execute in shell
+    std::string cmd_output = ::exec(cmd.c_str());
+
+    // strip trailing \n
+    cmd_output = cmd_output.substr(0, cmd_output.size() - 1);
+
+    return cmd_output;
+
+}
