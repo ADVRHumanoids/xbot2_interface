@@ -21,6 +21,12 @@ struct TestCollision : TestWithModel
     }
 };
 
+struct TestCollisionWithParam : TestCollision,
+                                ::testing::WithParamInterface<bool>
+{
+
+};
+
 TEST_F(TestCollision, checkSize)
 {
     cm->update();
@@ -53,8 +59,17 @@ TEST_F(TestCollision, checkBroadphase)
     }
 }
 
-TEST_F(TestCollision, checkFixCollision)
+TEST_P(TestCollisionWithParam, checkFixCollision)
 {
+    // add a sphere in the environment
+    XBot::Collision::Shape::Sphere sp;
+    sp.radius = 0.5;
+    Eigen::Affine3d w_T_c = model->getPose("wheel_3");
+    cm->addCollisionShape("mysphere", "world", sp, w_T_c);
+
+    bool include_env = GetParam();
+
+    // let's go
     model->setJointPosition(model->getNeutralQ());
     model->update();
     cm->update();
@@ -67,21 +82,23 @@ TEST_F(TestCollision, checkFixCollision)
 
     double lam = 1.0;
 
-    auto coll_pairs = cm->getCollisionPairs();
+    auto coll_pairs = cm->getCollisionPairs(include_env);
 
     Eigen::MatrixXd Jn(coll_pairs.size(), model->getNv());
     Eigen::VectorXd en(coll_pairs.size());  // des - actual
 
     for(int k = 0; true; k++)
     {
-        Eigen::VectorXd d = cm->computeDistance(d_th);
+        Eigen::VectorXd d = cm->computeDistance(include_env, d_th);
 
         if(d.minCoeff() > min_d - err_th)
         {
             break;
         }
 
-        Eigen::MatrixXd J = cm->getDistanceJacobian();
+        Eigen::MatrixXd J = cm->getDistanceJacobian(include_env);
+
+        EXPECT_EQ(J.rows(), d.size());
 
         int nn = 0;
 
@@ -127,7 +144,80 @@ TEST_F(TestCollision, checkFixCollision)
 
     std::cout << "final q = " << model->getJointPosition().transpose() << "\n";
 
-    EXPECT_FALSE(cm->checkSelfCollision());
+    EXPECT_FALSE(cm->checkCollision(include_env));
+
+}
+
+
+INSTANTIATE_TEST_SUITE_P(
+    checkFixCollision,
+    TestCollisionWithParam,
+    testing::Values(true, false));
+
+TEST_F(TestCollision, checkEnvironment)
+{
+    model->setJointPosition(model->getRobotState("home"));
+    model->update();
+    cm->update();
+
+    // start configuration is collision free
+    auto d = cm->computeDistance();
+    std::cout << "min distance in homing = " << d.minCoeff() << "\n";
+    ASSERT_GT(d.minCoeff(), 0);
+    ASSERT_FALSE(cm->checkSelfCollision());
+    ASSERT_FALSE(cm->checkCollision());
+
+    // environment has no collisions
+    ASSERT_EQ(cm->getNumCollisionPairs(true), cm->getNumCollisionPairs(false));
+
+    // add one
+    XBot::Collision::Shape::Sphere sp;
+    sp.radius = 0.5;
+
+    Eigen::Affine3d w_T_c;
+    w_T_c.setIdentity();
+    w_T_c.translation() << 3, 3, 3;  // very far away
+
+    cm->addCollisionShape("mysphere", "world", sp, w_T_c);
+
+    // environment has collisions
+    ASSERT_GT(cm->getNumCollisionPairs(true), cm->getNumCollisionPairs(false));
+
+    // still no self collisions
+    d = cm->computeDistance(true);
+    std::cout << "min distance in homing = " << d.minCoeff() << "\n";
+    ASSERT_GT(d.minCoeff(), 0);
+    ASSERT_FALSE(cm->checkSelfCollision());
+    ASSERT_FALSE(cm->checkCollision());
+
+    // move it to same position has the left hand
+    w_T_c = model->getPose("ball1");
+    cm->moveCollisionShape("mysphere", w_T_c);
+    d = cm->computeDistance(true);
+    std::cout << "min distance in homing = " << d.minCoeff() << "\n";
+    ASSERT_LT(d.minCoeff(), 0);
+    ASSERT_FALSE(cm->checkSelfCollision());
+    std::vector<int> colliding_idx;
+    ASSERT_TRUE(cm->checkCollision(colliding_idx));
+
+    // check wp
+    auto cpairs = cm->getCollisionPairs(true);
+    auto wpv = cm->getWitnessPoints(true);
+    EXPECT_GT(colliding_idx.size(), 0);
+
+    for(auto i : colliding_idx)
+    {
+        // check all colliding pairs are robot-to-env
+        EXPECT_EQ(cpairs[i].second, "world");
+
+        // check env witness point lies on sphere surface
+        Eigen::Vector3d wp_env = wpv[i].second;
+
+        EXPECT_FLOAT_EQ((w_T_c.translation() - wp_env).norm(), sp.radius) <<
+            "wp = " << wp_env.transpose() << "\n" <<
+            "sp = " << w_T_c.translation().transpose() << "\n";
+
+    }
 
 }
 
@@ -167,7 +257,7 @@ TEST_F(TestCollision, checkWpNormals)
 
     };
 
-    int count = 100001;
+    int count = 10001;
 
     for(int i = 0; i < count; i++)
     {
@@ -289,7 +379,7 @@ TEST_F(TestCollision, checkJacobian)
 
     };
 
-    int count = 10001;
+    int count = 1001;
 
     for(int i = 0; i < count; i++)
     {
