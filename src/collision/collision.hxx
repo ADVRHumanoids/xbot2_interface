@@ -33,12 +33,13 @@ public:
 
     //
 
-    bool checkSelfCollision(std::vector<int> * coll_pair_ids, bool include_env);
+    bool checkSelfCollision(std::vector<int> * coll_pair_ids, bool include_env, double threshold);
 
     bool addCollisionShape(string_const_ref name,
                            string_const_ref link,
                            Shape::Variant shape,
-                           Eigen::Affine3d link_T_shape);
+                           Eigen::Affine3d link_T_shape,
+                           std::vector<std::string> disabled_collisions);
 
     void check_distance_called_throw(const char * func);
 
@@ -71,6 +72,10 @@ private:
 
         int getIndex(CollisionObjectPtr co) const;
 
+        void addCollisionObject(CollisionObjectPtr co,  const Eigen::Affine3d& link_T_shape);
+
+        void setEnabled(CollisionObjectPtr co, bool flag);
+
         bool is_world;
         int link_id;
         std::string link_name;
@@ -79,6 +84,8 @@ private:
 
         std::vector<Eigen::Affine3d> l_T_shape;
         std::vector<CollisionObjectPtr> coll_obj;
+        std::vector<bool> enabled;
+        std::vector<std::set<std::string>> disabled_collisions;
     };
 
     struct CollisionPairData
@@ -93,6 +100,7 @@ private:
 
         CollisionObjectPtr o1, o2;
         LinkCollision::Ptr link1, link2;
+        int co_idx1, co_idx2;
         int id1, id2;
 
         CollisionPairData(CollisionObjectPtr o1,

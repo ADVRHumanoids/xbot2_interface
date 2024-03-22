@@ -26,6 +26,7 @@ add_definitions(-DXBOT2_TEST_RESOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/resources
 
 # common libs to link against
 set(TestLibs
+    fmt::fmt-header-only
     ${GTEST_BOTH_LIBRARIES}
     pthread
     xbot2_interface)

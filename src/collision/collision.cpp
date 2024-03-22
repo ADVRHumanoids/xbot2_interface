@@ -319,11 +319,18 @@ void CollisionModel::Impl::updateCollisionPairData()
         {
             for(int j = 0; j < c2->coll_obj.size(); j++)
             {
+                if(c1->disabled_collisions[i].contains(l2) ||
+                    c2->disabled_collisions[j].contains(l1))
+                {
+                    continue;
+                }
 
                 CollisionPairData cpd(c1->coll_obj[i], c2->coll_obj[j]);
 
                 cpd.link1 = c1;
                 cpd.link2 = c2;
+                cpd.co_idx1 = c1->getIndex(c1->coll_obj[i]);
+                cpd.co_idx2 = c2->getIndex(c2->coll_obj[j]);
                 cpd.id1 = _model->getLinkId(l1);
                 cpd.id2 = _model->getLinkId(l2);
 
@@ -332,8 +339,8 @@ void CollisionModel::Impl::updateCollisionPairData()
 
                 _collision_pair_data.emplace_back(std::move(cpd));
 
-                fmt::print("added pair i = {}: {} vs {} \n",
-                           pidx, l1, l2);
+                // fmt::print("added pair i = {}: {} vs {} \n",
+                //            pidx, l1, l2);
 
                 _ordered_idx.push_back(pidx);
 
@@ -373,6 +380,8 @@ void CollisionModel::Impl::updateCollisionPairData()
 
                 cpd.link1 = c;
                 cpd.link2 = env;
+                cpd.co_idx1 = c->getIndex(c->coll_obj[i]);
+                cpd.co_idx2 = env->getIndex(env->coll_obj[j]);
                 cpd.id1 = _model->getLinkId(l);
                 cpd.id2 = -1;
 
@@ -381,8 +390,8 @@ void CollisionModel::Impl::updateCollisionPairData()
 
                 _collision_pair_data.emplace_back(std::move(cpd));
 
-                fmt::print("added pair i = {}: {} vs {} \n",
-                           pidx, l, "env");
+                // fmt::print("added pair i = {}: {} vs {} \n",
+                //            pidx, l, "env");
 
                 _ordered_idx.push_back(pidx);
 
@@ -410,7 +419,8 @@ void CollisionModel::Impl::makeCollisionManager()
 }
 
 bool CollisionModel::Impl::checkSelfCollision(std::vector<int>* coll_pair_ids,
-                                              bool include_env)
+                                              bool include_env,
+                                              double threshold)
 {
     bool ret = false;
 
@@ -428,7 +438,7 @@ bool CollisionModel::Impl::checkSelfCollision(std::vector<int>* coll_pair_ids,
             return ret;
         }
 
-        cpd.compute_collision(*_model);
+        cpd.compute_collision(*_model, threshold);
 
         if(cpd.cresult.isCollision())
         {
@@ -459,7 +469,8 @@ template<class... Ts> Overload(Ts...) -> Overload<Ts...>;
 bool CollisionModel::Impl::addCollisionShape(string_const_ref name,
                                              string_const_ref link,
                                              Shape::Variant shape,
-                                             Eigen::Affine3d link_T_shape)
+                                             Eigen::Affine3d link_T_shape,
+                                             std::vector<std::string> disabled_collisions)
 {
     // check already exists
     // if so, check if type matches and move it
@@ -492,7 +503,7 @@ bool CollisionModel::Impl::addCollisionShape(string_const_ref name,
                 box.size.z()
                 );
 
-            std::cout << "sphere";
+            std::cout << "box";
 
             return true;
         },
@@ -576,6 +587,7 @@ bool CollisionModel::Impl::addCollisionShape(string_const_ref name,
         [&](const Shape::Sphere& sp)
         {
             fcl_geom = std::make_shared<hpp::fcl::Sphere>(sp.radius);
+            std::cout << "sphere";
             return true;
         }
     };
@@ -617,14 +629,18 @@ bool CollisionModel::Impl::addCollisionShape(string_const_ref name,
 
     // add geometry to collision
     auto fcl_obj = std::make_shared<fcl::CollisionObject>(fcl_geom);
-    link_collision->coll_obj.push_back(fcl_obj);
-    link_collision->l_T_shape.push_back(link_T_shape);
-    link_collision->updatePose(fcl_obj, link_T_shape);
+    link_collision->addCollisionObject(fcl_obj, link_T_shape);
+
+    // add disabled collisions
+    link_collision->disabled_collisions.back().insert(disabled_collisions.begin(),
+                                                      disabled_collisions.end());
 
     // add to user map
     _user_object_map[name] = {link_collision, fcl_obj, shape};
 
-    // update
+    // re-generate pairs
+    generateAllPairs();
+    removeDisabledPairs();
     updateCollisionPairData();
 
     return true;
@@ -666,12 +682,37 @@ int CollisionModel::getNumCollisionPairs(bool include_env) const
 bool CollisionModel::addCollisionShape(string_const_ref name,
                                        string_const_ref link,
                                        Shape::Variant shape,
-                                       Eigen::Affine3d link_T_shape)
+                                       Eigen::Affine3d link_T_shape,
+                                       std::vector<std::string> disabled_collisions)
 {
-    return impl->addCollisionShape(name, link, shape, link_T_shape);
+    if(impl->addCollisionShape(name, link, shape, link_T_shape, disabled_collisions))
+    {
+        update();
+        return true;
+    }
+
+    return false;
 }
 
-Eigen::Affine3d CollisionModel::getCollisionShapePose(string_const_ref name) const
+bool CollisionModel::setCollisionShapeActive(string_const_ref name, bool flag)
+{
+    auto user_obj_it = impl->_user_object_map.find(name);
+
+    if(user_obj_it == impl->_user_object_map.end())
+    {
+        fmt::print("shape {} not found", name);
+        return false;
+    }
+
+    auto co = user_obj_it->second.collision_object;
+    auto lc = user_obj_it->second.link_collision;
+
+    lc->setEnabled(co, flag);
+
+    return true;
+}
+
+CollisionModel::CollisionShapeData CollisionModel::getCollisionShapeData(string_const_ref name) const
 {
     auto user_obj_it = impl->_user_object_map.find(name);
 
@@ -682,8 +723,9 @@ Eigen::Affine3d CollisionModel::getCollisionShapePose(string_const_ref name) con
 
     auto co = user_obj_it->second.collision_object;
     auto lc = user_obj_it->second.link_collision;
+    auto sh = user_obj_it->second.shape;
 
-    return lc->getPose(co);
+    return {lc->link_name, sh, lc->getPose(co)};
 }
 
 bool CollisionModel::moveCollisionShape(string_const_ref name, Eigen::Affine3d link_T_shape)
@@ -757,24 +799,24 @@ void CollisionModel::setLinksVsEnvironment(std::set<std::string> links)
     impl->updateCollisionPairData();
 }
 
-bool CollisionModel::checkSelfCollision(std::vector<int>& coll_pair_ids)
+bool CollisionModel::checkSelfCollision(std::vector<int>& coll_pair_ids, double threshold)
 {
-    return impl->checkSelfCollision(&coll_pair_ids, false);
+    return impl->checkSelfCollision(&coll_pair_ids, false, threshold);
 }
 
-bool CollisionModel::checkSelfCollision()
+bool CollisionModel::checkSelfCollision(double threshold)
 {
-    return impl->checkSelfCollision(nullptr, false);
+    return impl->checkSelfCollision(nullptr, false, threshold);
 }
 
-bool CollisionModel::checkCollision(std::vector<int> &coll_pair_ids, bool include_env)
+bool CollisionModel::checkCollision(std::vector<int> &coll_pair_ids, bool include_env, double threshold)
 {
-    return impl->checkSelfCollision(&coll_pair_ids, include_env);
+    return impl->checkSelfCollision(&coll_pair_ids, include_env, threshold);
 }
 
-bool CollisionModel::checkCollision(bool include_env)
+bool CollisionModel::checkCollision(bool include_env, double threshold)
 {
-    return impl->checkSelfCollision(nullptr, include_env);
+    return impl->checkSelfCollision(nullptr, include_env, threshold);
 }
 
 void CollisionModel::update()
@@ -953,6 +995,17 @@ void CollisionModel::Impl::CollisionPairData::compute_distance(const ModelInterf
 {
     dresult.clear();
 
+    // one of the two collisions is disabled, return
+    if(!link1->enabled[co_idx1] || !link2->enabled[co_idx2])
+    {
+        dresult.min_distance = std::numeric_limits<double>::infinity();
+        dresult.normal.setZero();  // note: this makes jacobian be zero as we want
+        dresult.nearest_points[0].setZero();
+        dresult.nearest_points[1].setZero();
+        return;
+    }
+
+    // inexpensive aabb test
     Eigen::Vector3d aabb_1 = o1->getAABB().center();
     Eigen::Vector3d aabb_2 = o2->getAABB().center();
     Eigen::Vector3d aabb_21 = aabb_2 - aabb_1;
@@ -980,6 +1033,7 @@ void CollisionModel::Impl::CollisionPairData::compute_distance(const ModelInterf
     //     o1->getTransform().getTranslation().transpose().format(16) << " " << o1->getTransform().getQuatRotation().coeffs().transpose().format(16) << "\n" <<
     //     o2->getTransform().getTranslation().transpose().format(16) << " " << o2->getTransform().getQuatRotation().coeffs().transpose().format(16) << "\n";
 
+    // distance computation
     dist(o1->getTransform(),
          o2->getTransform(),
          drequest,
@@ -996,19 +1050,29 @@ void CollisionModel::Impl::CollisionPairData::compute_distance(const ModelInterf
 void CollisionModel::Impl::CollisionPairData::compute_collision(const ModelInterface &model,
                                                                 double threshold)
 {
+    cresult.clear();
+
+    // one of the two collisions is disabled, return
+    if(!link1->enabled[co_idx1] || !link2->enabled[co_idx2])
+    {
+        return;
+    }
+
+    // simple aabb distance
     Eigen::Vector3d aabb_1 = o1->getAABB().center();
     Eigen::Vector3d aabb_2 = o2->getAABB().center();
     Eigen::Vector3d aabb_21 = aabb_2 - aabb_1;
     double aabb_dist = o1->getAABB().distance(o2->getAABB());
 
-    cresult.clear();
-
+    // aabb distance larger than given threshold -> cannot collide !
     if(threshold > 0 && aabb_dist > threshold)
     {
         return;
     }
 
     crequest.num_max_contacts = 1;
+    crequest.security_margin = threshold;
+    crequest.enable_contact = false;
 
     coll(o1->getTransform(),
          o2->getTransform(),
@@ -1020,7 +1084,9 @@ void CollisionModel::Impl::CollisionPairData::compute_collision(const ModelInter
 CollisionModel::Impl::LinkCollision::LinkCollision(const ModelInterface &model,
                                                    string_const_ref link_name,
                                                    std::vector<CollisionGeometryPtr> geoms,
-                                                   std::vector<Eigen::Affine3d> l_T_shape)
+                                                   std::vector<Eigen::Affine3d> l_T_shape):
+    enabled(geoms.size(), true),
+    disabled_collisions(geoms.size())
 {
     this->link_name = link_name;
 
@@ -1137,4 +1203,33 @@ int CollisionModel::Impl::LinkCollision::getIndex(CollisionObjectPtr co) const
     }
 
     return co_it - coll_obj.begin();
+}
+
+void CollisionModel::Impl::LinkCollision::addCollisionObject(CollisionObjectPtr co,
+                                                             const Eigen::Affine3d &link_T_shape)
+{
+    if(getIndex(co) >= 0)
+    {
+        throw std::invalid_argument("collision object cannot be added: exists");
+    }
+
+    coll_obj.push_back(co);
+    l_T_shape.push_back(link_T_shape);
+    enabled.push_back(true);
+    disabled_collisions.push_back({});
+
+    updatePose(co, link_T_shape);
+}
+
+void CollisionModel::Impl::LinkCollision::setEnabled(CollisionObjectPtr co, bool flag)
+{
+    int idx = getIndex(co);
+
+    if(idx < 0)
+    {
+        throw std::invalid_argument("[LinkCollision::setActive] collision object not found");
+    }
+
+    enabled[idx] = flag;
+
 }

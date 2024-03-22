@@ -81,6 +81,10 @@ public:
 
     typedef std::vector<std::pair<Eigen::Vector3d, Eigen::Vector3d>> WitnessPointVector;
 
+    /**
+     * @brief CollisionModel constructor
+     * @param model shared pointer
+     */
     CollisionModel(ModelInterface::ConstPtr model);
 
     /**
@@ -94,22 +98,41 @@ public:
 
     /**
      * @brief addCollisionShape
-     * @param link
+     * @param name human-readable id for the collision shape
+     * @param link to attach to
      * @param shape
-     * @param link_T_shape
-     * @return
+     * @param link_T_shape: transform of the collision shape w.r.t. its parent link
+     * @return true if success
      */
     bool addCollisionShape(string_const_ref name,
                            string_const_ref link,
                            Shape::Variant shape,
-                           Eigen::Affine3d link_T_shape);
+                           Eigen::Affine3d link_T_shape,
+                           std::vector<std::string> disabled_collisions = {});
 
     /**
-     * @brief getCollisionShapePose
+     * @brief disableCollisionShape
      * @param name
      * @return
      */
-    Eigen::Affine3d getCollisionShapePose(string_const_ref name) const;
+    bool setCollisionShapeActive(string_const_ref name, bool flag);
+
+    /**
+     * @brief Return type for the getCollisionShapeData method
+     */
+    struct CollisionShapeData
+    {
+        string_const_ref link;
+        Shape::Variant shape;
+        Eigen::Affine3d link_T_shape;
+    };
+
+    /**
+     * @brief getCollisionShapeData
+     * @param name
+     * @return
+     */
+    CollisionShapeData getCollisionShapeData(string_const_ref name) const;
 
     /**
      * @brief moveCollisionShape
@@ -159,25 +182,27 @@ public:
      * @brief checkSelfCollision
      * @return
      */
-    bool checkSelfCollision(std::vector<int>& coll_pair_ids);
+    bool checkSelfCollision(std::vector<int>& coll_pair_ids, double threshold = 0.0);
 
     /**
      * @brief checkSelfCollision
      * @return
      */
-    bool checkSelfCollision();
+    bool checkSelfCollision(double threshold = 0.0);
 
     /**
      * @brief checkCollision
      * @return
      */
-    bool checkCollision(std::vector<int>& coll_pair_ids, bool include_env = true);
+    bool checkCollision(std::vector<int>& coll_pair_ids,
+                        bool include_env = true,
+                        double threshold = 0.0);
 
     /**
      * @brief checkCollision
      * @return
      */
-    bool checkCollision(bool include_env = true);
+    bool checkCollision(bool include_env = true, double threshold = 0.0);
 
     /**
      * @brief update the collision model with the underlying ModelInterface's state

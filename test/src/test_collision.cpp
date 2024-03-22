@@ -1,7 +1,7 @@
 #include "common.h"
 
 #include <xbot2_interface/collision.h>
-
+#include <fmt/format.h>
 
 struct TestCollision : TestWithModel
 {
@@ -221,6 +221,142 @@ TEST_F(TestCollision, checkEnvironment)
 
 }
 
+TEST_F(TestCollision, checkCollision)
+{
+    // collision free pose
+    model->setJointPosition(model->getRobotState("home"));
+    model->update();
+    cm->update();
+    ASSERT_FALSE(cm->checkSelfCollision());
+
+    // compute min distance
+    double min_d = cm->computeDistance().minCoeff();
+
+    // check consistency w.r.t. threshold
+    EXPECT_FALSE(cm->checkSelfCollision(min_d * 0.1));
+    EXPECT_FALSE(cm->checkSelfCollision(min_d * 0.5));
+    EXPECT_FALSE(cm->checkSelfCollision(min_d * 0.9));
+    EXPECT_FALSE(cm->checkSelfCollision(min_d * 0.99));
+    EXPECT_TRUE(cm->checkSelfCollision(min_d * 1.0));
+    EXPECT_TRUE(cm->checkSelfCollision(min_d * 1.1));
+}
+
+TEST_F(TestCollision, checkCollisionVsDistance)
+{
+    double dt_upd = 0, dt_dist = 0, dt_coll = 0;
+
+    auto check_coll_vs_dist = [&]()
+    {
+        model->setJointPosition(model->generateRandomQ());
+        model->update();
+
+        TIC(upd);
+        cm->update();
+        dt_upd += TOC(upd);
+
+        TIC(dist);
+        double min_dist = cm->computeDistance(false, 0).minCoeff();
+        dt_dist += TOC(dist);
+
+        TIC(coll);
+        bool collide = cm->checkSelfCollision();
+        dt_coll += TOC(coll);
+
+        EXPECT_EQ(collide, min_dist <= 0);
+    };
+
+    int count = 1000;
+
+    for(int i = 0; i < count; i++)
+    {
+        check_coll_vs_dist();
+    }
+
+
+    std::cout << "CollisionModel::update requires " << dt_upd/count*1e6 << " us \n";
+    std::cout << "CollisionModel::getDistance requires " << dt_dist/count*1e6 << " us \n";
+    std::cout << "CollisionModel::checkSelfCollision requires " << dt_coll/count*1e6 << " us \n";
+
+}
+
+TEST_F(TestCollision, checkUserCollisionActivation)
+{
+    // collision free pose
+    model->setJointPosition(model->getRobotState("home"));
+    model->update();
+    cm->update();
+    ASSERT_FALSE(cm->checkCollision());
+    ASSERT_FALSE(cm->computeDistance().minCoeff() <= 0);
+
+    // add one
+    XBot::Collision::Shape::Sphere sp;
+    sp.radius = 0.2;
+    Eigen::Affine3d w_T_c = model->getPose("ball1");
+    cm->addCollisionShape("mysphere", "world", sp, w_T_c);
+    ASSERT_TRUE(cm->checkCollision());
+    ASSERT_TRUE(cm->computeDistance(true).minCoeff() <= 0);
+
+    // deactivate
+    cm->setCollisionShapeActive("mysphere", false);
+    ASSERT_FALSE(cm->checkCollision());
+    ASSERT_FALSE(cm->computeDistance(true).minCoeff() <= 0);
+
+    // activate
+    cm->setCollisionShapeActive("mysphere", true);
+    ASSERT_TRUE(cm->checkCollision());
+    ASSERT_TRUE(cm->computeDistance(true).minCoeff() <= 0);
+
+}
+
+TEST_F(TestCollision, checkUserCollisionTouchLinks)
+{
+    // collision free pose
+    model->setJointPosition(model->getRobotState("home"));
+    model->update();
+    cm->update();
+    ASSERT_FALSE(cm->checkCollision());
+    ASSERT_FALSE(cm->computeDistance().minCoeff() <= 0);
+
+    // add one
+    XBot::Collision::Shape::Sphere sp;
+    sp.radius = 0.2;
+    Eigen::Affine3d w_T_c;
+    w_T_c.setIdentity();
+    std::vector<int> coll_idx;
+    cm->addCollisionShape("mysphere",
+                          "ball1",
+                          sp,
+                          w_T_c,
+                          {"arm1_1", "arm1_5", "arm1_6", "arm1_7", "ball1"});
+    EXPECT_FALSE(cm->checkCollision(coll_idx));
+    EXPECT_FALSE(cm->computeDistance().minCoeff() <= 0);
+
+    auto d = cm->computeDistance();
+    auto pairs = cm->getCollisionPairs();
+
+    for(int i : coll_idx)
+    {
+        fmt::print("{} vs {} -> d = {} \n",
+                   pairs[i].first, pairs[i].second, d[i]);
+    }
+
+    // another but without dc
+    int n1 = cm->getNumCollisionPairs();
+    cm->addCollisionShape("mysphere1",
+                          "ball1",
+                          sp,
+                          w_T_c,
+                          {});
+    int n2 = cm->getNumCollisionPairs();
+    EXPECT_GT(n2, n1);
+    EXPECT_TRUE(cm->checkCollision(coll_idx));
+    EXPECT_TRUE(cm->computeDistance().minCoeff() <= 0);
+
+
+
+
+}
+
 TEST_F(TestCollision, checkWpNormals)
 {
 
@@ -263,7 +399,6 @@ TEST_F(TestCollision, checkWpNormals)
     {
         check_wp_normals();
     }
-
 }
 
 
