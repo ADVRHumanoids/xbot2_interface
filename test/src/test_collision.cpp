@@ -218,7 +218,37 @@ TEST_F(TestCollision, checkEnvironment)
             "sp = " << w_T_c.translation().transpose() << "\n";
 
     }
+}
 
+TEST_F(TestCollision, checkPairSetters)
+{
+    // add env
+    XBot::Collision::Shape::Sphere sp;
+    sp.radius = 0.5;
+
+    Eigen::Affine3d w_T_c;
+    w_T_c.setIdentity();
+
+    cm->addCollisionShape("mysphere", "world", sp, w_T_c);
+
+    //
+    EXPECT_THROW(cm->setLinkPairs({{"pelvis", "doesnotexist"}}), std::out_of_range);
+
+    //
+    cm->setLinkPairs({});
+
+    EXPECT_EQ(cm->getNumCollisionPairs(false), 0);
+    EXPECT_GT(cm->getNumCollisionPairs(true), 0);
+
+    cm->setLinksVsEnvironment({"pelvis", "arm1_4"});
+
+    EXPECT_EQ(cm->getNumCollisionPairs(false), 0);
+    EXPECT_EQ(cm->getNumCollisionPairs(true), 2);
+
+    cm->addCollisionShape("mysphere1", "world", sp, w_T_c);
+
+    EXPECT_EQ(cm->getNumCollisionPairs(false), 0);
+    EXPECT_EQ(cm->getNumCollisionPairs(true), 4);
 }
 
 TEST_F(TestCollision, checkCollision)

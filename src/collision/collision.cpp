@@ -639,9 +639,8 @@ bool CollisionModel::Impl::addCollisionShape(string_const_ref name,
     _user_object_map[name] = {link_collision, fcl_obj, shape};
 
     // re-generate pairs
-    generateAllPairs();
-    removeDisabledPairs();
     updateCollisionPairData();
+
 
     return true;
 }
@@ -796,6 +795,24 @@ void CollisionModel::setLinksVsEnvironment(std::set<std::string> links)
 {
     impl->_env_active_links = links;
 
+    impl->updateCollisionPairData();
+}
+
+void CollisionModel::resetLinkPairs()
+{
+    // note: restore old env active links
+    auto env_pairs = impl->_env_active_links;
+    impl->generateAllPairs();
+    impl->_env_active_links = env_pairs;
+
+    impl->removeDisabledPairs();
+    impl->updateCollisionPairData();
+}
+
+void CollisionModel::resetLinksVsEnvironment()
+{
+    impl->generateAllPairs();
+    impl->removeDisabledPairs();
     impl->updateCollisionPairData();
 }
 

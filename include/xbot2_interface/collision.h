@@ -179,6 +179,17 @@ public:
     void setLinksVsEnvironment(std::set<std::string> links);
 
     /**
+     * @brief recompute self collision pairs from given urdf and srdf
+     */
+    void resetLinkPairs();
+
+    /**
+     * @brief recompute robot-environment collision pairs from given
+     * urdf
+     */
+    void resetLinksVsEnvironment();
+
+    /**
      * @brief checkSelfCollision
      * @return
      */
