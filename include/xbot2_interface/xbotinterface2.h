@@ -447,6 +447,10 @@ protected:
 
     std::shared_ptr<Impl> impl;
 
+public:
+
+    Impl& getImpl();
+
 };
 
 

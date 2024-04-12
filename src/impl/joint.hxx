@@ -35,6 +35,8 @@ public:
                        VecRef q,
                        VecRef v)> fn_inv_kin;
 
+    void setApi(XBotInterface* api);
+
     friend Joint;
 
     friend ModelJoint;

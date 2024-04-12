@@ -30,6 +30,11 @@ XBotInterface::XBotInterface(std::shared_ptr<Impl> _impl):
 
 }
 
+XBotInterface::Impl &XBotInterface::getImpl()
+{
+    return *impl;
+}
+
 std::ostream &XBotInterface::print(std::ostream &os) const
 {
     os << "model name: " << getName() << "\n";
@@ -1596,6 +1601,21 @@ XBotInterface::Impl::Impl(const ConfigOptions& opt,
     parse_imu();
 
     parse_ft();
+}
+
+void XBotInterface::Impl::setApi(XBotInterface *xbi)
+{
+    if(!xbi)
+    {
+        throw std::runtime_error("[XBotInterface::Impl::setApi] nullptr api was provided");
+    }
+
+    for(auto j: _joints)
+    {
+        j->getImpl().setApi(xbi);
+    }
+
+
 }
 
 Eigen::VectorXd XBotInterface::Impl::getRobotState(string_const_ref name) const

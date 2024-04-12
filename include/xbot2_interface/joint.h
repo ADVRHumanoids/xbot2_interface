@@ -92,6 +92,10 @@ protected:
 
     Joint(std::unique_ptr<Impl>);
 
+public:
+
+    Impl& getImpl();
+
 };
 
 

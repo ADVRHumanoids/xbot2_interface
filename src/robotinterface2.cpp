@@ -38,7 +38,13 @@ RobotInterface::UniquePtr RobotInterface::getRobot(ConfigOptions opt)
 
     opt.get_parameter("robot_type", robot_type);
 
-    if(const char * robot_type_env = getenv("XBOT2IFC_ROBOT_TYPE"))
+    bool ignore_type_from_env = false;
+
+    opt.get_parameter("ignore_type_from_env", ignore_type_from_env);
+
+    const char * robot_type_env = getenv("XBOT2IFC_ROBOT_TYPE");
+
+    if(robot_type_env && !ignore_type_from_env)
     {
         robot_type = robot_type_env;
     }
@@ -262,7 +268,10 @@ RobotInterface::Impl::Impl(RobotInterface &api,
     _api(api),
     _model(std::move(model))
 {
-
+    // note: we share all the internal state with the internal model,
+    // but we need to set this robot as external api
+    // this is needed for validateControlMode to work correctly
+    _model->getImpl().setApi(&api);
 }
 
 Eigen::Vector6d XBot::RobotInterface::getVelocityTwist(int link_id) const

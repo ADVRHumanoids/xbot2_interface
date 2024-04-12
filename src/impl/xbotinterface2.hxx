@@ -28,6 +28,8 @@ public:
     Impl(const ConfigOptions& opt,
          XBotInterface& api);
 
+    void setApi(XBotInterface * xbi);
+
     Eigen::VectorXd getRobotState(string_const_ref name) const;
 
     UniversalJoint::Ptr getJoint(string_const_ref name) const;

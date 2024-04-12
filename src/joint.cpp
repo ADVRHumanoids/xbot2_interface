@@ -156,6 +156,11 @@ Joint::Joint(std::unique_ptr<Joint::Impl> _impl):
     impl->_api = this;
 }
 
+Joint::Impl &Joint::getImpl()
+{
+    return *impl;
+}
+
 void ModelJoint::setJointPositionMinimal(VecConstRef q)
 {
     minimalToPosition(q, impl->_state.qlink);
@@ -196,9 +201,7 @@ Joint::Impl::Impl(detail::StateView sv,
     _qcmd_minimal.setZero(sv.vlink.size());
 
     // assign container class pointers
-    _xbotifc = xbotifc;
-    _modelifc = dynamic_cast<ModelInterface*>(xbotifc);
-    _robotifc = dynamic_cast<RobotInterface*>(xbotifc);
+    setApi(xbotifc);
 
     // default fw kin for revolute, continuous, prismatic
     fn_fwd_kin = [this](VecConstRef q,
@@ -254,6 +257,18 @@ Joint::Impl::Impl(detail::StateView sv,
 
         }
     };
+}
+
+void Joint::Impl::setApi(XBotInterface *api)
+{
+    if(!api)
+    {
+        throw std::runtime_error("[Joint::Impl::setApi] nullptr api was provided");
+    }
+
+    _xbotifc = api;
+    _modelifc = dynamic_cast<ModelInterface*>(api);
+    _robotifc = dynamic_cast<RobotInterface*>(api);
 }
 
 UniversalJoint::UniversalJoint(std::unique_ptr<Joint::Impl> impl):
