@@ -168,7 +168,7 @@ VecConstRef ReadStateInterface<Derived>::getEffortLimits() const
 template<class Derived>
 void ReadStateInterface<Derived>::getEffortLimits(Eigen::VectorXd &taumax) const
 {
-    taumax = getVelocityLimits();
+    taumax = getEffortLimits();
 }
 
 template<class Derived>
