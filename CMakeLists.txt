@@ -6,6 +6,7 @@ option(XBOT2_IFC_BUILD_PINOCCHIO "Build Pinocchio implementation" ON)
 option(XBOT2_IFC_BUILD_RBDL "Build RBDL implementation" OFF)
 option(XBOT2_IFC_BUILD_ROS "Build ROS implementation" ON)
 option(XBOT2_IFC_BUILD_COLLISION "Build collision support (required hpp-fcl)" ON)
+option(XBOT2_IFC_BUILD_TESTS "Build tests" OFF)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -106,8 +107,10 @@ add_subdirectory(python)
 
 add_subdirectory(examples)
 
-enable_testing()
-add_subdirectory(test)
+if(${XBOT2_IFC_BUILD_TESTS})
+	enable_testing()
+	add_subdirectory(test)
+endif()
 
 include(cmake/ExportProject.cmake)
 export_project()
