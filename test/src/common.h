@@ -52,12 +52,51 @@ protected:
 
 };
 
+namespace XBot {
+
+class RobotInterfaceMockup : public RobotInterface
+{
+
+public:
+
+    RobotInterfaceMockup(std::unique_ptr<ModelInterface> model):
+        RobotInterface(std::move(model))
+    {
+
+    }
+
+    // RobotInterface interface
+protected:
+    bool sense_impl() override;
+    bool move_impl() override;
+    bool validateControlMode(string_const_ref jname, ControlMode::Type ctrl) override;
+};
+
+bool RobotInterfaceMockup::sense_impl()
+{
+    return true;
+}
+
+bool RobotInterfaceMockup::move_impl()
+{
+    return true;
+}
+
+bool RobotInterfaceMockup::validateControlMode(string_const_ref jname, ControlMode::Type ctrl)
+{
+    return true;
+}
+
+}
+
 class TestWithModel : public TestCommon
 {
 
 protected:
 
     XBot::ModelInterface::Ptr model;
+
+    XBot::RobotInterfaceMockup::Ptr robot;
 
     void checkConfigurationIsEqual(const XBot::ModelInterface& m1,
                                    const XBot::ModelInterface& m2)
@@ -76,6 +115,8 @@ protected:
         TestCommon::SetUp();
 
         model = XBot::ModelInterface::getModel(urdf, srdf, model_type);
+
+        robot = std::make_shared<XBot::RobotInterfaceMockup>(XBot::ModelInterface::getModel(urdf, srdf, model_type));
     }
 
 };
