@@ -46,7 +46,7 @@ inline XBot::ConfigOptions ConfigOptionsFromParamServer(ros::NodeHandle n = ros:
     }
 
     // set robot type
-    ret.set_parameter("robot_type", "ros");
+    ret.set_parameter<std::string>("robot_type", "ros");
 
     // set model type from private parameters
     std::string model_type;
