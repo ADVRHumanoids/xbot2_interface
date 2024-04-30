@@ -327,7 +327,16 @@ pinocchio::Index ModelInterface2Pin::get_frame_id(string_const_ref name) const
         return it->second;
     }
 
-    int idx = _mdl.getFrameId(name);
+    int idx = -1;
+
+    try
+    {
+        idx = _mdl.getFrameId(name);
+    }
+    catch(std::invalid_argument& e)
+    {
+        throw std::invalid_argument(name + ": " + e.what());
+    }
 
     check_frame_idx_throw(idx);
 
