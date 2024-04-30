@@ -1960,8 +1960,8 @@ void XBotInterface::Impl::finalize()
 
         if(jptr->type == urdf::Joint::CONTINUOUS)
         {
-            _state.qmin[iv] = -infinity;
-            _state.qmax[iv] = infinity;
+            _state.qmin[iv] = -2*M_PI;  // why not +/- M_PI ?
+            _state.qmax[iv] = 2*M_PI;
             _state.vmax[iv] = lims ? lims->velocity : infinity;
             _state.taumax[iv] = lims ? lims->effort : infinity;
         }
