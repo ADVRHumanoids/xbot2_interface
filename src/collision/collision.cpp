@@ -657,6 +657,93 @@ bool CollisionModel::Impl::addCollisionShape(string_const_ref name,
     return true;
 }
 
+XBot::Collision::CollisionModel::ComputeCollisionFreeOptions::ComputeCollisionFreeOptions()
+{
+    max_iter = std::numeric_limits<int>::max();
+    include_env = true;
+    min_distance = 0.0;
+}
+
+bool CollisionModel::Impl::computeCollisionFree(VecRef q,
+                                                ComputeCollisionFreeOptions opt)
+{
+
+    if(opt.w_norm.size() > 0 &&
+        opt.w_norm.size() != _model->getNv())
+    {
+        throw std::invalid_argument(
+            fmt::format("w_norm has wrong size {} != {}",
+                        opt.w_norm.size(), _model->getNv()));
+    }
+
+    if(opt.w_norm.minCoeff() <= 0)
+    {
+        throw std::invalid_argument(
+            fmt::format("w_norm has negative coefficients"));
+    }
+
+    double d_th = opt.min_distance + 0.10;
+
+    double min_d = opt.min_distance;
+
+    double err_th = 1e-2;
+
+    double lam = 1.0;
+
+    bool include_env = opt.include_env;
+
+    const auto& coll_pairs = _api.getCollisionPairs(include_env);
+
+    Eigen::MatrixXd Jn(coll_pairs.size(), _model->getNv());
+    Eigen::VectorXd en(coll_pairs.size());  // des - actual
+
+    auto model = std::const_pointer_cast<ModelInterface>(_model);
+
+    model->setJointPosition(q);
+
+    for(int k = 0; k < opt.max_iter; k++)
+    {
+        model->update();
+
+        _api.update();
+
+        Eigen::VectorXd d = _api.computeDistance(include_env, d_th);
+
+        if(d.minCoeff() > min_d - err_th)
+        {
+            return true;
+        }
+
+        Eigen::MatrixXd J = _api.getDistanceJacobian(include_env);
+
+        int nn = 0;
+
+        for(int i = 0; i < d.size(); i++)
+        {
+            if(d[i] >= min_d)
+            {
+                continue;
+            }
+
+            en[nn] = min_d - d[i];
+            Jn.row(nn) = J.row(i);
+            nn++;
+        }
+
+        auto Jn_block = Jn.topRows(nn);
+        auto en_block = en.head(nn);
+
+        auto svd = Jn_block.jacobiSvd(Eigen::ComputeThinU|Eigen::ComputeThinV);
+        svd.setThreshold(svd.singularValues()[0] / 20.0);
+
+        Eigen::VectorXd dq = lam * svd.solve(en_block);
+
+        model->integrateJointPosition(dq);
+    }
+
+    return false;
+}
+
 void CollisionModel::Impl::check_distance_called_throw(const char * func)
 {
     if(!(_cached_computation & Distance))
@@ -995,6 +1082,11 @@ const std::vector<int> &CollisionModel::getOrderedCollisionPairIndices() const
     });
 
     return impl->_ordered_idx;
+}
+
+bool CollisionModel::computeCollisionFree(VecRef q, ComputeCollisionFreeOptions opt)
+{
+    return impl->computeCollisionFree(q, opt);
 }
 
 CollisionModel::~CollisionModel()

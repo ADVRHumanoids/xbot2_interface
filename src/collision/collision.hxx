@@ -41,6 +41,9 @@ public:
                            Eigen::Affine3d link_T_shape,
                            std::vector<std::string> disabled_collisions);
 
+    bool computeCollisionFree(VecRef q,
+                              ComputeCollisionFreeOptions opt);
+
     void check_distance_called_throw(const char * func);
 
     void set_distance_called();

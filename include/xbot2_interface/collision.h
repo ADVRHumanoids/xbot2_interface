@@ -283,6 +283,28 @@ public:
      */
     const std::vector<int>& getOrderedCollisionPairIndices() const;
 
+    /**
+     * @brief The ComputeCollisionFreeOptions class
+     */
+    struct ComputeCollisionFreeOptions
+    {
+        bool include_env;
+        Eigen::VectorXd w_norm;
+        int max_iter;
+        double min_distance;
+
+        ComputeCollisionFreeOptions();
+    };
+
+    /**
+     * @brief computeNearestCollisionFree
+     * @param q
+     * @param w_norm
+     * @return
+     */
+    bool computeCollisionFree(VecRef q,
+                              ComputeCollisionFreeOptions opt = ComputeCollisionFreeOptions());
+
     virtual ~CollisionModel();
 
 private:
