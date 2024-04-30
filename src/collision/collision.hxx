@@ -19,7 +19,7 @@ public:
 
     friend class CollisionModel;
 
-    Impl(ModelInterface::ConstPtr model);
+    Impl(ModelInterface::ConstPtr model, Collision::CollisionModel& api);
 
     bool parseCollisionObjects();
 
@@ -46,6 +46,8 @@ public:
     void set_distance_called();
 
 private:
+
+    CollisionModel& _api;
 
     Eigen::MatrixXd _Jtmp;
 
@@ -122,6 +124,7 @@ private:
 
     // distances are computed for each item in this vector
     std::vector<CollisionPairData> _collision_pair_data;
+    LinkPairVector _collision_pairs, _collision_pairs_no_env;
     int _n_self_collision_pairs;
 
     // map link -> collisions

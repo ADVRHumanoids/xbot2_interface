@@ -30,7 +30,9 @@ Eigen::Affine3d toeigen(const urdf::Pose& T)
     return ret;
 }
 
-CollisionModel::Impl::Impl(ModelInterface::ConstPtr model):
+CollisionModel::Impl::Impl(ModelInterface::ConstPtr model,
+                           Collision::CollisionModel& api):
+    _api(api),
     _model(model)
 {
     parseCollisionObjects();
@@ -295,6 +297,10 @@ void CollisionModel::Impl::updateCollisionPairData()
 
     _ordered_idx.clear();
 
+    _collision_pairs_no_env.clear();
+
+    _collision_pairs.clear();
+
     int pidx = 0;
 
     for(auto [l1, l2] : _active_link_pairs)
@@ -343,6 +349,10 @@ void CollisionModel::Impl::updateCollisionPairData()
                 //            pidx, l1, l2);
 
                 _ordered_idx.push_back(pidx);
+
+                _collision_pairs.emplace_back(l1, l2);
+
+                _collision_pairs_no_env.emplace_back(l1, l2);
 
                 pidx++;
 
@@ -394,6 +404,8 @@ void CollisionModel::Impl::updateCollisionPairData()
                 //            pidx, l, "env");
 
                 _ordered_idx.push_back(pidx);
+
+                _collision_pairs.emplace_back(l, "world");
 
                 pidx++;
 
@@ -661,7 +673,7 @@ void CollisionModel::Impl::set_distance_called()
 }
 
 CollisionModel::CollisionModel(ModelInterface::ConstPtr model):
-    impl(std::make_unique<Impl>(model))
+    impl(std::make_unique<Impl>(model, *this))
 {
 
 }
@@ -753,25 +765,17 @@ bool CollisionModel::moveCollisionShape(string_const_ref name, Eigen::Affine3d l
     return true;
 }
 
-std::vector<std::pair<std::string, std::string>>
+const std::vector<std::pair<std::string, std::string>>&
     CollisionModel::getCollisionPairs(bool include_env) const
 {
-    std::vector<std::pair<std::string, std::string>> ret;
-    ret.reserve(impl->_collision_pair_data.size());
-
-    for(const auto& item : impl->_collision_pair_data)
+    if(include_env)
     {
-        ret.emplace_back(item.link1->link_name, item.link2->link_name);
-
-        // early return if we must not include env
-        if(ret.size() == impl->_n_self_collision_pairs && !include_env)
-        {
-            return ret;
-        }
+        return impl->_collision_pairs;
     }
-
-    return ret;
-
+    else
+    {
+        return impl->_collision_pairs_no_env;
+    }
 }
 
 std::set<std::pair<std::string, std::string>> CollisionModel::getLinkPairs() const

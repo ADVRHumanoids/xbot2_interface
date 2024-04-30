@@ -152,7 +152,7 @@ public:
      * @note the first getNumCollisionPairs(false) elements contain robot self collision
      * pairs, whereas the remaining ones are robot-environment pairs
      */
-    LinkPairVector getCollisionPairs(bool include_env = false) const;
+    const LinkPairVector& getCollisionPairs(bool include_env = false) const;
 
     /**
      * @brief returns the set of links that are being taken into account by this
