@@ -99,6 +99,8 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
              py::overload_cast<>(&XBotInterface::getJointPosition, py::const_))
         .def("getJointPositionMinimal",
              py::overload_cast<>(&XBotInterface::getJointPositionMinimal, py::const_))
+        .def("getJointVelocity",
+             py::overload_cast<>(&RobotInterface::getJointVelocity, py::const_))
         .def("getJointEffort",
              py::overload_cast<>(&XBotInterface::getJointEffort, py::const_))
         .def("getJointAcceleration",
