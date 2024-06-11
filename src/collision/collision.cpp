@@ -226,7 +226,10 @@ bool CollisionModel::Impl::parseCollisionObjects()
 
     // construct env collision model
     // TODO put collision elements of link 'world' there?
-    _env_collision = std::make_shared<LinkCollision>(*_model, "world");
+    if(_model->getLinkId("world") >= 0)
+    {
+        _env_collision = std::make_shared<LinkCollision>(*_model, "world");
+    }
 
     return true;
 }
@@ -362,7 +365,7 @@ void CollisionModel::Impl::updateCollisionPairData()
 
     _n_self_collision_pairs = _collision_pair_data.size();
 
-    if(_env_collision->coll_obj.size() == 0)
+    if(!_env_collision || _env_collision->coll_obj.size() == 0)
     {
         return;
     }
@@ -622,6 +625,11 @@ bool CollisionModel::Impl::addCollisionShape(string_const_ref name,
 
     // search the correct link collision object
     LinkCollision::Ptr link_collision;
+
+    if(link == "world" && !_env_collision)
+    {
+        throw std::invalid_argument("no world link was defined");
+    }
 
     if(link == "world")
     {

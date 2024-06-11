@@ -249,6 +249,11 @@ TEST_F(TestCollision, checkPairSetters)
 
     EXPECT_EQ(cm->getNumCollisionPairs(false), 0);
     EXPECT_EQ(cm->getNumCollisionPairs(true), 4);
+
+    cm->setLinksVsEnvironment({"pelvis"});
+
+    EXPECT_EQ(cm->getNumCollisionPairs(false), 0);
+    EXPECT_EQ(cm->getNumCollisionPairs(true), 2);
 }
 
 TEST_F(TestCollision, checkCollision)
