@@ -1155,6 +1155,8 @@ void CollisionModel::Impl::CollisionPairData::compute_distance(const ModelInterf
     //     o2->getTransform().getTranslation().transpose().format(16) << " " << o2->getTransform().getQuatRotation().coeffs().transpose().format(16) << "\n";
 
     // distance computation
+    dresult.normal.setZero();
+
     dist(o1->getTransform(),
          o2->getTransform(),
          drequest,
@@ -1165,6 +1167,12 @@ void CollisionModel::Impl::CollisionPairData::compute_distance(const ModelInterf
     if(dresult.min_distance < 0)
     {
         dresult.min_distance = -(dresult.nearest_points[0] - dresult.nearest_points[1]).norm();
+    }
+
+    // hack fix normal bug gjk
+    if(dresult.normal.norm() < 1e-6)
+    {
+        dresult.normal = (dresult.nearest_points[1]-dresult.nearest_points[0]).normalized();
     }
 }
 
