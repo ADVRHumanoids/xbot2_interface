@@ -528,11 +528,11 @@ public:
 
     Eigen::Affine3d getFloatingBasePose() const;
 
-    Eigen::Vector6d getFloatingBaseTwist() const;
+    Eigen::Vector6d getFloatingBaseTwist(bool local = false) const;
 
     bool getFloatingBasePose(Eigen::Affine3d& w_T_b) const;
 
-    bool getFloatingBaseTwist(Eigen::Vector6d& w_T_b) const;
+    bool getFloatingBaseTwist(Eigen::Vector6d& w_T_b, bool local = false) const;
 
     bool setFloatingBaseState(const Eigen::Affine3d& w_T_b, const Eigen::Vector6d& v);
 
@@ -542,7 +542,8 @@ public:
 
     bool setFloatingBaseOrientation(const Eigen::Matrix3d& w_R_b);
 
-    bool setFloatingBaseTwist(const Eigen::Vector6d& v);
+    bool setFloatingBaseTwist(const Eigen::Vector6d& v,
+                              bool local = false);
 
     virtual ~ModelInterface();
 
