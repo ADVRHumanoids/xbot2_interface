@@ -441,7 +441,7 @@ void ModelInterface::integrateJointPosition(VecConstRef v)
     setJointPosition(impl->_tmp.q);
 }
 
-bool XBot::v2::ModelInterface::getFloatingBasePose(Eigen::Affine3d &w_T_b) const
+bool XBot::ModelInterface::getFloatingBasePose(Eigen::Affine3d &w_T_b) const
 {
     auto fb = getJoint(0);
 
@@ -455,11 +455,11 @@ bool XBot::v2::ModelInterface::getFloatingBasePose(Eigen::Affine3d &w_T_b) const
     return true;
 }
 
-bool ModelInterface::getFloatingBaseTwist(Eigen::Vector6d &v) const
+bool ModelInterface::getFloatingBaseTwist(Eigen::Vector6d &v, bool local) const
 {
     try
     {
-        v = getFloatingBaseTwist();
+        v = getFloatingBaseTwist(local);
         return true;
     }
     catch (std::runtime_error&)
@@ -480,7 +480,7 @@ Eigen::Affine3d XBot::v2::ModelInterface::getFloatingBasePose() const
     return getPose(fb->getChildLink());
 }
 
-Eigen::Vector6d ModelInterface::getFloatingBaseTwist() const
+Eigen::Vector6d ModelInterface::getFloatingBaseTwist(bool local) const
 {
     auto fb = getJoint(0);
 
@@ -489,7 +489,20 @@ Eigen::Vector6d ModelInterface::getFloatingBaseTwist() const
         throw std::runtime_error("this model is not floating base");
     }
 
-    return getVelocityTwist(fb->getChildLink());
+    Eigen::Matrix3d w_R_b;
+
+    if(local)
+    {
+        w_R_b = getPose(fb->getChildLink()).linear();
+    }
+    else
+    {
+        w_R_b.setIdentity();
+    }
+
+    auto ret = getVelocityTwist(fb->getChildLink());
+
+    return Utils::rotate(ret, w_R_b.transpose());
 }
 
 bool ModelInterface::setFloatingBaseState(const Eigen::Affine3d &w_T_b, const Eigen::Vector6d &twist)
@@ -574,7 +587,8 @@ bool ModelInterface::setFloatingBaseOrientation(const Eigen::Matrix3d &w_R_b)
     return setFloatingBasePose(T);
 }
 
-bool ModelInterface::setFloatingBaseTwist(const Eigen::Vector6d &twist)
+bool ModelInterface::setFloatingBaseTwist(const Eigen::Vector6d &twist,
+                                          bool local)
 {
     if(!isFloatingBase())
     {
@@ -583,8 +597,17 @@ bool ModelInterface::setFloatingBaseTwist(const Eigen::Vector6d &twist)
 
     auto fb = getJoint(0);
 
+    Eigen::Vector6d local_twist = twist;
+
+    // we need the local twist to give to ik
+    // rotate if global twist was passed in
+    if(!local)
+    {
+        Utils::rotate(local_twist, getFloatingBasePose().linear().transpose());
+    }
+
     Eigen::VectorXd q, v;
-    fb->inverseKinematics(Eigen::Affine3d::Identity(), twist, q, v);
+    fb->inverseKinematics(Eigen::Affine3d::Identity(), local_twist, q, v);
     fb->setJointVelocity(v);
 
     return true;
