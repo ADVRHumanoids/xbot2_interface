@@ -68,7 +68,7 @@ ControlMode ControlMode::Position()
 
 ControlMode ControlMode::Velocity()
 {
-    return ControlMode("Velocity", POSITION);
+    return ControlMode("Velocity", VELOCITY);
 }
 
 ControlMode ControlMode::Effort()
