@@ -24,17 +24,20 @@ RobotInterface2Ros::RobotInterface2Ros(std::unique_ptr<ModelInterface> model):
         _base_cmd_pub = _nh.advertise<geometry_msgs::TwistStamped>(jfb->getChildLink() + "/cmd_vel", 1);
     }
 
-    auto timeout = ros::Time::now() + ros::Duration(5.0);
-    while(!_js_received && ros::Time::now() < timeout)
+    ROS_INFO("started listening to joint states..");
+    int niter = 0;
+    while(!_js_received && niter++ < 100)
     {
         _cbq.callAvailable();
-        ros::Duration(0.001).sleep();
+        ros::Duration(0.01).sleep();
     }
 
     if(!_js_received)
     {
         throw std::runtime_error("no joint message received from topic: " + _js_sub.getTopic());
     }
+
+    ROS_INFO("got joint states!");
 
     // imu
     auto imu_map = getImuNonConst();
