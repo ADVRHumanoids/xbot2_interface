@@ -45,6 +45,8 @@ public:
 
     int getId() const;
 
+    bool checkJointLimits(double q, double tolerance = 0) const;
+
     VecRef getJointPositionMinimal() const;
 
     void minimalToPosition(VecConstRef q_minimal,

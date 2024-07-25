@@ -50,6 +50,22 @@ int Joint::getId() const
     return impl->_jinfo.id;
 }
 
+bool Joint::checkJointLimits(double q, double tolerance) const
+{
+    if(getType() == urdf::Joint::CONTINUOUS)
+    {
+        return true;
+    }
+
+    if(getType() == urdf::Joint::FLOATING)
+    {
+        throw std::runtime_error("Joint::checkJointLimits: floating joint not supported");
+    }
+
+    return impl->_state.qmin.value() + tolerance <= q &&
+           q <= impl->_state.qmax.value() - tolerance;
+}
+
 VecRef Joint::getJointPositionMinimal() const
 {
     positionToMinimal(getJointPosition(), impl->_q_minimal);
@@ -301,12 +317,12 @@ void UniversalJoint::setPositionReferenceFeedbackMinimal(double q)
 
 void UniversalJoint::setVelocityReferenceFeedback(double v)
 {
-    return setPositionReferenceFeedback(Eigen::Scalard(v));
+    return setVelocityReferenceFeedback(Eigen::Scalard(v));
 }
 
 void UniversalJoint::setEffortReferenceFeedback(double tau)
 {
-    return setPositionReferenceFeedback(Eigen::Scalard(tau));
+    return setEffortReferenceFeedback(Eigen::Scalard(tau));
 }
 
 void UniversalJoint::setStiffnessFeedback(double k)
