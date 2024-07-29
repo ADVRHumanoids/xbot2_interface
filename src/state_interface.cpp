@@ -587,20 +587,6 @@ void WriteCmdInterface<Derived>::setDampingFeedback(VecConstRef k)
 }
 
 
-namespace XBot {
-
-template struct ReadStateInterface<Joint>;
-template struct WriteStateInterface<ModelJoint>;
-template struct ReadCmdInterface<RobotJoint>;
-template struct WriteCmdInterface<UniversalJoint>;
-
-template struct ReadStateInterface<Chain>;
-
-template struct ReadStateInterface<XBotInterface>;
-template struct WriteStateInterface<ModelInterface>;
-template struct ReadCmdInterface<RobotInterface>;
-template struct WriteCmdInterface<RobotInterface>;
-
 template<class Derived>
 void ReadCmdInterface<Derived>::getMotorPosition(Eigen::VectorXd &q) const
 {
@@ -672,5 +658,19 @@ void ReadCmdInterface<Derived>::getDamping(Eigen::VectorXd &q) const
 {
     q = getDamping();
 }
+
+namespace XBot {
+
+template struct ReadStateInterface<Joint>;
+template struct WriteStateInterface<ModelJoint>;
+template struct ReadCmdInterface<RobotJoint>;
+template struct WriteCmdInterface<UniversalJoint>;
+
+template struct ReadStateInterface<Chain>;
+
+template struct ReadStateInterface<XBotInterface>;
+template struct WriteStateInterface<ModelInterface>;
+template struct ReadCmdInterface<RobotInterface>;
+template struct WriteCmdInterface<RobotInterface>;
 
 }
