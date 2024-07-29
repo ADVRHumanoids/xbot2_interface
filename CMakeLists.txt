@@ -113,22 +113,6 @@ if(${XBOT2_IFC_BUILD_PINOCCHIO})
     add_subdirectory(pinocchio/)
 endif()
 
-if(TARGET srdfdom::srdfdom)
-    target_link_libraries(xbot2_interface
-        PUBLIC
-        srdfdom::srdfdom
-        urdf::urdf)
-else()
-    target_include_directories(xbot2_interface
-        SYSTEM PUBLIC
-        ${srdfdom_INCLUDE_DIRS}
-        )
-endif()
-
-if(urdfdom_VERSION_MAJOR GREATER_EQUAL 4)
-    add_definitions(-DXBOT2IFC_URDFDOM_USES_TINIXML2)
-endif()
-
 if(${XBOT2_IFC_BUILD_RBDL})
     add_subdirectory(rbdl/)
 endif()
