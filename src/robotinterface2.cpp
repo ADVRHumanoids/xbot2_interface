@@ -3,6 +3,8 @@
 
 #include "impl/load_object.h"
 
+#include <iostream>
+
 using namespace XBot;
 
 bool RobotInterface::sense(bool update_model)

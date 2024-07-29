@@ -6,6 +6,7 @@
 #endif
 
 #include <variant>
+#include <set>
 
 #include "xbotinterface2.h"
 

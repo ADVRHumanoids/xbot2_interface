@@ -1,6 +1,7 @@
 #ifndef CHAIN_HXX
 #define CHAIN_HXX
 
+#include <list>
 #include <Eigen/Dense>
 
 #include <xbot2_interface/chain.h>

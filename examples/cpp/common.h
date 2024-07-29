@@ -4,6 +4,7 @@
 #include <xbot2_interface/xbotinterface2.h>
 #include <fmt/format.h>
 #include <cmrc/cmrc.hpp>
+#include <iostream>
 
 CMRC_DECLARE(example_resources);
 

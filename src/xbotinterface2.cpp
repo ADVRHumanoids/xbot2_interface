@@ -1,4 +1,5 @@
 #include <fstream>
+#include <iostream>
 
 #include <xbot2_interface/common/plugin.h>
 #include <xbot2_interface/common/utils.h>
