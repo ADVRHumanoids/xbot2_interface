@@ -596,8 +596,8 @@ bool CollisionModel::Impl::addCollisionShape(string_const_ref name,
         },
         [&](const Shape::Octree& oct)
         {
-            fcl_geom = std::any_cast<std::shared_ptr<hpp::fcl::OcTree>>(oct.data);
-            return true;
+            // fcl_geom = std::any_cast<std::shared_ptr<hpp::fcl::OcTree>>(oct.data);
+            return false;
         },
         [&](const Shape::Sphere& sp)
         {
@@ -1104,8 +1104,8 @@ CollisionModel::~CollisionModel()
 
 CollisionModel::Impl::CollisionPairData::CollisionPairData(
     std::shared_ptr<fcl::CollisionObject> _o1, std::shared_ptr<fcl::CollisionObject> _o2):
-    dist(_o1->collisionGeometryPtr(), _o2->collisionGeometryPtr()),
-    coll(_o1->collisionGeometryPtr(), _o2->collisionGeometryPtr()),
+    dist(_o1->collisionGeometry().get(), _o2->collisionGeometry().get()),
+    coll(_o1->collisionGeometry().get(), _o2->collisionGeometry().get()),
     o1(_o1), o2(_o2)
 {
 
@@ -1161,7 +1161,6 @@ void CollisionModel::Impl::CollisionPairData::compute_distance(const ModelInterf
          o2->getTransform(),
          drequest,
          dresult);
-
 
     // hack to fix wrong distance when in deep collision
     if(dresult.min_distance < 0)
