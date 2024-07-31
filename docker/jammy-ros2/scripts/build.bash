@@ -2,7 +2,7 @@
 set -e
 
 # chown to user (needed after mounting volumes)
-sudo chown -R user:user test_ws
+sudo chown -R user:user ~/test_ws
 
 # pip deps
 sudo pip install hhcm-forest 
@@ -12,7 +12,7 @@ sudo pip install setuptools
 export HHCM_FOREST_CLONE_DEFAULT_PROTO=https
 
 # create ws and source it
-mkdir test_ws && cd test_ws
+mkdir -p ~/test_ws && cd ~/test_ws
 forest init
 
 # setup env
