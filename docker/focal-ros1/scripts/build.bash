@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+# chown to user (needed after mounting volumes)
+sudo chown -R user:user test_ws
+
 # pip deps
 sudo pip install hhcm-forest 
 sudo pip install setuptools
