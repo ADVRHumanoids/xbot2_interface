@@ -1,7 +1,6 @@
 
 find_package(hpp-fcl REQUIRED)
 find_package(geometric_shapes REQUIRED)
-find_package(moveit_core REQUIRED)
 
 add_library(collision SHARED
     collision.cpp
@@ -13,7 +12,6 @@ target_link_libraries(collision
     PRIVATE
     fmt::fmt-header-only
     hpp-fcl::hpp-fcl
-    ${moveit_core_LIBRARIES}
     ${geometric_shapes_LIBRARIES}
     PUBLIC
     xbot2_interface)
@@ -36,7 +34,6 @@ target_compile_definitions(collision
 
 target_include_directories(collision
     SYSTEM PUBLIC
-    ${moveit_core_INCLUDE_DIRS}
     ${geometric_shapes_INCLUDE_DIRS}
     )
 
