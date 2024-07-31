@@ -52,13 +52,15 @@ RobotInterface2Ros::RobotInterface2Ros(std::unique_ptr<ModelInterface> model):
 
     for(auto [name, imu] : imu_map)
     {
-        auto cb = [imu](Imu::ConstSharedPtr msg)
+	    auto imu0 = imu;  // some compilers cannot capture structured bindings...
+
+        auto cb = [imu0](Imu::ConstSharedPtr msg)
         {
             wall_time ts = wall_time() +
                            std::chrono::seconds(msg->header.stamp.sec) +
                            std::chrono::nanoseconds(msg->header.stamp.nanosec);
 
-            imu->setMeasurement(
+            imu0->setMeasurement(
                 Eigen::Vector3d::Map(&msg->angular_velocity.x),
                 Eigen::Vector3d::Map(&msg->linear_acceleration.x),
                 Eigen::Quaterniond(&msg->orientation.x),
@@ -77,13 +79,15 @@ RobotInterface2Ros::RobotInterface2Ros(std::unique_ptr<ModelInterface> model):
 
     for(auto [name, ft] : ft_map)
     {
-        auto cb = [ft](WrenchStamped::ConstSharedPtr msg)
+	    auto ft0 = ft;  // some compilers cannot capture structured bindings...
+	    
+        auto cb = [ft0](WrenchStamped::ConstSharedPtr msg)
         {
             wall_time ts = wall_time() +
                            std::chrono::seconds(msg->header.stamp.sec) +
                            std::chrono::nanoseconds(msg->header.stamp.nanosec);
 
-            ft->setMeasurement(
+            ft0->setMeasurement(
                 Eigen::Vector6d::Map(&msg->wrench.force.x),
                 ts);
         };
@@ -226,3 +230,4 @@ RobotInterface2Ros::RosInit::RosInit()
 }
 
 XBOT2_REGISTER_ROBOT_PLUGIN(RobotInterface2Ros, ros2);
+

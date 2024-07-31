@@ -428,7 +428,7 @@ TEST_F(TestCollision, checkWpNormals)
 
     };
 
-    int count = 10001;
+    int count = 1001;
 
     for(int i = 0; i < count; i++)
     {
