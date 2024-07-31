@@ -16,6 +16,7 @@ set(CMAKE_INSTALL_RPATH $ORIGIN)
 set(CMAKE_BUILD_RPATH "$ORIGIN;$ORIGIN/pinocchio;$ORIGIN/rbdl;$ORIGIN/ros")
 
 find_package(urdf REQUIRED)
+find_package(urdfdom REQUIRED)
 find_package(srdfdom REQUIRED)
 find_package(Eigen3 REQUIRED)
 
