@@ -220,13 +220,13 @@ TEST_F(TestParser, checkJointLimits)
 
         if(jptr->type == urdf::Joint::CONTINUOUS)
         {
-            EXPECT_GE(-1000, xbj->getJointLimits().first[0]);
-            EXPECT_LE(1000, xbj->getJointLimits().second[0]);
+            EXPECT_GE(-2*M_PI, xbj->getJointLimits().first[0]);
+            EXPECT_LE(2*M_PI, xbj->getJointLimits().second[0]);
             EXPECT_EQ(jptr->limits->velocity, xbj->getVelocityLimits()[0]);
             EXPECT_EQ(jptr->limits->effort, xbj->getEffortLimits()[0]);
 
-            EXPECT_GE(-1000, qmin[jinfo.iv]);
-            EXPECT_LE(1000, qmax[jinfo.iv]);
+            EXPECT_GE(-2*M_PI, qmin[jinfo.iv]);
+            EXPECT_LE(2*M_PI, qmax[jinfo.iv]);
             EXPECT_EQ(jptr->limits->velocity, vmax[jinfo.iv]);
             EXPECT_EQ(jptr->limits->effort, taumax[jinfo.iv]);
         }
@@ -235,8 +235,8 @@ TEST_F(TestParser, checkJointLimits)
         {
             EXPECT_TRUE((xbj->getJointLimits().first.head<3>().array() <= -1000).all());
             EXPECT_TRUE((xbj->getJointLimits().second.head<3>().array() >= 1000).all());
-            EXPECT_TRUE((xbj->getJointLimits().first.tail<3>().array() <= -1000).all());
-            EXPECT_TRUE((xbj->getJointLimits().second.tail<3>().array() >= 1000).all());
+            EXPECT_TRUE((xbj->getJointLimits().first.tail<3>().array() <= -2*M_PI).all());
+            EXPECT_TRUE((xbj->getJointLimits().second.tail<3>().array() >= 2*M_PI).all());
         }
 
     }
