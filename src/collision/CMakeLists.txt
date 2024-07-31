@@ -16,6 +16,11 @@ target_link_libraries(collision
     PUBLIC
     xbot2_interface)
 
+if(TARGET geometric_shapes::geometric_shapes)
+    target_link_libraries(collision PRIVATE geometric_shapes::geometric_shapes)
+endif()
+
+
 target_compile_options(collision
     PUBLIC
     PRIVATE
@@ -28,9 +33,6 @@ target_compile_definitions(collision
     PRIVATE
     -DXBOT2IFC_DLL
     -DXBOT2IFC_DLL_EXPORTS)
-
-# target_include_directories(collision
-#     )
 
 target_include_directories(collision
     SYSTEM PUBLIC
