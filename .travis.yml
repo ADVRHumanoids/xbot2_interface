@@ -32,4 +32,5 @@ script:
   - set -e
   - docker compose exec dev scripts/build.bash 
   - docker compose exec dev scripts/test.bash 
+  - docker compose down || true
   - set +e
