@@ -13,6 +13,7 @@ target_link_libraries(collision
     fmt::fmt-header-only
     hpp-fcl::hpp-fcl
     ${geometric_shapes_LIBRARIES}
+    -Wl,--exclude-libs,ALL
     PUBLIC
     xbot2_interface)
 

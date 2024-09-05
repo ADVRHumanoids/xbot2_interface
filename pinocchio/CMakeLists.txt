@@ -10,7 +10,10 @@ add_library(modelinterface2_pin SHARED
 target_link_libraries(modelinterface2_pin
     PUBLIC
     pinocchio::pinocchio
-    xbot2_interface)
+    xbot2_interface
+    PRIVATE
+    -Wl,--exclude-libs,ALL
+)
 
 target_compile_options(modelinterface2_pin
     PUBLIC
