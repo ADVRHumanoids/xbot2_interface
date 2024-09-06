@@ -5,6 +5,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/string.hpp>
 #include <urdf_parser/urdf_parser.h>
+#include <rclcpp/wait_for_message.hpp>
 
 using namespace std_msgs::msg;
 using namespace std::chrono_literals;
@@ -35,26 +36,26 @@ inline ConfigOptions ConfigOptionsFromParams(rclcpp::Node::SharedPtr node,
                                                         [&](String::ConstSharedPtr msg) {
                                                             jidmap = msg->data;
                                                         });
-
-    while (urdf.empty()) {
-        rclcpp::spin_some(node);
-        RCLCPP_INFO_STREAM(node->get_logger(),
-                           "waiting for urdf on topic " << urdf_sub->get_topic_name());
-        node->get_clock()->sleep_for(100ms);
+    String msg;
+    if(!rclcpp::wait_for_message(msg,
+                             urdf_sub,
+                             node->get_node_options().context(),
+                                  1s))
+    {
+        throw std::runtime_error("could not get urdf from topic " + std::string(urdf_sub->get_topic_name()));
     }
+    opt.set_urdf(msg.data);
 
-    while (srdf.empty()) {
-        rclcpp::spin_some(node);
-        RCLCPP_INFO_STREAM(node->get_logger(),
-                           "waiting for srdf on topic " << srdf_sub->get_topic_name());
-        node->get_clock()->sleep_for(100ms);
+    if(!rclcpp::wait_for_message(msg,
+                                  srdf_sub,
+                                  node->get_node_options().context(),
+                                  1s))
+    {
+        throw std::runtime_error("could not get srdf from topic " + std::string(srdf_sub->get_topic_name()));
     }
+    opt.set_srdf(msg.data);
 
-    opt.set_urdf(urdf);
-    opt.set_srdf(srdf);
-
-
-    opt.set_parameter("model_type", node->get_parameter_or<std::string>("model_type", "RBDL"));
+    opt.set_parameter("model_type", node->get_parameter_or<std::string>("model_type", "pin"));
 
     opt.set_parameter<std::string>("framework", "ROS2");
 
