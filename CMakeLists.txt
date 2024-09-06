@@ -142,3 +142,4 @@ endif()
 include(cmake/ExportProject.cmake)
 export_project()
 
+include(cmake/GenerateDeb.cmake)
