@@ -1984,8 +1984,8 @@ void XBotInterface::Impl::finalize()
 
         if(jptr->type == urdf::Joint::CONTINUOUS)
         {
-            _state.qmin[iv] = -2*M_PI;  // why not +/- M_PI ?
-            _state.qmax[iv] = 2*M_PI;
+            _state.qmin[iv] = -2.*M_PI;  // why not +/- M_PI ?
+            _state.qmax[iv] = 2.*M_PI;
             _state.vmax[iv] = lims ? lims->velocity : infinity;
             _state.taumax[iv] = lims ? lims->effort : infinity;
         }
@@ -1994,8 +1994,8 @@ void XBotInterface::Impl::finalize()
         {
             _state.qmin.segment<3>(iv).setConstant(-infinity);
             _state.qmax.segment<3>(iv).setConstant(infinity);
-            _state.qmin.segment<3>(iv+3).setConstant(-M_PI);
-            _state.qmax.segment<3>(iv+3).setConstant(M_PI);
+            _state.qmin.segment<3>(iv+3).setConstant(-2.*M_PI);
+            _state.qmax.segment<3>(iv+3).setConstant(2.*M_PI);
             _state.vmax.segment<6>(iv).setConstant(lims ? lims->velocity : infinity);
             _state.taumax.segment<6>(iv).setConstant(lims ? lims->effort : infinity);
         }
