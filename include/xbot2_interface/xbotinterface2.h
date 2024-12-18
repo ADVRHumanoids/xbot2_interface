@@ -137,6 +137,16 @@ public:
 
     void mapToV(const JointNameMap& vmap, Eigen::VectorXd& v) const;
 
+    /* Eigen/map conversions with return values (useful for bindings) */
+
+    JointNameMap qToMap(VecConstRef q) const;    
+
+    JointNameMap vToMap(VecConstRef v) const;
+
+    Eigen::VectorXd mapToQ(const JointNameMap& qmap) const;
+
+    Eigen::VectorXd mapToV(const JointNameMap& vmap) const;
+
     /* Joint limits */
 
     bool checkJointLimits(VecConstRef q) const;

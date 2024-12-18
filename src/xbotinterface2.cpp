@@ -798,6 +798,44 @@ void XBotInterface::mapToV(const JointNameMap& vmap, Eigen::VectorXd& v) const
     detail::mapToV(impl->_state, vmap, v);
 }
 
+JointNameMap XBotInterface::qToMap(VecConstRef q) const
+{
+    check_mat_size(q, getNq(), 1, __func__);
+
+    JointNameMap qmap; 
+    detail::qToMap(impl->_state, q, qmap);
+
+    return qmap;
+}
+
+JointNameMap XBotInterface::vToMap(VecConstRef v) const
+{
+    check_mat_size(v, getNv(), 1, __func__);
+
+    JointNameMap vmap;
+    detail::vToMap(impl->_state, v, vmap);
+    
+    return vmap;
+}
+
+Eigen::VectorXd XBotInterface::mapToQ(const JointNameMap& qmap) const
+{
+    Eigen::VectorXd q = getNeutralQ();
+    detail::mapToQ(impl->_state, qmap, q);
+
+    return q; 
+}
+
+Eigen::VectorXd XBotInterface::mapToV(const JointNameMap& vmap) const
+{
+    Eigen::VectorXd v;
+    v.setZero(getNv());
+    detail::mapToV(impl->_state, vmap, v);
+
+    return v;
+
+}
+
 bool XBotInterface::checkJointLimits(VecConstRef q) const
 {
     auto& dq = impl->_tmp.v;
