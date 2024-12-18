@@ -87,6 +87,14 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
              &XBotInterface::getQIndexFromQName)
         .def("getVIndexFromVName",
              &XBotInterface::getVIndexFromVName)
+        .def("qToMap",
+             py::overload_cast<VecConstRef>(&XBotInterface::qToMap, py::const_))
+        .def("vToMap",
+             py::overload_cast<VecConstRef>(&XBotInterface::vToMap, py::const_))
+        .def("mapToQ",
+             py::overload_cast<const JointNameMap&>(&XBotInterface::mapToQ, py::const_))
+        .def("mapToV",
+             py::overload_cast<const JointNameMap&>(&XBotInterface::mapToV, py::const_))   
         .def("getJointLimits",
              py::overload_cast<>(&XBotInterface::getJointLimits, py::const_))
         .def("getVelocityLimits",
