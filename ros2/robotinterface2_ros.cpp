@@ -10,6 +10,7 @@ RobotInterface2Ros::RobotInterface2Ros(std::unique_ptr<ModelInterface> model):
     RobotInterface(std::move(model)),
     _js_received(false)
 {
+    RosInit();
     auto time_ns = std::chrono::steady_clock::now().time_since_epoch().count();
     _node = rclcpp::Node::make_shared("robot_ifc_" + std::to_string(time_ns));
 
