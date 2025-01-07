@@ -24,7 +24,7 @@ forest add-recipes git@github.com:advrhumanoids/multidof_recipes.git -t ros2
 
 # build
 export PYTHONUNBUFFERED=1
-forest grow xbot2_interface --verbose --clone-depth 1
+forest grow xbot2_interface -j 4 --verbose --clone-depth 1
 
 # build tests
 cd build/xbot2_interface
