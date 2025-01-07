@@ -1,4 +1,4 @@
-name: Docker Image CI
+name: Build and Test (Noble-ROS2)
 
 on:
   push:
