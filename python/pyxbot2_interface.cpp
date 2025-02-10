@@ -5,6 +5,7 @@
 #include <pybind11/eigen.h>
 #include <pybind11/stl.h>
 #include <pybind11/operators.h>
+#include <pybind11/chrono.h>
 
 using namespace XBot;
 namespace py = pybind11;
@@ -108,7 +109,7 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
         .def("getJointPositionMinimal",
              py::overload_cast<>(&XBotInterface::getJointPositionMinimal, py::const_))
         .def("getJointVelocity",
-             py::overload_cast<>(&RobotInterface::getJointVelocity, py::const_))
+             py::overload_cast<>(&XBotInterface::getJointVelocity, py::const_))
         .def("getJointEffort",
              py::overload_cast<>(&XBotInterface::getJointEffort, py::const_))
         .def("getJointAcceleration",
@@ -238,20 +239,20 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
              &ModelInterface::setFloatingBasePose)
         .def("setFloatingBaseTwist",
              &ModelInterface::setFloatingBaseTwist)
-        .def("addFixedLink",
-             &ModelInterface::addFixedLink,
-             py::arg("link_name"),
-             py::arg("parent_name"),
-             py::arg("mass") = 0,
-             py::arg("inertia") =
-             Eigen::Matrix3d::Zero().eval(),
-             py::arg("pose") = Eigen::Affine3d::Identity())
-        .def("updateFixedLink",
-             &ModelInterface::updateFixedLink,
-             py::arg("link_id"),
-             py::arg("mass") = 0,
-             py::arg("inertia") = Eigen::Matrix3d::Zero().eval(),
-             py::arg("pose") = Eigen::Affine3d::Identity())
+        // .def("addFixedLink",
+        //      &ModelInterface::addFixedLink,
+        //      py::arg("link_name"),
+        //      py::arg("parent_name"),
+        //      py::arg("mass") = 0,
+        //      py::arg("inertia") =
+        //      Eigen::Matrix3d::Zero().eval(),
+        //      py::arg("pose") = Eigen::Affine3d::Identity())
+        // .def("updateFixedLink",
+        //      &ModelInterface::updateFixedLink,
+        //      py::arg("link_id"),
+        //      py::arg("mass") = 0,
+        //      py::arg("inertia") = Eigen::Matrix3d::Zero().eval(),
+        //      py::arg("pose") = Eigen::Affine3d::Identity())
         .def("syncFrom",
              py::overload_cast<const RobotInterface&, ControlMode::Type, Sync>(&ModelInterface::syncFrom),
              py::arg("model"),
@@ -276,9 +277,12 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
         ;
 
     py::class_<RobotInterface, XBotInterface, RobotInterface::Ptr>(m, "RobotInterface2")
-        .def(py::init(py::overload_cast<std::string, std::string, std::string>(
+        .def(py::init(py::overload_cast<std::string, std::string, std::string, std::string>(
                  &RobotInterface::getRobot)),
-             py::arg("urdf_string"), py::arg("robot_type"), py::arg("model_type") = "pin")
+             py::arg("urdf_string"),
+             py::arg("srdf_string") = "",
+             py::arg("robot_type") = "ros2",
+             py::arg("model_type") = "pin")
         .def("update",
              &RobotInterface::update)
         .def("sense",
@@ -298,10 +302,16 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
              py::overload_cast<>(&RobotInterface::getMotorVelocity, py::const_))
         .def("getPositionReference",
              py::overload_cast<>(&RobotInterface::getPositionReference, py::const_))
+        .def("getPositionReferenceFeedback",
+             py::overload_cast<>(&RobotInterface::getPositionReferenceFeedback, py::const_))
         .def("getVelocityReference",
              py::overload_cast<>(&RobotInterface::getVelocityReference, py::const_))
+        .def("getVelocityReferenceFeedback",
+             py::overload_cast<>(&RobotInterface::getVelocityReferenceFeedback, py::const_))
         .def("getEffortReference",
              py::overload_cast<>(&RobotInterface::getEffortReference, py::const_))
+        .def("getEffortReferenceFeedback",
+             py::overload_cast<>(&RobotInterface::getEffortReferenceFeedback, py::const_))
         .def("getStiffness",
              py::overload_cast<>(&RobotInterface::getStiffness, py::const_))
         .def("getDamping",
@@ -338,6 +348,12 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
                                py::overload_cast<>(&RobotInterface::getStiffness, py::const_))
         .def_property_readonly("d",
                                py::overload_cast<>(&RobotInterface::getDamping, py::const_))
+        .def("getTimestamp",
+             &Sensor::getTimestamp,
+             py::arg("joint_states_only") = false)
+        .def("isUpdated",
+             &Sensor::isUpdated,
+             py::arg("joint_states_only") = false)
         ;
 
     py::class_<JointInfo>(m, "JointInfo")
@@ -379,7 +395,10 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
         .def("getLinearAcceleration",
              py::overload_cast<>(&ImuSensor::getLinearAcceleration, py::const_))
         .def("getOrientation",
-             py::overload_cast<>(&ImuSensor::getOrientation, py::const_))
+             [](const ImuSensor& self)
+             {
+                 return self.getOrientation().coeffs();
+             })
         ;
 
     py::class_<ForceTorqueSensor, Sensor>(m, "ForceTorqueSensor")

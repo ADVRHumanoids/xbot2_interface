@@ -61,6 +61,10 @@ public:
 
     void setReferenceFrom(const XBotInterface& other, ControlMode::Type mask = ControlMode::ALL);
 
+    bool isUpdated(bool joint_states_only = false) const;
+
+    wall_time getTimestamp(bool joint_states_only = false) const;
+
     virtual ~RobotInterface();
 
     friend ReadCmdInterface<RobotInterface>;
@@ -84,6 +88,8 @@ protected:
     virtual bool move_impl() = 0;
 
     virtual bool validateControlMode(string_const_ref jname, ControlMode::Type ctrl);
+
+    void markAsUpdated(wall_time timestamp);
 
     // XBotInterface interface
 public:

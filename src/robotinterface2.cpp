@@ -209,6 +209,49 @@ void RobotInterface::setReferenceFrom(const XBotInterface &other,
     }
 }
 
+bool RobotInterface::isUpdated(bool joint_states_only) const
+{
+    bool is_updated = r_impl->isUpdated();
+
+    if(!is_updated)
+    {
+        return false;
+    }
+
+    if(joint_states_only)
+    {
+        return is_updated;
+    }
+
+    for(auto& [sname, s] : XBotInterface::impl->_sensor_map)
+    {
+        if(!s->isUpdated())
+        {
+            return false;
+        }
+    }
+
+    return true;
+
+}
+
+wall_time RobotInterface::getTimestamp(bool joint_states_only) const
+{
+    auto ts = r_impl->getTimestamp();
+
+    if(joint_states_only)
+    {
+        return ts;
+    }
+
+    for(auto& [sname, s] : XBotInterface::impl->_sensor_map)
+    {
+        ts = std::max(ts, s->getTimestamp());
+    }
+
+    return ts;
+}
+
 RobotInterface::~RobotInterface()
 {
 
@@ -225,6 +268,11 @@ bool RobotInterface::validateControlMode(string_const_ref jname, ControlMode::Ty
     std::cout << jname << " ctrl " << ctrl << "\n";
 
     return true;
+}
+
+void RobotInterface::markAsUpdated(wall_time timestamp)
+{
+    r_impl->markAsUpdated(timestamp);
 }
 
 
@@ -274,6 +322,22 @@ RobotInterface::Impl::Impl(RobotInterface &api,
     // but we need to set this robot as external api
     // this is needed for validateControlMode to work correctly
     _model->getImpl().setApi(&api);
+}
+
+void RobotInterface::Impl::markAsUpdated(wall_time timestamp)
+{
+    _is_updated = true;
+    _js_timestamp = timestamp;
+}
+
+bool RobotInterface::Impl::isUpdated() const
+{
+    return _is_updated;
+}
+
+wall_time RobotInterface::Impl::getTimestamp() const
+{
+    return _js_timestamp;
 }
 
 Eigen::Vector6d XBot::RobotInterface::getVelocityTwist(int link_id) const

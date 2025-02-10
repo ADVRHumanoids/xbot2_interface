@@ -19,6 +19,12 @@ public:
     Impl(RobotInterface& api,
          std::unique_ptr<ModelInterface> model);
 
+    void markAsUpdated(wall_time timestamp);
+
+    bool isUpdated() const;
+
+    wall_time getTimestamp() const;
+
     friend RobotInterface;
 
 private:
@@ -28,6 +34,10 @@ private:
 
     // model
     std::shared_ptr<ModelInterface> _model;
+
+    //
+    wall_time _js_timestamp;
+    bool _is_updated = false;
 
 };
 
