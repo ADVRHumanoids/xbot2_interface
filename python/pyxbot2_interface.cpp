@@ -349,10 +349,10 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
         .def_property_readonly("d",
                                py::overload_cast<>(&RobotInterface::getDamping, py::const_))
         .def("getTimestamp",
-             &Sensor::getTimestamp,
+             &RobotInterface::getTimestamp,
              py::arg("joint_states_only") = false)
         .def("isUpdated",
-             &Sensor::isUpdated,
+             &RobotInterface::isUpdated,
              py::arg("joint_states_only") = false)
         ;
 
