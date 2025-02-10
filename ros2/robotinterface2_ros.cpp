@@ -16,7 +16,7 @@ RobotInterface2Ros::RobotInterface2Ros(std::unique_ptr<ModelInterface> model):
 
     /* Connect to joint states */
     auto js_sub = _node->create_subscription<JointState>("xbotcore/joint_states",
-                                                         rclcpp::SensorDataQoS(),
+                                                         rclcpp::SensorDataQoS().keep_last(1),
                                                          [this](JointState::ConstSharedPtr msg) {
                                                              on_js_recv(msg);
                                                          });
@@ -25,7 +25,7 @@ RobotInterface2Ros::RobotInterface2Ros(std::unique_ptr<ModelInterface> model):
 
     /* Connect to command topic */
     _cmd_pub = _node->create_publisher<JointCommand>("xbotcore/command",
-                                                     rclcpp::SensorDataQoS());
+                                                     rclcpp::SensorDataQoS().keep_last(1));
 
     auto jfb = getJoint(0);
     if(jfb->getType() == urdf::Joint::FLOATING)
@@ -68,8 +68,8 @@ RobotInterface2Ros::RobotInterface2Ros(std::unique_ptr<ModelInterface> model):
                 ts);
         };
 
-        auto sub = _node->create_subscription<Imu>("imu/" + name,
-                                                   rclcpp::SensorDataQoS(),
+        auto sub = _node->create_subscription<Imu>("xbotcore/imu/" + name,
+                                                   rclcpp::SensorDataQoS().keep_last(1),
                                                    cb);
 
         _subs.push_back(sub);
@@ -93,8 +93,8 @@ RobotInterface2Ros::RobotInterface2Ros(std::unique_ptr<ModelInterface> model):
                 ts);
         };
 
-        auto sub = _node->create_subscription<WrenchStamped>("ft/" + name,
-                                             rclcpp::SensorDataQoS(),
+        auto sub = _node->create_subscription<WrenchStamped>("xbotcore/ft/" + name,
+                                             rclcpp::SensorDataQoS().keep_last(1),
                                              cb);
 
         _subs.push_back(sub);
