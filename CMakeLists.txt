@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.15)
 
 project(xbot2_interface LANGUAGES CXX VERSION 1.0.0)
 
@@ -8,11 +8,17 @@ option(XBOT2_IFC_BUILD_ROS "Build ROS implementation" ON)
 option(XBOT2_IFC_BUILD_ROS2 "Build ROS2 implementation" OFF)
 option(XBOT2_IFC_BUILD_COLLISION "Build collision support (required hpp-fcl)" ON)
 option(XBOT2_IFC_BUILD_TESTS "Build tests" OFF)
+option(XBOT2_IFC_BUILD_EXAMPLES "Build examples" OFF)
+option(COMPILE_PYTHON_BINDINGS "Compile python bindings (requires pybind11)" ON)
+option(BUILD_BY_PYTHON "Indicate that cmake is invoked by python build tools" OFF)
+# Defaulted to ON since it would change behaviour
+option(USE_SHLIBDEPS "Use dpkg-shlibdebs for deb generation. It needs a previous install before packaging; therefore makes only sense in a CD job" ON)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(CMAKE_INSTALL_RPATH $ORIGIN)
+# This explicit opt path helps pyxbot2 libs to find the actual implementations from anywhere (especially a venv)
+set(CMAKE_INSTALL_RPATH "$ORIGIN;/opt/xbot/lib")
 set(CMAKE_BUILD_RPATH "$ORIGIN;$ORIGIN/pinocchio;$ORIGIN/rbdl;$ORIGIN/ros")
 
 find_package(urdf REQUIRED)
@@ -109,7 +115,6 @@ install(DIRECTORY include/xbot2_interface
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/xbot2_interface
     )
 
-
 if(${XBOT2_IFC_BUILD_PINOCCHIO})
     add_subdirectory(pinocchio/)
 endif()
@@ -130,9 +135,13 @@ if(${XBOT2_IFC_BUILD_COLLISION})
     add_subdirectory(src/collision/)
 endif()
 
-add_subdirectory(python)
+if(${COMPILE_PYTHON_BINDINGS})
+    add_subdirectory(python)
+endif()
 
-add_subdirectory(examples)
+if(${XBOT2_IFC_BUILD_EXAMPLES})
+    add_subdirectory(examples)
+endif()
 
 if(${XBOT2_IFC_BUILD_TESTS})
 	enable_testing()

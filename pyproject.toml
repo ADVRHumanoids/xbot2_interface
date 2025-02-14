@@ -1,0 +1,15 @@
+[build-system]
+requires = ["scikit-build-core>=0.3.0", "pybind11", "numpy~=1.26"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "xbot2_interface"
+version = "1.0.0"
+
+[tool.scikit-build]
+install.components = ["python-bindings"]
+cmake.source-dir = "."
+cmake.build-type = "Release"
+build.targets = ["pyxbot2_interface", "pyaffine3"]
+cmake.define = { "BUILD_BY_PYTHON"="ON" }
+
