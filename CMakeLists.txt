@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.15)
 
-project(xbot2_interface LANGUAGES CXX VERSION 1.0.0)
+project(xbot2_interface LANGUAGES CXX)
+file(READ "VERSION" PROJECT_VERSION)
 
 option(XBOT2_IFC_BUILD_PINOCCHIO "Build Pinocchio implementation" ON)
 option(XBOT2_IFC_BUILD_RBDL "Build RBDL implementation" OFF)

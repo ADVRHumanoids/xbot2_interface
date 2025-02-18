@@ -4,7 +4,8 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "xbot2_interface"
-version = "1.0.0"
+dynamic = ["version"]
+dependencies = ["numpy~=1.26"]
 
 [tool.scikit-build]
 install.components = ["python-bindings"]
@@ -13,3 +14,8 @@ cmake.build-type = "Release"
 build.targets = ["pyxbot2_interface", "pyaffine3"]
 cmake.define = { "BUILD_BY_PYTHON"="ON" }
 
+[tool.scikit-build.metadata.version]
+provider = "scikit_build_core.metadata.regex"
+input = "VERSION"
+regex = "(?P<major>\\d+).(?P<minor>\\d+).(?P<patch>\\d+)"
+result = "{major}.{minor}.{patch}"
