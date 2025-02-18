@@ -3,6 +3,11 @@ cmake_minimum_required(VERSION 3.15)
 project(xbot2_interface LANGUAGES CXX)
 file(READ "VERSION" PROJECT_VERSION)
 
+string(REPLACE "." ";" PARTS ${PROJECT_VERSION})
+list(GET PARTS 0 xbot2_interface_VERSION_MAJOR)
+list(GET PARTS 1 xbot2_interface_VERSION_MINOR)
+list(GET PARTS 2 xbot2_interface_VERSION_PATCH)
+
 option(XBOT2_IFC_BUILD_PINOCCHIO "Build Pinocchio implementation" ON)
 option(XBOT2_IFC_BUILD_RBDL "Build RBDL implementation" OFF)
 option(XBOT2_IFC_BUILD_ROS "Build ROS implementation" ON)
