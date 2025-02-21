@@ -11,8 +11,16 @@ set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "Set of APIs for robot control and modeling
 
 # dependencies
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "")
-set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
-set(CPACK_DEBIAN_PACKAGE_GENERATE_SHLIBS ON)
+# Would be nice to have that especially because it will be hard to put the dependencies above
+# but it does not help if it does not work properly.
+# OpenCV guys have the same problem https://github.com/opencv/opencv/issues/16318
+# dpkg-shlibdeps looks into the /opt/xbot path although there is nothing, YET
+# Packaging after installing makes literally no sense.
+# This is probably (STILL) a cmake/cpack problem
+if (${USE_SHLIBDEPS})
+    set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+    set(CPACK_DEBIAN_PACKAGE_GENERATE_SHLIBS ON)
+endif()
 
 # get short sha1 of current commit from git
 find_program(GIT_SCM git DOC "Git version control")
