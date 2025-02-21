@@ -215,6 +215,9 @@ void RobotInterface2Ros::on_js_recv(JointState::ConstSharedPtr msg)
 
 
     }
+
+    wall_time stamp = wall_time(msg->header.stamp.sec * 1s + msg->header.stamp.nanosec * 1ns);
+    markAsUpdated(stamp);
 }
 
 RobotInterface2Ros::RosInit::RosInit()
