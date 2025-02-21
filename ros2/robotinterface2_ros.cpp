@@ -104,7 +104,7 @@ RobotInterface2Ros::RobotInterface2Ros(std::unique_ptr<ModelInterface> model):
 bool RobotInterface2Ros::sense_impl()
 {
     _js_received = false;
-    rclcpp::spin_some(_node);
+    rclcpp::spin_all(_node, 0s);
     return _js_received;
 }
 
