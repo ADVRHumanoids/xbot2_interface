@@ -13,7 +13,8 @@ using namespace std::chrono_literals;
 namespace XBot {
 
 inline ConfigOptions ConfigOptionsFromParams(rclcpp::Node::SharedPtr node,
-                                             std::string prefix = "")
+                                             std::string prefix = "",
+                                            std::chrono::seconds timeout = 1s)
 {
     ConfigOptions opt;
 
@@ -36,24 +37,23 @@ inline ConfigOptions ConfigOptionsFromParams(rclcpp::Node::SharedPtr node,
                                                         [&](String::ConstSharedPtr msg) {
                                                             jidmap = msg->data;
                                                         });
-    String msg;
-    if(!rclcpp::wait_for_message(msg,
-                             urdf_sub,
-                             node->get_node_options().context(),
-                                  1s))
+    while(urdf.empty())
     {
-        throw std::runtime_error("could not get urdf from topic " + std::string(urdf_sub->get_topic_name()));
+        rclcpp::spin_all(node, 1s);
+        sleep(1);
+        RCLCPP_INFO(node->get_logger(), "waiting for urdf on topic '%s'...", urdf_sub->get_topic_name());
     }
-    opt.set_urdf(msg.data);
 
-    if(!rclcpp::wait_for_message(msg,
-                                  srdf_sub,
-                                  node->get_node_options().context(),
-                                  1s))
+    opt.set_urdf(urdf);
+
+    while(srdf.empty())
     {
-        throw std::runtime_error("could not get srdf from topic " + std::string(srdf_sub->get_topic_name()));
+        rclcpp::spin_all(node, 1s);
+        sleep(1);
+        RCLCPP_INFO(node->get_logger(), "waiting for srdf on topic '%s'...", srdf_sub->get_topic_name());
     }
-    opt.set_srdf(msg.data);
+
+    opt.set_srdf(srdf);
 
     opt.set_parameter("model_type", node->get_parameter_or<std::string>("model_type", "pin"));
 
