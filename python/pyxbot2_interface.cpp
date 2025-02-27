@@ -23,11 +23,13 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
         .def_static("Damping", &ControlMode::Damping)
         .def_static("Impedance", &ControlMode::Impedance)
         .def_static("PosImpedance", &ControlMode::PosImpedance)
+        .def_static("None_", &ControlMode::None)
         .def("type", &ControlMode::type)
         .def(py::self + py::self)
         ;
 
     py::enum_<ControlMode::Type>(controlMode, "Type", py::arithmetic())
+        .value("NONE", ControlMode::Type::NONE)
         .value("POSITION", ControlMode::Type::POSITION)
         .value("VELOCITY", ControlMode::Type::VELOCITY)
         .value("EFFORT", ControlMode::Type::EFFORT)
