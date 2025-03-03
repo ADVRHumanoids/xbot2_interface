@@ -83,7 +83,11 @@ RobotInterface::UniquePtr RobotInterface::getRobot(std::string urdf_string,
 {
     XBotInterface::ConfigOptions opt;
     opt.set_urdf(urdf_string);
-    opt.set_srdf(srdf_string);
+
+    if(!srdf_string.empty())
+    {
+        opt.set_srdf(srdf_string);
+    }
 
     return getRobot(opt.urdf, opt.srdf, robot_type, model_type);
 }
