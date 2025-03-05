@@ -384,10 +384,16 @@ void CollisionModel::Impl::updateCollisionPairData()
         auto c = _link_collision_map.at(l);
         auto env = _env_collision;
 
+        
+
         for(int i = 0; i < c->coll_obj.size(); i++)
         {
             for(int j = 0; j < env->coll_obj.size(); j++)
             {
+                if(env->disabled_collisions[j].contains(l) || c->disabled_collisions[i].contains("world"))
+                {
+                    continue;
+                }
 
                 CollisionPairData cpd(c->coll_obj[i], env->coll_obj[j]);
 
@@ -544,6 +550,17 @@ bool CollisionModel::Impl::addCollisionShape(string_const_ref name,
 
             return true;
         },
+        [&](const Shape::Halfspace& hs)
+        {
+            fcl_geom = std::make_shared<hpp::fcl::Halfspace>(
+                hs.normal,
+                hs.d
+                );
+
+            std::cout << "halfspace";
+
+            return true;
+        },
         [&](const Shape::HeightMap& caps)
         {
             throw std::runtime_error("heightmap not implemented");
@@ -650,6 +667,17 @@ bool CollisionModel::Impl::addCollisionShape(string_const_ref name,
     // add geometry to collision
     auto fcl_obj = std::make_shared<fcl::CollisionObject>(fcl_geom);
     link_collision->addCollisionObject(fcl_obj, link_T_shape);
+
+    // check disabled collisions are valid link names
+    for(auto& dc : disabled_collisions)
+    {
+        if(!_link_collision_map.contains(dc))
+        {
+            throw std::invalid_argument(
+                fmt::format("disabled collision '{}' is not a valid collision link name",
+                            dc));
+        }
+    }
 
     // add disabled collisions
     link_collision->disabled_collisions.back().insert(disabled_collisions.begin(),

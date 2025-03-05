@@ -28,6 +28,12 @@ struct XBOT2IFC_API Shape
         double length;
     };
 
+    struct Halfspace 
+    {
+        Eigen::Vector3d normal;
+        double d;
+    };
+
     struct Box
     {
         Eigen::Vector3d size;
@@ -63,6 +69,7 @@ struct XBOT2IFC_API Shape
         Capsule,
         Box,
         Cylinder,
+        Halfspace,
         Mesh,
         Octree,
         HeightMap
