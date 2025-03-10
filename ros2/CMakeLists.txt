@@ -6,11 +6,6 @@ find_package(xbot_msgs REQUIRED)
 
 set(CMAKE_CXX_STANDARD 20)
 
-include_directories(
-    ${roscpp_INCLUDE_DIRS}
-    ${xbot_msgs_INCLUDE_DIRS}
-    )
-
 add_library(robotinterface2_ros2 SHARED
     robotinterface2_ros.cpp)
 
