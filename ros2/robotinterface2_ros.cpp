@@ -38,7 +38,7 @@ RobotInterface2Ros::RobotInterface2Ros(std::unique_ptr<ModelInterface> model):
     while(!_js_received && niter++ < 100)
     {
         rclcpp::spin_some(_node);
-        _node->get_clock()->sleep_for(10ms);
+        _node->get_clock()->sleep_for(100ms);
     }
 
     if(!_js_received)
