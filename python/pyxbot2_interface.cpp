@@ -145,9 +145,9 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
         .def("difference",
              py::overload_cast<VecConstRef, VecConstRef>(&XBotInterface::difference, py::const_))
         .def("getForceTorque",
-             py::overload_cast<>(&XBotInterface::getForceTorque, py::const_), rvp::reference_internal)
+             py::overload_cast<>(&XBotInterface::getForceTorque, py::const_), rvp::reference)
         .def("getImu",
-             py::overload_cast<>(&XBotInterface::getImu, py::const_), rvp::reference_internal)
+             py::overload_cast<>(&XBotInterface::getImu, py::const_), rvp::reference)
         .def("getPose",
              py::overload_cast<string_const_ref>(&XBotInterface::getPose, py::const_))
         .def("getPose",
@@ -382,7 +382,7 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
 
 
 
-    py::class_<Sensor>(m, "Sensor")
+    py::class_<Sensor, Sensor::Ptr>(m, "Sensor")
         .def("getName",
              &Sensor::getName)
         .def("getTimestamp",
@@ -391,7 +391,7 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
              &Sensor::isUpdated)
         ;
 
-    py::class_<ImuSensor, Sensor>(m, "ImuSensor")
+    py::class_<ImuSensor, Sensor, ImuSensor::Ptr>(m, "ImuSensor")
         .def("getAngularVelocity",
              py::overload_cast<>(&ImuSensor::getAngularVelocity, py::const_))
         .def("getLinearAcceleration",
@@ -403,7 +403,7 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
              })
         ;
 
-    py::class_<ForceTorqueSensor, Sensor>(m, "ForceTorqueSensor")
+    py::class_<ForceTorqueSensor, Sensor, ForceTorqueSensor::Ptr>(m, "ForceTorqueSensor")
         .def("getWrench",
              py::overload_cast<>(&ForceTorqueSensor::getWrench, py::const_))
         ;
