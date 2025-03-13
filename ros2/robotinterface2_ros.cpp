@@ -14,6 +14,9 @@ RobotInterface2Ros::RobotInterface2Ros(std::unique_ptr<ModelInterface> model):
     auto time_ns = std::chrono::steady_clock::now().time_since_epoch().count();
     _node = rclcpp::Node::make_shared("robot_ifc_" + std::to_string(time_ns));
 
+    _exe = rclcpp::executors::SingleThreadedExecutor::make_unique();
+    _exe->add_node(_node);
+
     /* Connect to joint states */
     auto js_sub = _node->create_subscription<JointState>("xbotcore/joint_states",
                                                          rclcpp::SensorDataQoS().keep_last(1),
@@ -104,7 +107,7 @@ RobotInterface2Ros::RobotInterface2Ros(std::unique_ptr<ModelInterface> model):
 bool RobotInterface2Ros::sense_impl()
 {
     _js_received = false;
-    rclcpp::spin_all(_node, 0s);
+    _exe->spin_all(0s);
     return _js_received;
 }
 

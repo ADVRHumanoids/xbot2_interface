@@ -43,6 +43,8 @@ private:
 
     rclcpp::Node::SharedPtr _node;
 
+    rclcpp::executors::SingleThreadedExecutor::UniquePtr _exe;
+
     std::vector<rclcpp::SubscriptionBase::SharedPtr> _subs;
 
     rclcpp::Publisher<JointCommand>::SharedPtr _cmd_pub;
