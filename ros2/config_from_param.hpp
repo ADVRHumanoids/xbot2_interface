@@ -39,7 +39,7 @@ inline ConfigOptions ConfigOptionsFromParams(rclcpp::Node::SharedPtr node,
                                                         });
     while(urdf.empty())
     {
-        rclcpp::spin_all(node, 1s);
+        rclcpp::spin_some(node, 1s);
         sleep(1);
         RCLCPP_INFO(node->get_logger(), "waiting for urdf on topic '%s'...", urdf_sub->get_topic_name());
     }
@@ -48,7 +48,7 @@ inline ConfigOptions ConfigOptionsFromParams(rclcpp::Node::SharedPtr node,
 
     while(srdf.empty())
     {
-        rclcpp::spin_all(node, 1s);
+        rclcpp::spin_some(node, 1s);
         sleep(1);
         RCLCPP_INFO(node->get_logger(), "waiting for srdf on topic '%s'...", srdf_sub->get_topic_name());
     }
