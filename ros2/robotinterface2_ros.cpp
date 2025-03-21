@@ -40,7 +40,7 @@ RobotInterface2Ros::RobotInterface2Ros(std::unique_ptr<ModelInterface> model):
     int niter = 0;
     while(!_js_received && niter++ < 100)
     {
-        rclcpp::spin_some(_node);
+        _exe->spin_some();
         _node->get_clock()->sleep_for(100ms);
     }
 
@@ -165,6 +165,10 @@ bool RobotInterface2Ros::move_impl()
     if(pub_cmd)
     {
         _cmd_pub->publish(cmd);
+    }
+    else
+    {
+        RCLCPP_WARN(_node->get_logger(), "No command to publish");
     }
 
     // handle base
