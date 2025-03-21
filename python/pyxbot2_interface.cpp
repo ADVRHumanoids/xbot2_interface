@@ -325,9 +325,13 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
         .def("setEffortReference",
              &RobotInterface::setEffortReference)
         .def("setStiffness",
-             &RobotInterface::setStiffness)
+              py::overload_cast<VecConstRef>(&RobotInterface::setStiffness))
+        .def("setStiffness",
+              py::overload_cast<const JointNameMap&>(&RobotInterface::setStiffness))
         .def("setDamping",
-             &RobotInterface::setDamping)
+             py::overload_cast<VecConstRef>(&RobotInterface::setDamping))
+        .def("setDamping",
+             py::overload_cast<const JointNameMap&>(&RobotInterface::setDamping))
         .def("getControlMode",
              py::overload_cast<>(&RobotInterface::getControlMode, py::const_))
         .def("setControlMode",
@@ -379,7 +383,6 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
             return ss.str();
         })
         ;
-
 
 
     py::class_<Sensor, Sensor::Ptr>(m, "Sensor")

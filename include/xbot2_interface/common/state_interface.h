@@ -161,6 +161,7 @@ struct XBOT2IFC_API ReadCmdInterface
     void getStiffness(Eigen::VectorXd& q) const;
 
     void setStiffness(VecConstRef q);  // sets cmd to this interface
+    void setStiffness(const JointNameMap& q);  // sets cmd to this interface
 
     VecConstRef getDampingDesired() const;  // from this interface
     void getDampingDesired(Eigen::VectorXd& q) const;
@@ -169,6 +170,7 @@ struct XBOT2IFC_API ReadCmdInterface
     void getDamping(Eigen::VectorXd& q) const;
 
     void setDamping(VecConstRef q);  // sets cmd to this interface
+    void setDamping(const JointNameMap& q);  // sets cmd to this interface
 
     CtrlModeVectorConstRef getControlMode() const;
     void getControlMode(CtrlModeMap& ctrl) const;

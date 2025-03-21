@@ -269,8 +269,6 @@ RobotInterface::RobotInterface(std::unique_ptr<ModelInterface> model):
 
 bool RobotInterface::validateControlMode(string_const_ref jname, ControlMode::Type ctrl)
 {
-    std::cout << jname << " ctrl " << ctrl << "\n";
-
     return true;
 }
 
