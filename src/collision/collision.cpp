@@ -582,6 +582,38 @@ bool CollisionModel::Impl::addCollisionShape(string_const_ref name,
 
             return false;
         },
+        [&](const Shape::MeshRaw& mr)
+        {
+            // fill vertices and triangles
+            std::vector<fcl::Vec3f> vertices;
+            std::vector<fcl::Triangle> triangles;
+
+            for(unsigned int i = 0; i < mr.vertices.size(); ++i)
+            {
+                fcl::Vec3f v(mr.vertices[i].x(),
+                             mr.vertices[i].y(),
+                             mr.vertices[i].z());
+                vertices.push_back(v);
+            }
+
+            for(unsigned int i = 0; i < mr.triangles.size(); ++i)
+            {
+                fcl::Triangle t(mr.triangles[i][0], mr.triangles[i][1], mr.triangles[i][2]);
+                triangles.push_back(t);
+            }
+
+            // add the mesh data into the BVHModel structure
+            auto bvhModel = std::make_shared<fcl::BVHModel<fcl::OBBRSS>>();
+            fcl_geom = bvhModel;
+            bvhModel->beginModel(vertices.size(), triangles.size());
+            bvhModel->addSubModel(vertices, triangles);
+            bvhModel->endModel();
+
+            std::cout << "mesh raw";
+
+
+            return true;
+        },
         [&](const Shape::Mesh& m)
         {
             // read mesh file
