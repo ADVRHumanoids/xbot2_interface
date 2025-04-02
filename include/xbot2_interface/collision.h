@@ -58,6 +58,12 @@ struct XBOT2IFC_API Shape
         std::shared_ptr<Eigen::MatrixXf> height;
     };
 
+    struct MeshRaw
+    {
+        std::vector<Eigen::Vector3d> vertices;
+        std::vector<Eigen::Vector3i> triangles;
+    };
+
     using Variant = std::variant<
         Sphere,
         Capsule,
@@ -65,7 +71,8 @@ struct XBOT2IFC_API Shape
         Cylinder,
         Mesh,
         Octree,
-        HeightMap
+        HeightMap,
+        MeshRaw
         >;
 };
 
