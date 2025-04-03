@@ -1259,6 +1259,14 @@ void CollisionModel::Impl::CollisionPairData::compute_distance(const ModelInterf
     {
         dresult.normal = (dresult.nearest_points[1]-dresult.nearest_points[0]).normalized();
     }
+
+    //hack to fix normal direction when not pointing from o1 to o2
+    double dir = dresult.normal.dot(dresult.nearest_points[1] - dresult.nearest_points[0]);
+    if(dir < 1e-6)
+    {
+        dresult.normal = -dresult.normal;
+    }
+
 }
 
 void CollisionModel::Impl::CollisionPairData::compute_collision(const ModelInterface &model,
