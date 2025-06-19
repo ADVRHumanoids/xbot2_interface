@@ -426,3 +426,8 @@ Eigen::Vector6d RobotInterface::computeCentroidalMomentum() const
 {
     return r_impl->_model->computeCentroidalMomentum();
 }
+
+Eigen::Vector6d RobotInterface::computeCentroidalMomentumdotTimesV() const
+{
+    return r_impl->_model->computeCentroidalMomentumdotTimesV();
+}

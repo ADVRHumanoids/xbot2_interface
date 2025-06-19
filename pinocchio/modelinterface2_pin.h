@@ -57,6 +57,8 @@ public:
 
     Eigen::Vector6d computeCentroidalMomentum() const override;
 
+    Eigen::Vector6d computeCentroidalMomentumdotTimesV() const override;
+
     MatConstRef computeInertiaInverse() const override;
 
     VecConstRef computeNonlinearTerm() const override;

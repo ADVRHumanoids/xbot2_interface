@@ -373,6 +373,8 @@ public:
 
     virtual MatConstRef computeCentroidalMomentumMatrix() const = 0;
 
+    virtual Eigen::Vector6d computeCentroidalMomentumdotTimesV() const = 0;
+
     void computeCentroidalMomentumMatrix(Eigen::MatrixXd& Ag) const;
 
     virtual Eigen::Vector6d computeCentroidalMomentum() const;
