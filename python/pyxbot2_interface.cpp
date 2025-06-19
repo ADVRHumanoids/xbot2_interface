@@ -182,6 +182,8 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
              py::overload_cast<>(&XBotInterface::computeGravityCompensation, py::const_))
         .def("computeCentroidalMomentumMatrix",
              py::overload_cast<>(&XBotInterface::computeCentroidalMomentumMatrix, py::const_))
+        .def("computeCentroidalMomentumdotTimesV",
+             py::overload_cast<>(&XBotInterface::computeCentroidalMomentumdotTimesV, py::const_))
         .def("computeNonlinearTerm",
              py::overload_cast<>(&XBotInterface::computeNonlinearTerm, py::const_))
         .def("__str__", [](const XBotInterface& self)
