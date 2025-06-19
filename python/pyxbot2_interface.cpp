@@ -158,8 +158,12 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
              py::overload_cast<string_const_ref>(&XBotInterface::getJdotTimesV, py::const_))
         .def("getCOM",
              py::overload_cast<>(&XBotInterface::getCOM, py::const_))
+        .def("getCOMVelocity",
+             py::overload_cast<>(&XBotInterface::getCOMVelocity, py::const_))
         .def("getCOMJacobian",
              py::overload_cast<>(&XBotInterface::getCOMJacobian, py::const_))
+        .def("getCOMJdotTimesV",
+             py::overload_cast<>(&XBotInterface::getCOMJdotTimesV, py::const_))
         .def("getRelativeVelocityTwist",
              py::overload_cast<string_const_ref, string_const_ref>(&XBotInterface::getRelativeVelocityTwist, py::const_))
         .def("getRelativeAccelerationTwist",
