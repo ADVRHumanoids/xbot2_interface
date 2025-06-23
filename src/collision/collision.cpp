@@ -567,6 +567,38 @@ bool CollisionModel::Impl::addCollisionShape(string_const_ref name,
 
             return false;
         },
+        [&](const Shape::MeshRaw& mr)
+        {
+            // fill vertices and triangles
+            std::vector<fcl::Vec3f> vertices;
+            std::vector<fcl::Triangle> triangles;
+
+            for(unsigned int i = 0; i < mr.vertices.size(); ++i)
+            {
+                fcl::Vec3f v(mr.vertices[i].x(),
+                             mr.vertices[i].y(),
+                             mr.vertices[i].z());
+                vertices.push_back(v);
+            }
+
+            for(unsigned int i = 0; i < mr.triangles.size(); ++i)
+            {
+                fcl::Triangle t(mr.triangles[i][0], mr.triangles[i][1], mr.triangles[i][2]);
+                triangles.push_back(t);
+            }
+
+            // add the mesh data into the BVHModel structure
+            auto bvhModel = std::make_shared<fcl::BVHModel<fcl::OBBRSS>>();
+            fcl_geom = bvhModel;
+            bvhModel->beginModel(vertices.size(), triangles.size());
+            bvhModel->addSubModel(vertices, triangles);
+            bvhModel->endModel();
+
+            std::cout << "mesh raw";
+
+
+            return true;
+        },
         [&](const Shape::Mesh& m)
         {
             // read mesh file
@@ -1201,6 +1233,14 @@ void CollisionModel::Impl::CollisionPairData::compute_distance(const ModelInterf
     {
         dresult.normal = (dresult.nearest_points[1]-dresult.nearest_points[0]).normalized();
     }
+
+    //hack to fix normal direction when not pointing from o1 to o2
+    double dir = dresult.normal.dot(dresult.nearest_points[1] - dresult.nearest_points[0]);
+    if(dir < 1e-6)
+    {
+        dresult.normal = -dresult.normal;
+    }
+
 }
 
 void CollisionModel::Impl::CollisionPairData::compute_collision(const ModelInterface &model,

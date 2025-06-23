@@ -25,3 +25,13 @@ Eigen::Vector6d ModelInterface2Pin::computeCentroidalMomentum() const
 
     return _data.hg;
 }
+
+Eigen::Vector6d ModelInterface2Pin::computeCentroidalMomentumdotTimesV() const
+{
+    if(!(_cached_computation & CCrba))
+    {
+        return pinocchio::computeCentroidalMomentumTimeVariation(_mdl, _data_no_acc);
+    }
+
+    return _data.dhg;
+}

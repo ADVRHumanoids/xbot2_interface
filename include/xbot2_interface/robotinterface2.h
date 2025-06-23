@@ -161,6 +161,9 @@ public:
     using XBotInterface::computeCentroidalMomentum;
     Eigen::Vector6d computeCentroidalMomentum() const override;
 
+    using XBotInterface::computeCentroidalMomentumdotTimesV;
+    Eigen::Vector6d computeCentroidalMomentumdotTimesV() const override;
+
 protected:
 
     JointParametrization get_joint_parametrization(string_const_ref jname) override;
