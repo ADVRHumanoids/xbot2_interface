@@ -71,6 +71,12 @@ const std::vector<Joint::Ptr> &Chain::getJoints()
     return impl->_joints_xbi;
 }
 
+bool Chain::hasJoint(string_const_ref jname) const
+{
+    return std::find(impl->_joint_names.begin(), impl->_joint_names.end(), jname) 
+        != impl->_joint_names.end();
+}
+
 const std::vector<Joint::ConstPtr> &Chain::getJoints() const
 {
     return impl->_joints_xbi_const;
