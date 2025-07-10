@@ -13,6 +13,14 @@ using rvp = py::return_value_policy;
 
 PYBIND11_MODULE(pyxbot2_interface, m) {
 
+    py::class_<ConfigOptions>(m, "ConfigOptions")
+        .def(py::init<>())
+        .def("set_urdf", &ConfigOptions::set_urdf)
+        .def("set_srdf", &ConfigOptions::set_srdf)
+        .def("set_bool_parameter", &ConfigOptions::set_parameter<bool>)
+        .def("set_string_parameter", &ConfigOptions::set_parameter<std::string>)
+        ;
+
     py::class_<ControlMode> controlMode(m, "ControlMode");
 
     controlMode
@@ -199,14 +207,21 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
         ;
 
     py::class_<ModelInterface, XBotInterface, ModelInterface::Ptr>(m, "ModelInterface2")
+        .def(py::init(py::overload_cast<ConfigOptions>(&ModelInterface::getModel)),
+               py::arg("cfg"))
         .def(py::init(py::overload_cast<std::string, std::string>(&ModelInterface::getModel)),
-             py::arg("urdf_string"), py::arg("model_type") = "pin")
+              py::arg("urdf_string"), py::arg("model_type") = "pin")
         .def(py::init(py::overload_cast<std::string, std::string, std::string>(&ModelInterface::getModel)),
              py::arg("urdf_string"), py::arg("srdf_string"), py::arg("model_type") = "pin")
         .def("getType",
              &ModelInterface::getType)
         .def("update",
              &ModelInterface::update)
+        .def("clone",
+             [](ModelInterface& self)
+             {
+                 return ModelInterface::Ptr(self.clone());
+             })
         .def("getJoints",
              py::overload_cast<>(&ModelInterface::getJoints, py::const_), rvp::reference_internal)
         .def("getJoints",
@@ -279,6 +294,8 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
         ;
 
     py::class_<RobotInterface, XBotInterface, RobotInterface::Ptr>(m, "RobotInterface2")
+        .def(py::init(py::overload_cast<ConfigOptions>(&RobotInterface::getRobot)),
+               py::arg("cfg"))
         .def(py::init(py::overload_cast<std::string, std::string, std::string, std::string>(
                  &RobotInterface::getRobot)),
              py::arg("urdf_string"),
