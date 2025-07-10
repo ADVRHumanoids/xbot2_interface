@@ -31,8 +31,10 @@ Eigen::Affine3d toeigen(const urdf::Pose& T)
 }
 
 CollisionModel::Impl::Impl(ModelInterface::ConstPtr model,
+                           CollisionModel::Options opt,
                            Collision::CollisionModel& api):
     _api(api),
+    _options(opt),
     _model(model)
 {
     parseCollisionObjects();
@@ -197,12 +199,25 @@ bool CollisionModel::Impl::parseCollisionObjects()
                 triangles.push_back(t);
             }
 
+            // print num triangles
+            std::cout << "mesh for link " << link->name
+                      << " has " << triangles.size() << " triangles" << std::endl;
+
             // add the mesh data into the BVHModel structure
             auto bvhModel = std::make_shared<fcl::BVHModel<fcl::OBBRSS>>();
-            shape = bvhModel;
             bvhModel->beginModel();
             bvhModel->addSubModel(vertices, triangles);
             bvhModel->endModel();
+
+            if(_options.assume_convex_meshes)
+            {
+                bvhModel->buildConvexHull(true, "Qt");
+                shape = bvhModel->convex;
+            }
+            else
+            {
+                shape = bvhModel;
+            }
 
             shape_origin = toeigen(link->collision->origin);
         }
@@ -607,6 +622,12 @@ bool CollisionModel::Impl::addCollisionShape(string_const_ref name,
             bvhModel->addSubModel(vertices, triangles);
             bvhModel->endModel();
 
+            if(m.convex)
+            {
+                bvhModel->buildConvexHull(true, "Qt");
+                fcl_geom = bvhModel->convex;
+            }
+
             std::cout << "mesh";
 
             return true;
@@ -795,7 +816,8 @@ void CollisionModel::Impl::set_distance_called()
     _cached_computation |= Distance;
 }
 
-CollisionModel::CollisionModel(ModelInterface::ConstPtr model):
+CollisionModel::CollisionModel(ModelInterface::ConstPtr model,
+                               Options opt):
     impl(std::make_unique<Impl>(model, *this))
 {
 
@@ -1044,8 +1066,12 @@ void CollisionModel::computeDistance(Eigen::VectorXd& d,
         {
             break;
         }
-
+        
+        auto tic = std::chrono::steady_clock::now();
         item.compute_distance(*impl->_model, threshold);
+        auto toc = std::chrono::steady_clock::now();
+        std::chrono::duration<double> duration = toc - tic;
+        // std::cout << "Collision computation for pair (" << item.link1->link_name << ", " << item.link2->link_name << ") took " << duration.count() << " seconds" << std::endl;
     }
 
     impl->set_distance_called();
@@ -1388,4 +1414,9 @@ void CollisionModel::Impl::LinkCollision::setEnabled(CollisionObjectPtr co, bool
 
     enabled[idx] = flag;
 
+}
+
+CollisionModel::Options::Options():
+    assume_convex_meshes(false)
+{
 }

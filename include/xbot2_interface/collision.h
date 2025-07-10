@@ -49,6 +49,7 @@ struct XBOT2IFC_API Shape
     {
         std::string filepath;
         Eigen::Vector3d scale;
+        bool convex = false;
     };
 
     struct Octree
@@ -89,11 +90,20 @@ public:
 
     typedef std::vector<std::pair<Eigen::Vector3d, Eigen::Vector3d>> WitnessPointVector;
 
+    struct XBOT2IFC_API Options
+    {
+        // if true, the collision model will assume that all meshes are convex
+        // this is *very* beneficial for performance
+        bool assume_convex_meshes;
+
+        Options();
+    };
+
     /**
      * @brief CollisionModel constructor
      * @param model shared pointer
      */
-    CollisionModel(ModelInterface::ConstPtr model);
+    CollisionModel(ModelInterface::ConstPtr model, Options opt = Options());
 
     /**
      * @brief returns the number of collision pairs that the collision model will

@@ -19,7 +19,9 @@ public:
 
     friend class CollisionModel;
 
-    Impl(ModelInterface::ConstPtr model, Collision::CollisionModel& api);
+    Impl(ModelInterface::ConstPtr model,
+         CollisionModel::Options opt,
+         Collision::CollisionModel& api);
 
     bool parseCollisionObjects();
 
@@ -51,6 +53,8 @@ public:
 private:
 
     CollisionModel& _api;
+
+    CollisionModel::Options _options;
 
     Eigen::MatrixXd _Jtmp;
 
