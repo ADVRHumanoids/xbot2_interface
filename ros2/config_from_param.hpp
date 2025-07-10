@@ -14,8 +14,11 @@ namespace XBot {
 
 inline ConfigOptions ConfigOptionsFromParams(rclcpp::Node::SharedPtr node,
                                              std::string prefix = "",
-                                            std::chrono::seconds timeout = 1s)
+                                             std::chrono::seconds timeout = 1s, 
+                                             bool require_srdf = true)
 {
+    auto timeout_expired = std::chrono::steady_clock::now() + timeout;
+
     ConfigOptions opt;
 
     std::string urdf, srdf, jidmap;
@@ -42,18 +45,41 @@ inline ConfigOptions ConfigOptionsFromParams(rclcpp::Node::SharedPtr node,
         rclcpp::spin_some(node);
         sleep(1);
         RCLCPP_INFO(node->get_logger(), "waiting for urdf on topic '%s'...", urdf_sub->get_topic_name());
+
+        if(std::chrono::steady_clock::now() > timeout_expired)
+        {
+            throw std::runtime_error("Timeout waiting for urdf");
+        }
     }
 
     opt.set_urdf(urdf);
+
+    timeout_expired = std::chrono::steady_clock::now() + timeout;
 
     while(srdf.empty())
     {
         rclcpp::spin_some(node);
         sleep(1);
         RCLCPP_INFO(node->get_logger(), "waiting for srdf on topic '%s'...", srdf_sub->get_topic_name());
+
+        if(std::chrono::steady_clock::now() > timeout_expired)
+        {
+            if(require_srdf)
+            {
+                throw std::runtime_error("Timeout waiting for srdf");
+            }
+            else
+            {
+                srdf = "";
+                break;
+            }
+        }
     }
 
-    opt.set_srdf(srdf);
+    if(!srdf.empty())
+    {
+        opt.set_srdf(srdf);
+    }
 
     opt.set_parameter("model_type", node->get_parameter_or<std::string>("model_type", "pin"));
 
