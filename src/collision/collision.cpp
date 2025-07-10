@@ -818,7 +818,7 @@ void CollisionModel::Impl::set_distance_called()
 
 CollisionModel::CollisionModel(ModelInterface::ConstPtr model,
                                Options opt):
-    impl(std::make_unique<Impl>(model, *this))
+    impl(std::make_unique<Impl>(model, opt, *this))
 {
 
 }
