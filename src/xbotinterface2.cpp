@@ -1660,6 +1660,8 @@ XBotInterface::Impl::Impl(const ConfigOptions& opt,
     _urdf(opt.urdf),
     _srdf(opt.srdf)
 {
+    opt.get_parameter("model_type", _type);
+
     parse_imu();
 
     parse_ft();
