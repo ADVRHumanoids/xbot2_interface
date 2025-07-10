@@ -32,8 +32,10 @@ Eigen::Affine3d toeigen(const urdf::Pose& T)
 
 CollisionModel::Impl::Impl(ModelInterface::ConstPtr model,
                            CollisionModel::Options opt,
+                           CollisionModel::Options opt,
                            Collision::CollisionModel& api):
     _api(api),
+    _options(opt),
     _options(opt),
     _model(model)
 {
@@ -203,11 +205,25 @@ bool CollisionModel::Impl::parseCollisionObjects()
             std::cout << "mesh for link " << link->name
                       << " has " << triangles.size() << " triangles" << std::endl;
 
+            // print num triangles
+            std::cout << "mesh for link " << link->name
+                      << " has " << triangles.size() << " triangles" << std::endl;
+
             // add the mesh data into the BVHModel structure
             auto bvhModel = std::make_shared<fcl::BVHModel<fcl::OBBRSS>>();
             bvhModel->beginModel();
             bvhModel->addSubModel(vertices, triangles);
             bvhModel->endModel();
+
+            if(_options.assume_convex_meshes)
+            {
+                bvhModel->buildConvexHull(true, "Qt");
+                shape = bvhModel->convex;
+            }
+            else
+            {
+                shape = bvhModel;
+            }
 
             if(_options.assume_convex_meshes)
             {
@@ -660,6 +676,12 @@ bool CollisionModel::Impl::addCollisionShape(string_const_ref name,
                 fcl_geom = bvhModel->convex;
             }
 
+            if(m.convex)
+            {
+                bvhModel->buildConvexHull(true, "Qt");
+                fcl_geom = bvhModel->convex;
+            }
+
             std::cout << "mesh";
 
             return true;
@@ -1100,6 +1122,8 @@ void CollisionModel::computeDistance(Eigen::VectorXd& d,
         }
         
         auto tic = std::chrono::steady_clock::now();
+        
+        auto tic = std::chrono::steady_clock::now();
         item.compute_distance(*impl->_model, threshold);
         auto toc = std::chrono::steady_clock::now();
         std::chrono::duration<double> duration = toc - tic;
@@ -1454,6 +1478,11 @@ void CollisionModel::Impl::LinkCollision::setEnabled(CollisionObjectPtr co, bool
 
     enabled[idx] = flag;
 
+}
+
+CollisionModel::Options::Options():
+    assume_convex_meshes(false)
+{
 }
 
 CollisionModel::Options::Options():
