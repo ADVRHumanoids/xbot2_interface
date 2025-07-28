@@ -19,6 +19,53 @@ auto check_collision = [](CollisionModel& self, bool include_env)
 
 
 PYBIND11_MODULE(pyxbot2_collision, m) {
+    py::module_ sm = m.def_submodule("shape");
+
+    py::class_<Shape::Sphere>(sm, "Sphere")
+        .def(py::init<>())
+        .def_readwrite("radius", &Shape::Sphere::radius);
+
+    py::class_<Shape::Capsule>(sm, "Capsule")
+        .def(py::init<>())
+        .def_readwrite("radius", &Shape::Capsule::radius)
+        .def_readwrite("length", &Shape::Capsule::length);
+
+    py::class_<Shape::Halfspace>(sm, "Halfspace")
+        .def(py::init<>())
+        .def_readwrite("normal", &Shape::Halfspace::normal)
+        .def_readwrite("d", &Shape::Halfspace::d);
+
+    py::class_<Shape::Box>(sm, "Box")
+        .def(py::init<>())
+        .def_readwrite("size", &Shape::Box::size);
+
+    py::class_<Shape::Cylinder>(sm, "Cylinder")
+        .def(py::init<>())
+        .def_readwrite("radius", &Shape::Cylinder::radius)
+        .def_readwrite("length", &Shape::Cylinder::length);
+
+    py::class_<Shape::Mesh>(sm, "Mesh")
+        .def(py::init<>())
+        .def_readwrite("filepath", &Shape::Mesh::filepath)
+        .def_readwrite("scale", &Shape::Mesh::scale);
+
+    py::class_<Shape::Octree>(sm, "Octree")
+        .def(py::init<>()) // binding std::any content is skipped
+        .def_readwrite("data", &Shape::Octree::data);
+
+    py::class_<Shape::HeightMap>(sm, "HeightMap")
+        .def(py::init<>())
+        .def_readwrite("dim_x", &Shape::HeightMap::dim_x)
+        .def_readwrite("dim_y", &Shape::HeightMap::dim_y)
+        .def_property("height",
+            [](const Shape::HeightMap &self) { return *self.height; },
+            [](Shape::HeightMap &self, const Eigen::MatrixXf &mat) {
+                self.height = std::make_shared<Eigen::MatrixXf>(mat);});
+
+    py::class_<Shape::MeshRaw>(sm, "MeshRaw")
+        .def(py::init<>())
+        .def_readwrite("vertices", &Shape::MeshRaw::vertices)
+        .def_readwrite("triangles", &Shape::MeshRaw::triangles);
 
 
 
