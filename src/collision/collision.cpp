@@ -32,10 +32,8 @@ Eigen::Affine3d toeigen(const urdf::Pose& T)
 
 CollisionModel::Impl::Impl(ModelInterface::ConstPtr model,
                            CollisionModel::Options opt,
-                           CollisionModel::Options opt,
                            Collision::CollisionModel& api):
     _api(api),
-    _options(opt),
     _options(opt),
     _model(model)
 {
@@ -1122,8 +1120,6 @@ void CollisionModel::computeDistance(Eigen::VectorXd& d,
         }
         
         auto tic = std::chrono::steady_clock::now();
-        
-        auto tic = std::chrono::steady_clock::now();
         item.compute_distance(*impl->_model, threshold);
         auto toc = std::chrono::steady_clock::now();
         std::chrono::duration<double> duration = toc - tic;
@@ -1279,17 +1275,17 @@ void CollisionModel::Impl::CollisionPairData::compute_distance(const ModelInterf
     }
 
     // hack fix normal bug gjk
-    if(dresult.normal.norm() < 1e-6)
-    {
-        dresult.normal = (dresult.nearest_points[1]-dresult.nearest_points[0]).normalized();
-    }
+    // if(dresult.normal.norm() < 1e-6)
+    // {
+    //     dresult.normal = (dresult.nearest_points[1]-dresult.nearest_points[0]).normalized();
+    // }
 
     //hack to fix normal direction when not pointing from o1 to o2
-    double dir = dresult.normal.dot(dresult.nearest_points[1] - dresult.nearest_points[0]);
-    if(dir < 1e-6)
-    {
-        dresult.normal = -dresult.normal;
-    }
+    // double dir = dresult.normal.dot(dresult.nearest_points[1] - dresult.nearest_points[0]);
+    // if(dir < 1e-6)
+    // {
+    //     dresult.normal = -dresult.normal;
+    // }
 
 }
 
@@ -1478,11 +1474,6 @@ void CollisionModel::Impl::LinkCollision::setEnabled(CollisionObjectPtr co, bool
 
     enabled[idx] = flag;
 
-}
-
-CollisionModel::Options::Options():
-    assume_convex_meshes(false)
-{
 }
 
 CollisionModel::Options::Options():
