@@ -3,7 +3,6 @@
 
 #include <xbot2_interface/common/utils.h>
 #include <geometric_shapes/mesh_operations.h>
-#include <hpp/fcl/BVH/BVH_model.h>
 #include <fmt/format.h>
 
 using namespace XBot::Collision;
@@ -540,14 +539,14 @@ bool CollisionModel::Impl::addCollisionShape(string_const_ref name,
         return true;
     }
 
-    std::shared_ptr<hpp::fcl::CollisionGeometry> fcl_geom;
+    std::shared_ptr<fcl::CollisionGeometry> fcl_geom;
 
     std::cout << "adding shape with name " << name << ", type ";
 
     auto ShapeVisitor = Overload {
         [&](const Shape::Box& box)
         {
-            fcl_geom = std::make_shared<hpp::fcl::Box>(
+            fcl_geom = std::make_shared<fcl::Box>(
                 box.size.x(),
                 box.size.y(),
                 box.size.z()
@@ -559,7 +558,7 @@ bool CollisionModel::Impl::addCollisionShape(string_const_ref name,
         },
         [&](const Shape::Capsule& caps)
         {
-            fcl_geom = std::make_shared<hpp::fcl::Capsule>(
+            fcl_geom = std::make_shared<fcl::Capsule>(
                 caps.radius,
                 caps.length
                 );
@@ -570,7 +569,7 @@ bool CollisionModel::Impl::addCollisionShape(string_const_ref name,
         },
         [&](const Shape::Cylinder& cyl)
         {
-            fcl_geom = std::make_shared<hpp::fcl::Cylinder>(
+            fcl_geom = std::make_shared<fcl::Cylinder>(
                 cyl.radius,
                 cyl.length
                 );
@@ -581,7 +580,7 @@ bool CollisionModel::Impl::addCollisionShape(string_const_ref name,
         },
         [&](const Shape::Halfspace& hs)
         {
-            fcl_geom = std::make_shared<hpp::fcl::Halfspace>(
+            fcl_geom = std::make_shared<fcl::Halfspace>(
                 hs.normal,
                 hs.d
                 );
@@ -686,12 +685,12 @@ bool CollisionModel::Impl::addCollisionShape(string_const_ref name,
         },
         [&](const Shape::Octree& oct)
         {
-            // fcl_geom = std::any_cast<std::shared_ptr<hpp::fcl::OcTree>>(oct.data);
+            // fcl_geom = std::any_cast<std::shared_ptr<fcl::OcTree>>(oct.data);
             return false;
         },
         [&](const Shape::Sphere& sp)
         {
-            fcl_geom = std::make_shared<hpp::fcl::Sphere>(sp.radius);
+            fcl_geom = std::make_shared<fcl::Sphere>(sp.radius);
             std::cout << "sphere";
             return true;
         }
@@ -1251,7 +1250,7 @@ void CollisionModel::Impl::CollisionPairData::compute_distance(const ModelInterf
      * D435_head_camera_link vs arm1_4
      * 0.2893013111227844  0.6620163446598711 -0.8569489983182211   0.3255094250551769 -0.04220620018335156  -0.7014379749636802   0.6326507868841883
      * 0.3030546655518612  0.6643892127068073 -0.8234177007679618  0.05331201346441317    0.988241826570244  -0.1400101570343576 -0.03054631507551606
-     * test_collision: /home/iit.local/alaurenzi/code/core_ws/src/hpp-fcl/src/narrowphase/gjk.cpp:339: void hpp::fcl::details::getSupportFuncTpl(const MinkowskiDiff&, const hpp::fcl::Vec3f&, bool, hpp::fcl::Vec3f&, hpp::fcl::Vec3f&, hpp::fcl::support_func_guess_t&, MinkowskiDiff::ShapeData*) [with Shape0 = hpp::fcl::Box; Shape1 = hpp::fcl::Capsule; bool TransformIsIdentity = false; hpp::fcl::Vec3f = Eigen::Matrix<double, 3, 1>; hpp::fcl::support_func_guess_t = Eigen::Matrix<int, 2, 1>]: Assertion `NeedNormalizedDir || dir.cwiseAbs().maxCoeff() >= 1e-6' failed.
+     * test_collision: /home/iit.local/alaurenzi/code/core_ws/src/hpp-fcl/src/narrowphase/gjk.cpp:339: void fcl::details::getSupportFuncTpl(const MinkowskiDiff&, const fcl::Vec3f&, bool, fcl::Vec3f&, fcl::Vec3f&, fcl::support_func_guess_t&, MinkowskiDiff::ShapeData*) [with Shape0 = fcl::Box; Shape1 = fcl::Capsule; bool TransformIsIdentity = false; fcl::Vec3f = Eigen::Matrix<double, 3, 1>; fcl::support_func_guess_t = Eigen::Matrix<int, 2, 1>]: Assertion `NeedNormalizedDir || dir.cwiseAbs().maxCoeff() >= 1e-6' failed.
      * Aborted (core dumped)
      */
 

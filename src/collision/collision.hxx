@@ -3,12 +3,30 @@
 
 #include <xbot2_interface/collision.h>
 
+// handle both hpp-fcl and coal
+#ifdef HPP_FCL_COAL
+
+#include <coal/collision.h>
+#include <coal/distance.h>
+#include <coal/broadphase/broadphase.h>
+#include <coal/BVH/BVH_model.h>
+namespace fcl = coal;
+
+namespace coal {
+    using Transform3f = Transform3s;
+    using Vec3f = Vec3s;
+}
+
+#else
+
 #include <hpp/fcl/collision.h>
 #include <hpp/fcl/distance.h>
 #include <hpp/fcl/broadphase/broadphase.h>
-
-
+#include <hpp/fcl/BVH/BVH_model.h>
 namespace fcl = hpp::fcl;
+
+#endif
+
 
 namespace XBot {
 
