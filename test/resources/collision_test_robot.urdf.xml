@@ -2,6 +2,8 @@
 
 <robot name="example_robot">
 
+  <link name="world"/>
+
   <!-- Base Link -->
   <link name="base_link">
     <inertial>
@@ -152,6 +154,11 @@
 </link>
 
   <!-- Floating Joints -->
+  <joint name="joint0" type="floating">
+    <parent link="world"/>
+    <child link="base_link"/>
+  </joint>
+
   <joint name="joint1" type="floating">
     <parent link="base_link"/>
     <child link="link1"/>
