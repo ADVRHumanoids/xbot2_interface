@@ -622,6 +622,12 @@ bool CollisionModel::Impl::addCollisionShape(string_const_ref name,
             bvhModel->addSubModel(vertices, triangles);
             bvhModel->endModel();
 
+            if(mr.convex)
+            {
+                bvhModel->buildConvexHull(true, "Qt");
+                fcl_geom = bvhModel->convex;
+            }
+
             std::cout << "mesh raw";
 
 
@@ -666,12 +672,6 @@ bool CollisionModel::Impl::addCollisionShape(string_const_ref name,
             bvhModel->beginModel();
             bvhModel->addSubModel(vertices, triangles);
             bvhModel->endModel();
-
-            if(m.convex)
-            {
-                bvhModel->buildConvexHull(true, "Qt");
-                fcl_geom = bvhModel->convex;
-            }
 
             if(m.convex)
             {
@@ -1242,7 +1242,7 @@ void CollisionModel::Impl::CollisionPairData::compute_distance(const ModelInterf
     if(threshold > 0 && aabb_dist > threshold)
     {
         dresult.min_distance = aabb_dist;
-        dresult.normal = (dresult.nearest_points[1]-dresult.nearest_points[0]).normalized();
+        dresult.normal = (dresult.nearest_points[1] - dresult.nearest_points[0]).normalized();
         return;
     }
 
@@ -1266,6 +1266,7 @@ void CollisionModel::Impl::CollisionPairData::compute_distance(const ModelInterf
          o2->getTransform(),
          drequest,
          dresult);
+
 
     // hack to fix wrong distance when in deep collision
     if(dresult.min_distance < 0)

@@ -69,6 +69,7 @@ struct XBOT2IFC_API Shape
     {
         std::vector<Eigen::Vector3d> vertices;
         std::vector<Eigen::Vector3i> triangles;
+        bool convex = false;
     };
 
     using Variant = std::variant<
