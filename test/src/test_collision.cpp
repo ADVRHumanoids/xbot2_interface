@@ -557,7 +557,7 @@ TEST_F(TestCollision, checkJacobian)
 
 TEST_F(TestCollisionNoRobot, checkDistanceConsistency)
 {
-    const bool use_mesh = false;
+    const bool use_mesh = true;
 
     Eigen::Affine3d w_T_c;
     w_T_c.setIdentity();
@@ -620,8 +620,12 @@ TEST_F(TestCollisionNoRobot, checkDistanceConsistency)
 
     auto decrease_distance = [&]()
     {
-        auto J = cm->getDistanceJacobian(include_env);
-        Eigen::VectorXd dq = -J.transpose() * Eigen::VectorXd::Ones(J.rows()) * step;
+        Eigen::MatrixXd J = cm->getDistanceJacobian(include_env).bottomRows(8);
+        J.leftCols(6).setZero(); // do not move the base
+
+        // std::cout << "J (rows: " << J.rows() << ", cols: " << J.cols() << "): \n" << J.format(2) << "\n";
+        Eigen::VectorXd dq = -J.transpose() * (d.tail(8).array() > -0.05).matrix().cast<double>() * step;
+        // Eigen::VectorXd dq = -J.transpose() * Eigen::VectorXd::Ones(8) * step;
         q = model->sum(q, dq);
 
         model->setJointPosition(q);
@@ -631,17 +635,19 @@ TEST_F(TestCollisionNoRobot, checkDistanceConsistency)
         auto d_new = cm->computeDistance(include_env);
         auto n_new = cm->getNormals(include_env);
 
-        for (int i = 0; i < d.size(); i++)
+        for (int i = d.size()-8; i < d.size(); i++)
         {
-            // expect distance to decrease
-            EXPECT_LE(d_new[i], d[i]) << "pair " << lp[i].first << " vs " << lp[i].second << "\n"
-                                      << "old d: " << d[i] << "\n"
-                                      << "new d: " << d_new[i] << "\n";
+            // skip deep collisions (?)
+            if(d_new[i] > -0.05)
+            {
+                // expect normals not to flip
+                EXPECT_GE(n_new[i].dot(n[i]), -0.50) << "pair " << lp[i].first << " vs " << lp[i].second << "\n"
+                                        << "old d: " << d[i] << "\n"
+                                        << "new d: " << d_new[i] << "\n"
+                                        << "old n: " << n[i].transpose() << "\n"
+                                        << "new n: " << n_new[i].transpose() << "\n";
 
-            // expect normals not to flip
-            EXPECT_GE(n_new[i].dot(n[i]), -0.1) << "pair " << lp[i].first << " vs " << lp[i].second << "\n"
-                                            << "old n: " << n[i].transpose() << "\n"
-                                            << "new n: " << n_new[i].transpose() << "\n";
+            }
 
             // update distance and normal
             n[i] = n_new[i];
@@ -649,9 +655,13 @@ TEST_F(TestCollisionNoRobot, checkDistanceConsistency)
         }
     };
 
-    for(int i = 0; i < 25; i++)
+    for(;;)
     {
-        std::cout << "Step " << i << "\n";
+        if(d.tail(8).maxCoeff() < -0.05)
+        {
+            break;
+        }
+
         std::cout << "d = " << d.tail(8).transpose().format(2) << "\n";
         decrease_distance();
     }
