@@ -17,7 +17,6 @@ auto check_collision = [](CollisionModel& self, bool include_env)
     return std::make_pair(ret, idx);
 };
 
-
 PYBIND11_MODULE(pyxbot2_collision, m) {
     py::module_ sm = m.def_submodule("shape");
 
