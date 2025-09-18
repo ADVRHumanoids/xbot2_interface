@@ -59,7 +59,8 @@ public:
                            string_const_ref link,
                            Shape::Variant shape,
                            Eigen::Affine3d link_T_shape,
-                           std::vector<std::string> disabled_collisions);
+                           std::vector<std::string> disabled_collisions,
+                           bool user_object = true);
 
     bool computeCollisionFree(VecRef q,
                               ComputeCollisionFreeOptions opt);
