@@ -69,6 +69,8 @@ public:
 
     void set_distance_called();
 
+    bool is_link_movable(string_const_ref link) const;
+
 private:
 
     CollisionModel& _api;

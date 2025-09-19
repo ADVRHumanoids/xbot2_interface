@@ -522,6 +522,25 @@ bool CollisionModel::Impl::checkSelfCollision(std::vector<int>* coll_pair_ids,
     return ret;
 }
 
+bool CollisionModel::Impl::is_link_movable(string_const_ref link) const
+{
+    auto urdf = _model->getUrdf();
+    auto root = urdf->getRoot();
+    auto urdf_link = urdf->getLink(link);
+
+    while(urdf_link && urdf_link != root)
+    {
+        if(urdf_link->parent_joint && urdf_link->parent_joint->type != urdf::Joint::FIXED)
+        {
+            return true;
+        }
+
+        urdf_link = urdf_link->getParent();
+    }
+
+    return false;
+}
+
 // define helper struct to generate a visitor from a set of lambdas
 template<typename ... Ts>
 struct Overload : Ts ... {
@@ -769,6 +788,12 @@ bool CollisionModel::Impl::addCollisionShape(string_const_ref name,
     // add disabled collisions
     link_collision->disabled_collisions.back().insert(disabled_collisions.begin(),
                                                       disabled_collisions.end());
+
+    // check if link is moveable: if not, disable collisions with "world"
+    if(!is_link_movable(link))
+    {
+        link_collision->disabled_collisions.back().insert("world");
+    }
 
     // add to user object map
     if(user_object) 
