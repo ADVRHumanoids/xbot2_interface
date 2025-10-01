@@ -43,7 +43,7 @@ inline ConfigOptions ConfigOptionsFromParams(rclcpp::Node::SharedPtr node,
     while(urdf.empty())
     {
         rclcpp::spin_some(node);
-        sleep(1);
+        usleep(100000);
         RCLCPP_INFO(node->get_logger(), "waiting for urdf on topic '%s'...", urdf_sub->get_topic_name());
 
         if(std::chrono::steady_clock::now() > timeout_expired)
@@ -59,7 +59,7 @@ inline ConfigOptions ConfigOptionsFromParams(rclcpp::Node::SharedPtr node,
     while(srdf.empty())
     {
         rclcpp::spin_some(node);
-        sleep(1);
+        usleep(100000);
         RCLCPP_INFO(node->get_logger(), "waiting for srdf on topic '%s'...", srdf_sub->get_topic_name());
 
         if(std::chrono::steady_clock::now() > timeout_expired)
