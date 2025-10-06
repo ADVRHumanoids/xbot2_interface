@@ -943,6 +943,23 @@ ForceTorqueSensor::ConstPtr XBotInterface::getForceTorque(string_const_ref name)
     }
 }
 
+std::map<std::string, Gripper::Ptr> XBotInterface::getGripper() const
+{
+    return impl->_gripper_map;
+}
+
+Gripper::Ptr XBotInterface::getGripper(string_const_ref name) const
+{
+    try
+    {
+        return impl->_gripper_map.at(name);
+    }
+    catch(std::out_of_range&)
+    {
+        return nullptr;
+    }
+}
+
 bool XBotInterface::addSensor(Sensor::Ptr s)
 {
     if(impl->_sensor_map.contains(s->getName()))
@@ -958,7 +975,11 @@ bool XBotInterface::addSensor(Sensor::Ptr s)
     }
     else if(auto imu = std::dynamic_pointer_cast<ImuSensor>(s))
     {
-        impl->_imu_map[s->getName()] =  imu;
+        impl->_imu_map[s->getName()] = imu;
+    }
+    else if(auto gr = std::dynamic_pointer_cast<Gripper>(s))
+    {
+        impl->_gripper_map[s->getName()] = gr;
     }
 
     return true;
@@ -1665,6 +1686,8 @@ XBotInterface::Impl::Impl(const ConfigOptions& opt,
     parse_imu();
 
     parse_ft();
+
+    parse_grippers();
 }
 
 void XBotInterface::Impl::setApi(XBotInterface *xbi)
@@ -2092,6 +2115,24 @@ void XBotInterface::Impl::parse_imu()
             _sensor_map[lname] = _imu_map[lname] =
                 std::make_shared<ImuSensor>(lname);
         }
+    }
+}
+
+void XBot::XBotInterface::Impl::parse_grippers()
+{
+    if(!_srdf)
+    {
+        return;
+    }
+    
+    auto srdf_ee = _srdf->getEndEffectors();
+
+    std::cout << "Found " << srdf_ee.size() << " end-effectors in the SRDF\n";
+
+    for(auto ee : srdf_ee)
+    {
+        _sensor_map[ee.name_] = _gripper_map[ee.name_] = 
+            std::make_shared<Gripper>(ee.name_);
     }
 }
 

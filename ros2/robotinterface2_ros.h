@@ -13,11 +13,13 @@
 #include <xbot_msgs/msg/joint_command.hpp>
 #include <xbot_msgs/msg/joint_state.hpp>
 #include <std_msgs/msg/float64.hpp>
+#include <sensor_msgs/msg/joint_state.hpp>
 
 using namespace xbot_msgs::msg;
 using namespace std_msgs::msg;
 using namespace geometry_msgs::msg;
-using namespace sensor_msgs::msg;
+using Imu = sensor_msgs::msg::Imu;
+using JointStateSM = sensor_msgs::msg::JointState;
 
 namespace XBot {
 
@@ -50,6 +52,8 @@ private:
     rclcpp::Publisher<JointCommand>::SharedPtr _cmd_pub;
 
     rclcpp::Publisher<Twist>::SharedPtr _base_cmd_pub;
+
+    std::map<Gripper::Ptr, rclcpp::Publisher<JointStateSM>::SharedPtr> _gripper_cmd;
 
     bool _js_received;
 

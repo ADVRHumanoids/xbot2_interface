@@ -50,6 +50,8 @@ private:
 
     void parse_imu();
 
+    void parse_grippers();
+
     void parse_chains();
 
     // options
@@ -113,6 +115,10 @@ private:
 
     // ft
     std::map<std::string, ForceTorqueSensor::Ptr> _ft_map;
+
+    // gripper
+    std::map<std::string, Gripper::Ptr> _gripper_map;
+
 
     struct Temporaries
     {
