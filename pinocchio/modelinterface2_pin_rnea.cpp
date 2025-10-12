@@ -33,14 +33,13 @@ void ModelInterface2Pin::computeInverseDynamicsDerivative(Eigen::MatrixXd& dtau_
                                           getJointVelocity(),
                                           getJointAcceleration());
 
+        _data.M.triangularView<Eigen::StrictlyLower>() = _data.M.transpose().triangularView<Eigen::StrictlyLower>();
+
         _cached_computation |= dRnea;
     }
 
     dtau_dq = _data.dtau_dq;
     dtau_dv = _data.dtau_dv;
-
-    _data.M.triangularView<Eigen::StrictlyLower>() =
-        _data.M.transpose().triangularView<Eigen::StrictlyLower>();
 
     dtau_da = _data.M;
 }
