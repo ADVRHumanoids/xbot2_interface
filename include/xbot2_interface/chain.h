@@ -39,6 +39,8 @@ public:
 
     const std::vector<Joint::ConstPtr>& getJoints() const;
 
+    bool hasJoint(string_const_ref jname) const;
+
     class Impl;
 
     Chain(std::unique_ptr<Impl>);

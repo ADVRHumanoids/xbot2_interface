@@ -1,5 +1,5 @@
-#ifndef SENSOR_H
-#define SENSOR_H
+#ifndef XBOT2IFC_SENSOR_H
+#define XBOT2IFC_SENSOR_H
 
 #include "common/types.h"
 

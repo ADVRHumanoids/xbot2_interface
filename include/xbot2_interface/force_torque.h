@@ -1,5 +1,5 @@
-#ifndef FORCE_TORQUE_H
-#define FORCE_TORQUE_H
+#ifndef XBOT2IFC_FORCE_TORQUE_H
+#define XBOT2IFC_FORCE_TORQUE_H
 
 #include "sensor.h"
 

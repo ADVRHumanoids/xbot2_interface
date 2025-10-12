@@ -37,6 +37,7 @@ add_library(xbot2_interface SHARED
     src/utils.cpp
     src/sensor.cpp
     src/imu.cpp
+    src/gripper.cpp
     src/force_torque.cpp
     src/logger.cpp
 )

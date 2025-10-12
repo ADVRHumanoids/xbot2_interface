@@ -3,12 +3,30 @@
 
 #include <xbot2_interface/collision.h>
 
+// handle both hpp-fcl and coal
+#ifdef HPP_FCL_COAL
+
+#include <coal/collision.h>
+#include <coal/distance.h>
+#include <coal/broadphase/broadphase.h>
+#include <coal/BVH/BVH_model.h>
+namespace fcl = coal;
+
+namespace coal {
+    using Transform3f = Transform3s;
+    using Vec3f = Vec3s;
+}
+
+#else
+
 #include <hpp/fcl/collision.h>
 #include <hpp/fcl/distance.h>
 #include <hpp/fcl/broadphase/broadphase.h>
-
-
+#include <hpp/fcl/BVH/BVH_model.h>
 namespace fcl = hpp::fcl;
+
+#endif
+
 
 namespace XBot {
 
@@ -19,7 +37,9 @@ public:
 
     friend class CollisionModel;
 
-    Impl(ModelInterface::ConstPtr model, Collision::CollisionModel& api);
+    Impl(ModelInterface::ConstPtr model,
+         CollisionModel::Options opt,
+         Collision::CollisionModel& api);
 
     bool parseCollisionObjects();
 
@@ -39,7 +59,8 @@ public:
                            string_const_ref link,
                            Shape::Variant shape,
                            Eigen::Affine3d link_T_shape,
-                           std::vector<std::string> disabled_collisions);
+                           std::vector<std::string> disabled_collisions,
+                           bool user_object = true);
 
     bool computeCollisionFree(VecRef q,
                               ComputeCollisionFreeOptions opt);
@@ -48,9 +69,13 @@ public:
 
     void set_distance_called();
 
+    bool is_link_movable(string_const_ref link) const;
+
 private:
 
     CollisionModel& _api;
+
+    CollisionModel::Options _options;
 
     Eigen::MatrixXd _Jtmp;
 

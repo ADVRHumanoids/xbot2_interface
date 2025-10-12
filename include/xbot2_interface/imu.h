@@ -1,5 +1,5 @@
-#ifndef IMU_H
-#define IMU_H
+#ifndef XBOT2IFC_IMU_H
+#define XBOT2IFC_IMU_H
 
 #include "sensor.h"
 

@@ -3,7 +3,6 @@
 
 #include <xbot2_interface/common/utils.h>
 #include <geometric_shapes/mesh_operations.h>
-#include <hpp/fcl/BVH/BVH_model.h>
 #include <fmt/format.h>
 
 using namespace XBot::Collision;
@@ -31,8 +30,10 @@ Eigen::Affine3d toeigen(const urdf::Pose& T)
 }
 
 CollisionModel::Impl::Impl(ModelInterface::ConstPtr model,
+                           CollisionModel::Options opt,
                            Collision::CollisionModel& api):
     _api(api),
+    _options(opt),
     _model(model)
 {
     parseCollisionObjects();
@@ -55,36 +56,106 @@ CollisionModel::Impl::Impl(ModelInterface::ConstPtr model,
  */
 urdf::CollisionConstSharedPtr capsule_from_collision(urdf::Link& l)
 {
-    if(l.collision_array.size() != 3)
+    if(l.collision_array.size() < 3)
     {
         return nullptr;
     }
 
-    int num_spheres = 0;
-    urdf::CollisionConstSharedPtr cylinder;
+    std::list<urdf::CollisionConstSharedPtr> cylinders;
+    std::list<urdf::CollisionConstSharedPtr> spheres;
 
+    // parse cylinders and spheres
     for(auto c : l.collision_array)
     {
         if(c->geometry->type == urdf::Geometry::CYLINDER)
         {
-            cylinder = c;
+            cylinders.push_back(c);
         }
         else if(c->geometry->type == urdf::Geometry::SPHERE)
         {
-            num_spheres++;
+            spheres.push_back(c);
         }
     }
 
-    if(cylinder && num_spheres == 2)
+    // early return
+    if(cylinders.size() == 0 || spheres.size() < 2)
     {
-        return cylinder;
+        return nullptr;
     }
 
-    return nullptr;
+    // for each cylinder, check if there are two spheres at its extremes
+    // (within a tolerance)
+    const double tol = 1e-3;
+    urdf::CollisionConstSharedPtr cylinder;
+    urdf::CollisionConstSharedPtr sphere_1, sphere_2;
+
+    for(auto c : cylinders)
+    {
+        double length = std::dynamic_pointer_cast<urdf::Cylinder>(c->geometry)->length;
+
+        auto Tc = toeigen(c->origin);
+        Eigen::Vector3d p1 = Tc.translation() + Tc.linear().col(2) * length/2.0;
+        Eigen::Vector3d p2 = Tc.translation() - Tc.linear().col(2) * length/2.0;
+
+        // enumerate all sphere pairs
+        for(auto s1 = spheres.begin(); s1 != spheres.end(); s1++)
+        {
+            auto T1 = toeigen((*s1)->origin);
+
+            Eigen::Vector3d p_other;
+
+            if(T1.translation().isApprox(p1, tol))
+            {
+                p_other = p2;
+            }
+            else if(T1.translation().isApprox(p2, tol))
+            {
+                p_other = p1;
+            }
+            else
+            {
+                // this sphere is not at one of the cylinder extremes
+                continue;
+            }
+
+            for(auto s2 = std::next(s1); s2 != spheres.end(); s2++)
+            {
+                auto T2 = toeigen((*s2)->origin);
+                
+                if(T2.translation().isApprox(p_other, tol))
+                {
+                    // capsule found
+                    cylinder = c;
+                    sphere_1 = *s1;
+                    sphere_2 = *s2;
+                    break;
+                }
+            }
+        }
+    }
+
+    if(!cylinder)
+    {
+        return nullptr;
+    }
+
+    // remove the cylinder and spheres from the collision array
+    std::remove(l.collision_array.begin(), l.collision_array.end(), cylinder);
+    std::remove(l.collision_array.begin(), l.collision_array.end(), sphere_1);
+    std::remove(l.collision_array.begin(), l.collision_array.end(), sphere_2);
+    l.collision_array.resize(l.collision_array.size() - 3);
+
+    return cylinder;
 }
 
 bool CollisionModel::Impl::parseCollisionObjects()
 {
+    // construct env collision model
+    if(_model->getLinkId("world") >= 0)
+    {
+        _env_collision = std::make_shared<LinkCollision>(*_model, "world");
+    }
+
     // get urdf links
     std::vector<urdf::LinkSharedPtr> links;
     _model->getUrdf()->getLinks(links);
@@ -103,134 +174,105 @@ bool CollisionModel::Impl::parseCollisionObjects()
             continue;
         }
 
-        // convert urdf collision to fcl shape
-        std::shared_ptr<fcl::CollisionGeometry> shape;
-        Eigen::Affine3d shape_origin;
+        // collision id
+        int coll_id = 0;
 
-        if(auto cylinder = capsule_from_collision(*link))
+        // first parse and remove all capsules
+        while(auto cylinder = capsule_from_collision(*link))
         {
-            std::cout << "adding capsule for " << link->name << std::endl;
-
             auto collisionGeometry =
                 std::dynamic_pointer_cast<urdf::Cylinder>(cylinder->geometry);
 
-            shape = std::make_shared<fcl::Capsule>(collisionGeometry->radius,
-                                                   collisionGeometry->length);
+            Shape::Capsule caps;
+            caps.radius = collisionGeometry->radius;
+            caps.length = collisionGeometry->length;
 
-            shape_origin = toeigen(cylinder->origin);
-
-        }
-        else if(link->collision->geometry->type == urdf::Geometry::CYLINDER)
-        {
-            std::cout << "adding cylinder for " << link->name << std::endl;
-
-            auto collisionGeometry =
-                std::dynamic_pointer_cast<urdf::Cylinder>(link->collision->geometry);
-
-            shape = std::make_shared<fcl::Cylinder>(collisionGeometry->radius,
-                                                    collisionGeometry->length);
-
-            shape_origin = toeigen(link->collision->origin);
-
-            // note: check following line (for capsules it looks to
-            // generate wrong results)
-            // shape_origin.p -= collisionGeometry->length/2.0 * shape_origin.M.UnitZ();
+            addCollisionShape(link->name + "_capsule_" + std::to_string(coll_id++),
+                              link->name,
+                              caps,
+                              toeigen(cylinder->origin),
+                              {},
+                              false);
 
         }
-        else if(link->collision->geometry->type == urdf::Geometry::SPHERE)
+
+        for(auto collision : link->collision_array)
         {
-            std::cout << "adding sphere for " << link->name << std::endl;
 
-            auto collisionGeometry =
-                std::dynamic_pointer_cast<urdf::Sphere>(link->collision->geometry);
-
-            shape = std::make_shared<fcl::Sphere>(collisionGeometry->radius);
-            shape_origin = toeigen(link->collision->origin);
-        }
-        else if ( link->collision->geometry->type == urdf::Geometry::BOX )
-        {
-            std::cout << "adding box for " << link->name << std::endl;
-
-            auto collisionGeometry =
-                std::dynamic_pointer_cast<urdf::Box>(link->collision->geometry);
-
-            shape = std::make_shared<fcl::Box>(collisionGeometry->dim.x,
-                                               collisionGeometry->dim.y,
-                                               collisionGeometry->dim.z);
-
-            shape_origin = toeigen(link->collision->origin);
-
-        }
-        else if(link->collision->geometry->type == urdf::Geometry::MESH)
-        {
-            std::cout << "adding mesh for " << link->name << std::endl;
-
-            auto collisionGeometry =
-                std::dynamic_pointer_cast<urdf::Mesh>(link->collision->geometry);
-
-            auto mesh = shapes::createMeshFromResource(collisionGeometry->filename);
-
-            if(!mesh)
+            if(collision->geometry->type == urdf::Geometry::CYLINDER)
             {
-                std::cout << "Error loading mesh for link " << link->name << std::endl;
-                continue;
+                auto collisionGeometry =
+                    std::dynamic_pointer_cast<urdf::Cylinder>(collision->geometry);
+
+                Shape::Cylinder cyl;
+                cyl.radius = collisionGeometry->radius;
+                cyl.length = collisionGeometry->length;
+
+                addCollisionShape(link->name + "_cylinder_" + std::to_string(coll_id++),
+                                link->name,
+                                cyl,
+                                toeigen(collision->origin),
+                                {},
+                                false);
+
+            }
+            else if(collision->geometry->type == urdf::Geometry::SPHERE)
+            {
+                auto collisionGeometry =
+                    std::dynamic_pointer_cast<urdf::Sphere>(collision->geometry);
+
+                Shape::Sphere sph; 
+                sph.radius = collisionGeometry->radius;
+
+                addCollisionShape(link->name + "_sphere_" + std::to_string(coll_id++),
+                                link->name,
+                                sph,
+                                toeigen(collision->origin),
+                                {},
+                                false);
+            }
+            else if ( collision->geometry->type == urdf::Geometry::BOX )
+            {
+                auto collisionGeometry =
+                    std::dynamic_pointer_cast<urdf::Box>(collision->geometry);
+
+                Shape::Box box;
+                box.size = Eigen::Vector3d(collisionGeometry->dim.x,
+                                        collisionGeometry->dim.y,
+                                        collisionGeometry->dim.z);
+
+                addCollisionShape(link->name + "_box_" + std::to_string(coll_id++),
+                                link->name,
+                                box,
+                                toeigen(collision->origin),
+                                {},
+                                false);
+            }
+            else if(collision->geometry->type == urdf::Geometry::MESH)
+            {
+                auto collisionGeometry =
+                    std::dynamic_pointer_cast<urdf::Mesh>(collision->geometry);
+
+                Shape::Mesh mesh;
+                mesh.filepath = collisionGeometry->filename;
+                mesh.scale = Eigen::Vector3d(collisionGeometry->scale.x,
+                                            collisionGeometry->scale.y,
+                                            collisionGeometry->scale.z);
+                mesh.convex = _options.assume_convex_meshes;
+
+                addCollisionShape(link->name + "_mesh_" + std::to_string(coll_id++),
+                                link->name,
+                                mesh,
+                                toeigen(collision->origin),
+                                {},
+                                false);
             }
 
-            std::vector<fcl::Vec3f> vertices;
-            std::vector<fcl::Triangle> triangles;
-
-            for(unsigned int i = 0; i < mesh->vertex_count; ++i)
-            {
-                fcl::Vec3f v(mesh->vertices[3*i]*collisionGeometry->scale.x,
-                             mesh->vertices[3*i + 1]*collisionGeometry->scale.y,
-                             mesh->vertices[3*i + 2]*collisionGeometry->scale.z);
-
-                vertices.push_back(v);
-            }
-
-            for(unsigned int i = 0; i< mesh->triangle_count; ++i)
-            {
-                fcl::Triangle t(mesh->triangles[3*i],
-                                mesh->triangles[3*i + 1],
-                                mesh->triangles[3*i + 2]);
-
-                triangles.push_back(t);
-            }
-
-            // add the mesh data into the BVHModel structure
-            auto bvhModel = std::make_shared<fcl::BVHModel<fcl::OBBRSS>>();
-            shape = bvhModel;
-            bvhModel->beginModel();
-            bvhModel->addSubModel(vertices, triangles);
-            bvhModel->endModel();
-
-            shape_origin = toeigen(link->collision->origin);
         }
 
-        if(!shape)
-        {
-            std::cerr << "collision type unknown for link " << link->name << std::endl;
-            continue;
-        }
-
-        // compute local axis aligned bounding box (used to discard far apart shapes)
-        shape->computeLocalAABB();
-
-        // save parsed shapes for this link (TBD support multiple shapes)
-        _link_collision_map[link->name]
-            = std::make_shared<LinkCollision>(*_model,
-                                              link->name,
-                                              std::vector{shape},
-                                              std::vector{shape_origin});
     }
 
-    // construct env collision model
-    // TODO put collision elements of link 'world' there?
-    if(_model->getLinkId("world") >= 0)
-    {
-        _env_collision = std::make_shared<LinkCollision>(*_model, "world");
-    }
-
+    
     return true;
 }
 
@@ -480,6 +522,25 @@ bool CollisionModel::Impl::checkSelfCollision(std::vector<int>* coll_pair_ids,
     return ret;
 }
 
+bool CollisionModel::Impl::is_link_movable(string_const_ref link) const
+{
+    auto urdf = _model->getUrdf();
+    auto root = urdf->getRoot();
+    auto urdf_link = urdf->getLink(link);
+
+    while(urdf_link && urdf_link != root)
+    {
+        if(urdf_link->parent_joint && urdf_link->parent_joint->type != urdf::Joint::FIXED)
+        {
+            return true;
+        }
+
+        urdf_link = urdf_link->getParent();
+    }
+
+    return false;
+}
+
 // define helper struct to generate a visitor from a set of lambdas
 template<typename ... Ts>
 struct Overload : Ts ... {
@@ -491,11 +552,12 @@ bool CollisionModel::Impl::addCollisionShape(string_const_ref name,
                                              string_const_ref link,
                                              Shape::Variant shape,
                                              Eigen::Affine3d link_T_shape,
-                                             std::vector<std::string> disabled_collisions)
+                                             std::vector<std::string> disabled_collisions,
+                                             bool user_object)
 {
     // check already exists
     // if so, check if type matches and move it
-    if(_user_object_map.contains(name))
+    if(user_object && _user_object_map.contains(name))
     {
         auto uo = _user_object_map.at(name);
 
@@ -511,14 +573,14 @@ bool CollisionModel::Impl::addCollisionShape(string_const_ref name,
         return true;
     }
 
-    std::shared_ptr<hpp::fcl::CollisionGeometry> fcl_geom;
+    std::shared_ptr<fcl::CollisionGeometry> fcl_geom;
 
     std::cout << "adding shape with name " << name << ", type ";
 
     auto ShapeVisitor = Overload {
         [&](const Shape::Box& box)
         {
-            fcl_geom = std::make_shared<hpp::fcl::Box>(
+            fcl_geom = std::make_shared<fcl::Box>(
                 box.size.x(),
                 box.size.y(),
                 box.size.z()
@@ -530,7 +592,7 @@ bool CollisionModel::Impl::addCollisionShape(string_const_ref name,
         },
         [&](const Shape::Capsule& caps)
         {
-            fcl_geom = std::make_shared<hpp::fcl::Capsule>(
+            fcl_geom = std::make_shared<fcl::Capsule>(
                 caps.radius,
                 caps.length
                 );
@@ -541,7 +603,7 @@ bool CollisionModel::Impl::addCollisionShape(string_const_ref name,
         },
         [&](const Shape::Cylinder& cyl)
         {
-            fcl_geom = std::make_shared<hpp::fcl::Cylinder>(
+            fcl_geom = std::make_shared<fcl::Cylinder>(
                 cyl.radius,
                 cyl.length
                 );
@@ -552,7 +614,7 @@ bool CollisionModel::Impl::addCollisionShape(string_const_ref name,
         },
         [&](const Shape::Halfspace& hs)
         {
-            fcl_geom = std::make_shared<hpp::fcl::Halfspace>(
+            fcl_geom = std::make_shared<fcl::Halfspace>(
                 hs.normal,
                 hs.d
                 );
@@ -593,6 +655,12 @@ bool CollisionModel::Impl::addCollisionShape(string_const_ref name,
             bvhModel->beginModel(vertices.size(), triangles.size());
             bvhModel->addSubModel(vertices, triangles);
             bvhModel->endModel();
+
+            if(mr.convex)
+            {
+                bvhModel->buildConvexHull(true, "Qt");
+                fcl_geom = bvhModel->convex;
+            }
 
             std::cout << "mesh raw";
 
@@ -639,18 +707,24 @@ bool CollisionModel::Impl::addCollisionShape(string_const_ref name,
             bvhModel->addSubModel(vertices, triangles);
             bvhModel->endModel();
 
+            if(m.convex)
+            {
+                bvhModel->buildConvexHull(true, "Qt");
+                fcl_geom = bvhModel->convex;
+            }
+
             std::cout << "mesh";
 
             return true;
         },
         [&](const Shape::Octree& oct)
         {
-            // fcl_geom = std::any_cast<std::shared_ptr<hpp::fcl::OcTree>>(oct.data);
+            // fcl_geom = std::any_cast<std::shared_ptr<fcl::OcTree>>(oct.data);
             return false;
         },
         [&](const Shape::Sphere& sp)
         {
-            fcl_geom = std::make_shared<hpp::fcl::Sphere>(sp.radius);
+            fcl_geom = std::make_shared<fcl::Sphere>(sp.radius);
             std::cout << "sphere";
             return true;
         }
@@ -715,11 +789,21 @@ bool CollisionModel::Impl::addCollisionShape(string_const_ref name,
     link_collision->disabled_collisions.back().insert(disabled_collisions.begin(),
                                                       disabled_collisions.end());
 
-    // add to user map
-    _user_object_map[name] = {link_collision, fcl_obj, shape};
+    // check if link is moveable: if not, disable collisions with "world"
+    if(!is_link_movable(link))
+    {
+        link_collision->disabled_collisions.back().insert("world");
+    }
 
-    // re-generate pairs
-    updateCollisionPairData();
+    // add to user object map
+    if(user_object) 
+    {
+        // add to user map
+        _user_object_map[name] = {link_collision, fcl_obj, shape};
+
+        // re-generate pairs
+        updateCollisionPairData();
+    }
 
 
     return true;
@@ -827,8 +911,9 @@ void CollisionModel::Impl::set_distance_called()
     _cached_computation |= Distance;
 }
 
-CollisionModel::CollisionModel(ModelInterface::ConstPtr model):
-    impl(std::make_unique<Impl>(model, *this))
+CollisionModel::CollisionModel(ModelInterface::ConstPtr model,
+                               Options opt):
+    impl(std::make_unique<Impl>(model, opt, *this))
 {
 
 }
@@ -851,7 +936,7 @@ bool CollisionModel::addCollisionShape(string_const_ref name,
                                        Eigen::Affine3d link_T_shape,
                                        std::vector<std::string> disabled_collisions)
 {
-    if(impl->addCollisionShape(name, link, shape, link_T_shape, disabled_collisions))
+    if(impl->addCollisionShape(name, link, shape, link_T_shape, disabled_collisions, true))
     {
         update();
         return true;
@@ -1076,8 +1161,12 @@ void CollisionModel::computeDistance(Eigen::VectorXd& d,
         {
             break;
         }
-
+        
+        auto tic = std::chrono::steady_clock::now();
         item.compute_distance(*impl->_model, threshold);
+        auto toc = std::chrono::steady_clock::now();
+        std::chrono::duration<double> duration = toc - tic;
+        // std::cout << "Collision computation for pair (" << item.link1->link_name << ", " << item.link2->link_name << ") took " << duration.count() << " seconds" << std::endl;
     }
 
     impl->set_distance_called();
@@ -1197,7 +1286,7 @@ void CollisionModel::Impl::CollisionPairData::compute_distance(const ModelInterf
     if(threshold > 0 && aabb_dist > threshold)
     {
         dresult.min_distance = aabb_dist;
-        dresult.normal = (dresult.nearest_points[1]-dresult.nearest_points[0]).normalized();
+        dresult.normal = (dresult.nearest_points[1] - dresult.nearest_points[0]).normalized();
         return;
     }
 
@@ -1205,7 +1294,7 @@ void CollisionModel::Impl::CollisionPairData::compute_distance(const ModelInterf
      * D435_head_camera_link vs arm1_4
      * 0.2893013111227844  0.6620163446598711 -0.8569489983182211   0.3255094250551769 -0.04220620018335156  -0.7014379749636802   0.6326507868841883
      * 0.3030546655518612  0.6643892127068073 -0.8234177007679618  0.05331201346441317    0.988241826570244  -0.1400101570343576 -0.03054631507551606
-     * test_collision: /home/iit.local/alaurenzi/code/core_ws/src/hpp-fcl/src/narrowphase/gjk.cpp:339: void hpp::fcl::details::getSupportFuncTpl(const MinkowskiDiff&, const hpp::fcl::Vec3f&, bool, hpp::fcl::Vec3f&, hpp::fcl::Vec3f&, hpp::fcl::support_func_guess_t&, MinkowskiDiff::ShapeData*) [with Shape0 = hpp::fcl::Box; Shape1 = hpp::fcl::Capsule; bool TransformIsIdentity = false; hpp::fcl::Vec3f = Eigen::Matrix<double, 3, 1>; hpp::fcl::support_func_guess_t = Eigen::Matrix<int, 2, 1>]: Assertion `NeedNormalizedDir || dir.cwiseAbs().maxCoeff() >= 1e-6' failed.
+     * test_collision: /home/iit.local/alaurenzi/code/core_ws/src/hpp-fcl/src/narrowphase/gjk.cpp:339: void fcl::details::getSupportFuncTpl(const MinkowskiDiff&, const fcl::Vec3f&, bool, fcl::Vec3f&, fcl::Vec3f&, fcl::support_func_guess_t&, MinkowskiDiff::ShapeData*) [with Shape0 = fcl::Box; Shape1 = fcl::Capsule; bool TransformIsIdentity = false; fcl::Vec3f = Eigen::Matrix<double, 3, 1>; fcl::support_func_guess_t = Eigen::Matrix<int, 2, 1>]: Assertion `NeedNormalizedDir || dir.cwiseAbs().maxCoeff() >= 1e-6' failed.
      * Aborted (core dumped)
      */
 
@@ -1222,6 +1311,7 @@ void CollisionModel::Impl::CollisionPairData::compute_distance(const ModelInterf
          drequest,
          dresult);
 
+
     // hack to fix wrong distance when in deep collision
     if(dresult.min_distance < 0)
     {
@@ -1229,17 +1319,17 @@ void CollisionModel::Impl::CollisionPairData::compute_distance(const ModelInterf
     }
 
     // hack fix normal bug gjk
-    if(dresult.normal.norm() < 1e-6)
-    {
-        dresult.normal = (dresult.nearest_points[1]-dresult.nearest_points[0]).normalized();
-    }
+    // if(dresult.normal.norm() < 1e-6)
+    // {
+    //     dresult.normal = (dresult.nearest_points[1]-dresult.nearest_points[0]).normalized();
+    // }
 
     //hack to fix normal direction when not pointing from o1 to o2
-    double dir = dresult.normal.dot(dresult.nearest_points[1] - dresult.nearest_points[0]);
-    if(dir < 1e-6)
-    {
-        dresult.normal = -dresult.normal;
-    }
+    // double dir = dresult.normal.dot(dresult.nearest_points[1] - dresult.nearest_points[0]);
+    // if(dir < 1e-6)
+    // {
+    //     dresult.normal = -dresult.normal;
+    // }
 
 }
 
@@ -1428,4 +1518,9 @@ void CollisionModel::Impl::LinkCollision::setEnabled(CollisionObjectPtr co, bool
 
     enabled[idx] = flag;
 
+}
+
+CollisionModel::Options::Options():
+    assume_convex_meshes(false)
+{
 }

@@ -1,5 +1,5 @@
-#ifndef ROBOTINTERFACE2_H
-#define ROBOTINTERFACE2_H
+#ifndef XBOT2IFC_ROBOTINTERFACE2_H
+#define XBOT2IFC_ROBOTINTERFACE2_H
 
 #include "xbotinterface2.h"
 

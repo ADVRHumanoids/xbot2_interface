@@ -17,8 +17,8 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>
 */
 
-#ifndef __XBOT_RT_LOGGER_HPP__
-#define __XBOT_RT_LOGGER_HPP__
+#ifndef XBOT2IFC_LOGGER_HPP__
+#define XBOT2IFC_LOGGER_HPP__
 
 #include "common/visibility.h"
 

@@ -1,6 +1,18 @@
 
-find_package(hpp-fcl REQUIRED)
+find_package(coal QUIET)
+find_package(hpp-fcl QUIET)
 find_package(geometric_shapes REQUIRED)
+
+if(TARGET coal::coal)
+    message(STATUS "Using coal for collision detection")
+    add_definitions(-DHPP_FCL_COAL)
+    set(FCL_TARGET coal::coal)
+elseif(NOT TARGET hpp-fcl::hpp-fcl)
+    message(FATAL_ERROR "Could not find coal or hpp-fcl")
+else()
+    message(STATUS "Using hpp-fcl for collision detection")
+    set(FCL_TARGET hpp-fcl::hpp-fcl)
+endif()
 
 add_library(collision SHARED
     collision.cpp
@@ -11,7 +23,7 @@ add_library(xbot2_interface::collision ALIAS collision)
 target_link_libraries(collision
     PRIVATE
     fmt::fmt-header-only
-    hpp-fcl::hpp-fcl
+    ${FCL_TARGET}
     ${geometric_shapes_LIBRARIES}
     -Wl,--exclude-libs,ALL
     PUBLIC

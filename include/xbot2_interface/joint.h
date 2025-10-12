@@ -1,5 +1,5 @@
-#ifndef JOINT_H
-#define JOINT_H
+#ifndef XBOT2IFC_JOINT_H
+#define XBOT2IFC_JOINT_H
 
 #include <urdf_model/joint.h>
 

@@ -1,5 +1,5 @@
-#ifndef XBOTINTERFACE2_H
-#define XBOTINTERFACE2_H
+#ifndef XBOT2IFC_XBOTINTERFACE2_H
+#define XBOT2IFC_XBOTINTERFACE2_H
 
 #include <any>
 #include <urdf_model/model.h>
@@ -9,6 +9,7 @@
 #include "joint.h"
 #include "imu.h"
 #include "force_torque.h"
+#include "gripper.h"
 
 namespace XBot {
 
@@ -167,6 +168,10 @@ public:
     std::map<std::string, ForceTorqueSensor::ConstPtr> getForceTorque() const;
 
     ForceTorqueSensor::ConstPtr getForceTorque(string_const_ref name) const;
+
+    std::map<std::string, Gripper::Ptr> getGripper() const;
+
+    Gripper::Ptr getGripper(string_const_ref name) const;
 
     bool addSensor(Sensor::Ptr s);
 
