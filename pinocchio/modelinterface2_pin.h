@@ -47,6 +47,8 @@ public:
 
     VecConstRef computeInverseDynamics() const override;
 
+    void computeInverseDynamicsDerivative(Eigen::MatrixXd& dtau_dq, Eigen::MatrixXd& dtau_dv, Eigen::MatrixXd& dtau_da) override;
+
     VecConstRef computeGravityCompensation() const override;
 
     VecConstRef computeForwardDynamics() const override;
@@ -114,7 +116,8 @@ private:
         ComNoAcc = 128,
         Crba = 256,
         Minv = 512,
-        CCrba = 1024
+        CCrba = 1024,
+        dRnea = 2048
     };
 
     mutable uint16_t _cached_computation;

@@ -361,6 +361,8 @@ public:
 
     void computeInverseDynamics(Eigen::VectorXd& rnea) const;
 
+    virtual void computeInverseDynamicsDerivative(Eigen::MatrixXd& dtau_dq, Eigen::MatrixXd& dtau_dv, Eigen::MatrixXd& dtau_da);
+
     void computeGravityCompensation(Eigen::VectorXd& gcomp) const;
 
     void computeNonlinearTerm(Eigen::VectorXd& h) const;

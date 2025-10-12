@@ -1561,6 +1561,11 @@ void XBotInterface::computeInverseDynamics(Eigen::VectorXd& rnea) const
     rnea = computeInverseDynamics();
 }
 
+void XBotInterface::computeInverseDynamicsDerivative(Eigen::MatrixXd &dtau_dq, Eigen::MatrixXd &dtau_dv, Eigen::MatrixXd &dtau_da)
+{
+    throw std::runtime_error("computeInverseDynamicsDerivative() not implemented!");
+}
+
 void XBotInterface::computeGravityCompensation(Eigen::VectorXd& gcomp) const
 {
     gcomp = computeGravityCompensation();
