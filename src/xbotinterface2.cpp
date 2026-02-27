@@ -2127,8 +2127,6 @@ void XBot::XBotInterface::Impl::parse_grippers()
     
     auto srdf_ee = _srdf->getEndEffectors();
 
-    std::cout << "Found " << srdf_ee.size() << " end-effectors in the SRDF\n";
-
     for(auto ee : srdf_ee)
     {
         _sensor_map[ee.name_] = _gripper_map[ee.name_] = 
