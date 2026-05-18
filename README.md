@@ -1,3 +1,5 @@
+[![Build and Test (Noble-ROS2)](https://github.com/ADVRHumanoids/xbot2_interface/actions/workflows/build-and-test-ros2-noble.yml/badge.svg)](https://github.com/ADVRHumanoids/xbot2_interface/actions/workflows/build-and-test-ros2-noble.yml) [![Build and Test (Jammy-ROS2)](https://github.com/ADVRHumanoids/xbot2_interface/actions/workflows/build-and-test-ros2-jammy.yml/badge.svg)](https://github.com/ADVRHumanoids/xbot2_interface/actions/workflows/build-and-test-ros2-jammy.yml)
+
 # xbot2_interface
 
 This package replaces the good ole' [XBotInterface](https://github.com/advrhumanoids/xbotinterface) 
