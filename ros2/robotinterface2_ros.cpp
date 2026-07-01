@@ -65,9 +65,9 @@ RobotInterface2Ros::RobotInterface2Ros(std::unique_ptr<ModelInterface> model):
                            std::chrono::nanoseconds(msg->header.stamp.nanosec);
 
             imu0->setMeasurement(
-                Eigen::Vector3d::Map(&msg->angular_velocity.x),
-                Eigen::Vector3d::Map(&msg->linear_acceleration.x),
-                Eigen::Quaterniond(&msg->orientation.x),
+                Eigen::Vector3d(msg->angular_velocity.x, msg->angular_velocity.y, msg->angular_velocity.z),
+                Eigen::Vector3d(msg->linear_acceleration.x, msg->linear_acceleration.y, msg->linear_acceleration.z),
+                Eigen::Quaterniond(msg->orientation.w, msg->orientation.x, msg->orientation.y, msg->orientation.z),
                 ts);
         };
 
@@ -180,6 +180,12 @@ bool RobotInterface2Ros::move_impl()
 
     cmd.header.stamp = _node->get_clock()->now();
 
+    // opt-in to timestamp feedback in cmd for better synchronization with robot state
+    // note: cmd timestamp is cleared in RobotInterface::move() after move_impl() returns,
+    // must be explicitly set by user code at each control loop
+    cmd.stamp_rx_feedback = getCommandTimestamp().time_since_epoch().count();
+
+    // reserve space to avoid reallocations 
     cmd.name.reserve(nj);
     cmd.position.reserve(nj);
     cmd.velocity.reserve(nj);
@@ -267,6 +273,8 @@ void RobotInterface2Ros::on_js_recv(JointState::ConstSharedPtr msg)
 {
     _js_received = true;
 
+    _oldest_stamp = std::numeric_limits<uint64_t>::max();
+
     for(size_t i = 0; i < msg->name.size(); i++)
     {
         auto j = getUniversalJoint(msg->name[i]);
@@ -281,6 +289,9 @@ void RobotInterface2Ros::on_js_recv(JointState::ConstSharedPtr msg)
         {
             continue;
         }
+        
+        // handle timestamp
+        _oldest_stamp = std::min(_oldest_stamp, msg->stamp[i]);
 
         // nq could be =2 for SO(2), so we use "minimal" versions
         j->setJointPositionMinimal(msg->link_position[i]);
@@ -298,7 +309,7 @@ void RobotInterface2Ros::on_js_recv(JointState::ConstSharedPtr msg)
 
     }
 
-    wall_time stamp = wall_time(msg->header.stamp.sec * 1s + msg->header.stamp.nanosec * 1ns);
+    wall_time stamp = wall_time(_oldest_stamp * 1ns);
     markAsUpdated(stamp);
 }
 

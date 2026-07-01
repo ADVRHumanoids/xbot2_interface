@@ -342,11 +342,17 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
         .def("getDamping",
              py::overload_cast<>(&RobotInterface::getDamping, py::const_))
         .def("setPositionReference",
-             &RobotInterface::setPositionReference)
+             py::overload_cast<VecConstRef>(&RobotInterface::setPositionReference))
+        .def("setPositionReference",
+             py::overload_cast<const JointNameMap&>(&RobotInterface::setPositionReference))
         .def("setVelocityReference",
-             &RobotInterface::setVelocityReference)
+             py::overload_cast<VecConstRef>(&RobotInterface::setVelocityReference))
+        .def("setVelocityReference",
+             py::overload_cast<const JointNameMap&>(&RobotInterface::setVelocityReference))
         .def("setEffortReference",
-             &RobotInterface::setEffortReference)
+             py::overload_cast<VecConstRef>(&RobotInterface::setEffortReference))
+        .def("setEffortReference",
+             py::overload_cast<const JointNameMap&>(&RobotInterface::setEffortReference))
         .def("setStiffness",
               py::overload_cast<VecConstRef>(&RobotInterface::setStiffness))
         .def("setStiffness",
@@ -377,9 +383,13 @@ PYBIND11_MODULE(pyxbot2_interface, m) {
                                py::overload_cast<>(&RobotInterface::getStiffness, py::const_))
         .def_property_readonly("d",
                                py::overload_cast<>(&RobotInterface::getDamping, py::const_))
-        .def("getTimestamp",
-             &RobotInterface::getTimestamp,
+        .def("getStateTimestamp",
+             &RobotInterface::getStateTimestamp,
              py::arg("joint_states_only") = false)
+        .def("setCommandTimestamp",
+             &RobotInterface::setCommandTimestamp)
+        .def("getCommandTimestamp",
+             &RobotInterface::getCommandTimestamp)
         .def("isUpdated",
              &RobotInterface::isUpdated,
              py::arg("joint_states_only") = false)

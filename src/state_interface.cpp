@@ -210,6 +210,12 @@ void ReadCmdInterface<Derived>::setPositionReference(VecConstRef q)
                  derived().impl->_cmd.ctrlset);
 }
 
+GENERATE_MAP_SETTER_IMPL(ReadCmdInterface, PositionReference, _cmd.qcmd, Q)
+
+GENERATE_MAP_SETTER_IMPL(ReadCmdInterface, VelocityReference, _cmd.vcmd, V)
+
+GENERATE_MAP_SETTER_IMPL(ReadCmdInterface, EffortReference, _cmd.taucmd, V)
+
 GENERATE_GETTER_IMPL(ReadCmdInterface, MotorPosition, _state.qmot)
 
 GENERATE_GETTER_IMPL(ReadCmdInterface, MotorVelocity, _state.vmot)

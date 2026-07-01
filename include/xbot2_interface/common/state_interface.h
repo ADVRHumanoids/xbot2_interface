@@ -134,6 +134,7 @@ struct XBOT2IFC_API ReadCmdInterface
     void getPositionReferenceFeedback(Eigen::VectorXd& q) const;
 
     void setPositionReference(VecConstRef q);  // sets cmd to this interface
+    void setPositionReference(const JointNameMap& q);  // sets cmd to this interface
 
     VecConstRef getMotorVelocity() const;
     void getMotorVelocity(Eigen::VectorXd& q) const;
@@ -145,6 +146,7 @@ struct XBOT2IFC_API ReadCmdInterface
     void getVelocityReferenceFeedback(Eigen::VectorXd& q) const;
 
     void setVelocityReference(VecConstRef q);  // sets cmd to this interface
+    void setVelocityReference(const JointNameMap& q);  // sets cmd to this interface
 
     VecConstRef getEffortReference() const;  // from this interface
     void getEffortReference(Eigen::VectorXd& q) const;
@@ -153,6 +155,7 @@ struct XBOT2IFC_API ReadCmdInterface
     void getEffortReferenceFeedback(Eigen::VectorXd& q) const;
 
     void setEffortReference(VecConstRef q);  // sets cmd to this interface
+    void setEffortReference(const JointNameMap& q);  // sets cmd to this interface
 
     VecConstRef getStiffnessDesired() const;  // from this interface
     void getStiffnessDesired(Eigen::VectorXd& q) const;

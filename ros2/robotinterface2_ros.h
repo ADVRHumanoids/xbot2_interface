@@ -59,6 +59,8 @@ private:
 
     Eigen::VectorXd qtmp, vtmp;
 
+    uint64_t _oldest_stamp = 0;
+
 
 };
 

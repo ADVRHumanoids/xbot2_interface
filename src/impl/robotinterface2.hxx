@@ -25,6 +25,10 @@ public:
 
     wall_time getTimestamp() const;
 
+    void setCommandTimestamp(wall_time timestamp);
+
+    wall_time getCommandTimestamp() const;
+
     friend RobotInterface;
 
 private:
@@ -37,6 +41,7 @@ private:
 
     //
     wall_time _js_timestamp;
+    wall_time _cmd_timestamp;
     bool _is_updated = false;
 
 };

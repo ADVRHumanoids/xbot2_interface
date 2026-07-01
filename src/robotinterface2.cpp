@@ -29,7 +29,15 @@ bool RobotInterface::sense(bool update_model)
 
 bool RobotInterface::move()
 {
-    return move_impl();
+    // run child class move implementation
+    bool ret = move_impl();
+
+    // clear cmd timestamp
+    setCommandTimestamp(wall_time());
+
+    //
+    return ret;
+
 }
 
 RobotInterface::UniquePtr RobotInterface::getRobot(ConfigOptions opt)
@@ -239,7 +247,7 @@ bool RobotInterface::isUpdated(bool joint_states_only) const
 
 }
 
-wall_time RobotInterface::getTimestamp(bool joint_states_only) const
+wall_time RobotInterface::getStateTimestamp(bool joint_states_only) const
 {
     auto ts = r_impl->getTimestamp();
 
@@ -254,6 +262,21 @@ wall_time RobotInterface::getTimestamp(bool joint_states_only) const
     }
 
     return ts;
+}
+
+wall_time RobotInterface::getTimestamp(bool joint_states_only) const
+{
+    return getStateTimestamp(joint_states_only);
+}
+
+void RobotInterface::setCommandTimestamp(wall_time timestamp)
+{
+    r_impl->setCommandTimestamp(timestamp);
+}
+
+wall_time RobotInterface::getCommandTimestamp() const
+{
+    return r_impl->getCommandTimestamp();
 }
 
 RobotInterface::~RobotInterface()
@@ -340,6 +363,16 @@ bool RobotInterface::Impl::isUpdated() const
 wall_time RobotInterface::Impl::getTimestamp() const
 {
     return _js_timestamp;
+}
+
+void RobotInterface::Impl::setCommandTimestamp(wall_time timestamp)
+{
+    _cmd_timestamp = timestamp; 
+}
+
+wall_time RobotInterface::Impl::getCommandTimestamp() const
+{
+    return _cmd_timestamp;
 }
 
 Eigen::Vector6d XBot::RobotInterface::getVelocityTwist(int link_id) const

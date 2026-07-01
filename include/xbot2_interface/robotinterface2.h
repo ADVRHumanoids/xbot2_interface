@@ -63,7 +63,14 @@ public:
 
     bool isUpdated(bool joint_states_only = false) const;
 
+    wall_time getStateTimestamp(bool joint_states_only = false) const;
+
+    [[deprecated("Use getStateTimestamp instead")]]
     wall_time getTimestamp(bool joint_states_only = false) const;
+
+    void setCommandTimestamp(wall_time timestamp);
+
+    wall_time getCommandTimestamp() const;
 
     virtual ~RobotInterface();
 
