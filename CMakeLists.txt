@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.20)
 
 project(xbot2_interface LANGUAGES CXX VERSION 1.2.0)
 
@@ -14,6 +14,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_INSTALL_RPATH $ORIGIN)
 set(CMAKE_BUILD_RPATH "$ORIGIN;$ORIGIN/pinocchio;$ORIGIN/rbdl;$ORIGIN/ros")
+
+set(Boost_USE_DEBUG_RUNTIME OFF)  # hack: needed to avoid boost configuration errors
 
 find_package(urdf REQUIRED)
 find_package(urdfdom REQUIRED)

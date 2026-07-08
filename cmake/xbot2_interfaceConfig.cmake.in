@@ -2,9 +2,11 @@
 
 include(CMakeFindDependencyMacro)
 
+set(Boost_USE_DEBUG_RUNTIME OFF)  # hack: needed to avoid boost configuration errors
 find_dependency(urdf)
 find_dependency(srdfdom)
 find_dependency(Eigen3)
+
 
 set(export_config_name "@PROJECT_NAME@")
 set_and_check(${export_config_name}_TARGETS
