@@ -275,6 +275,8 @@ void RobotInterface2Ros::on_js_recv(JointState::ConstSharedPtr msg)
 
     _oldest_stamp = std::numeric_limits<uint64_t>::max();
 
+    const bool has_stamp_support = (msg->stamp.size() == msg->name.size());
+
     for(size_t i = 0; i < msg->name.size(); i++)
     {
         auto j = getUniversalJoint(msg->name[i]);
@@ -291,7 +293,10 @@ void RobotInterface2Ros::on_js_recv(JointState::ConstSharedPtr msg)
         }
         
         // handle timestamp
-        _oldest_stamp = std::min(_oldest_stamp, msg->stamp[i]);
+        if(has_stamp_support)
+        {
+            _oldest_stamp = std::min(_oldest_stamp, msg->stamp[i]);
+        }
 
         // nq could be =2 for SO(2), so we use "minimal" versions
         j->setJointPositionMinimal(msg->link_position[i]);
