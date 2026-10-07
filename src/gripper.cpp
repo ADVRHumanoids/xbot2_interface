@@ -75,6 +75,12 @@ void Gripper::setEffortReference(double q, ClosureResultFn callback, double time
     }
 }
 
+void Gripper::clearPendingCommands()
+{
+    impl->closure_ref.reset();
+    impl->effort_ref.reset();
+}
+
 int Gripper::getNumPendingCallbacks() const
 {
     return impl->callbacks.size();

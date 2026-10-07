@@ -110,57 +110,38 @@ RobotInterface2Ros::RobotInterface2Ros(std::unique_ptr<ModelInterface> model):
     {
 	    auto gr0 = gr;  // some compilers cannot capture structured bindings...
 
-        struct _GrHistory {
-            wall_time next_meas_time;
-            double last_closure = -666;
-        };
-
-        auto _gr_history = std::make_shared<_GrHistory>();
-	    
-        auto cb = [gr0, _gr_history](JointStateSM::ConstSharedPtr msg)
+        auto previous_ready = std::make_shared<std::optional<bool>>();
+        auto cb = [gr0, previous_ready](GripperState::ConstSharedPtr msg)
         {
+            const auto& joint_state = msg->joint_state;
+            if(joint_state.position.empty() || joint_state.effort.empty())
+            {
+                return;
+            }
+
             wall_time ts = wall_time() +
                            std::chrono::seconds(msg->header.stamp.sec) +
                            std::chrono::nanoseconds(msg->header.stamp.nanosec);
 
-            double closure = msg->position[0];
-
-            bool motion_ended = false;
-
-            if(ts > _gr_history->next_meas_time)
-            {
-                // force two consecutive measures at least 666ms apart
-                // and while there are pending callbacks
-                if(gr0->getNumPendingCallbacks() == 0)
-                {
-                    _gr_history->last_closure = -666;
-                }
-
-                _gr_history->next_meas_time = ts + 666ms;
-                
-                if(std::fabs(_gr_history->last_closure - closure) < 0.01)
-                {
-                    motion_ended = true;
-                }
-
-                _gr_history->last_closure = closure;
-            }
+            // The first valid sample establishes the baseline; only a
+            // subsequent busy-to-ready transition signals completion.
+            const bool motion_ended = previous_ready->has_value() &&
+                !**previous_ready && msg->is_ready;
+            *previous_ready = msg->is_ready;
 
             gr0->setMeasurement(
-                msg->position[0], msg->effort[0], motion_ended,
+                joint_state.position[0], joint_state.effort[0], motion_ended,
                 ts);
         };
 
-        auto sub = _node->create_subscription<JointStateSM>("xbotcore/gripper/" + name + "/state",
+        auto sub = _node->create_subscription<GripperState>("xbotcore/gripper/" + name + "/state",
                                              rclcpp::SensorDataQoS().keep_last(1),
                                              cb);
 
         _subs.push_back(sub);
 
-        auto pub = _node->create_publisher<JointStateSM>("xbotcore/gripper/" + name + "/command",
-                                            1);
-
-        _gripper_cmd[gr] = pub;
+        _gripper_cmd[gr] = _node->create_client<SetGripperCommand>(
+            "xbotcore/gripper/" + name + "/set_command");
     }
 
     
@@ -249,24 +230,59 @@ bool RobotInterface2Ros::move_impl()
         _base_cmd_pub->publish(tf2::toMsg(v));
     }
 
-    // handle gripprs
-    for(auto [gr, pub] : _gripper_cmd)
+    // Send each pending gripper command once, without blocking the control loop.
+    bool gripper_commands_sent = true;
+    for(const auto& [gr, client] : _gripper_cmd)
     {
-        JointStateSM msg;
-        msg.header.stamp = cmd.header.stamp;
-        msg.name = {gr->getName()};
-        if(auto cl = gr->getClosureReference())
+        // Release requests whose server never responded.
+        if(client->prune_requests_older_than(std::chrono::system_clock::now() - 5s) > 0)
         {
-            msg.position = {*cl};
+            RCLCPP_WARN(_node->get_logger(), "Gripper '%s' command response timed out",
+                        gr->getName().c_str());
         }
-        if(auto ef = gr->getEffortReference())
+
+        const auto closure = gr->getClosureReference();
+        const auto effort = gr->getEffortReference();
+        if(!closure && !effort)
         {
-            msg.effort = {*ef};
+            continue;
         }
-        pub->publish(msg);
+
+        if(!client->service_is_ready())
+        {
+            gripper_commands_sent = false;
+            continue;
+        }
+
+        auto req = std::make_shared<SetGripperCommand::Request>();
+        if(closure)
+        {
+            req->cmd = SetGripperCommand::Request::CMD_MOVE;
+            req->target_position = *closure;
+        }
+        else
+        {
+            req->cmd = SetGripperCommand::Request::CMD_GRIP;
+            req->target_force = *effort;
+        }
+        // Gripper currently has no velocity reference; use the HAL default.
+        req->target_velocity = 0.0;
+
+        client->async_send_request(req,
+            [logger = _node->get_logger(), name = gr->getName()](
+                rclcpp::Client<SetGripperCommand>::SharedFuture future)
+            {
+                const auto res = future.get();
+                if(!res->success)
+                {
+                    RCLCPP_WARN(logger, "Gripper '%s' command rejected: %s",
+                                name.c_str(), res->message.c_str());
+                }
+            });
+        gr->clearPendingCommands();
     }
 
-    return true;
+    return gripper_commands_sent;
 }
 
 void RobotInterface2Ros::on_js_recv(JointState::ConstSharedPtr msg)

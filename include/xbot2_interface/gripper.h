@@ -36,6 +36,8 @@ public:
 
     std::optional<double> getEffortReference() const;
 
+    void clearPendingCommands();
+
     // used internally to update state
     void setMeasurement(double closure, double effort, bool motion_ended,
                         wall_time ts);
