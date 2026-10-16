@@ -317,11 +317,19 @@ void RobotInterface2Ros::on_js_recv(JointState::ConstSharedPtr msg)
         // nq could be =2 for SO(2), so we use "minimal" versions
         j->setJointPositionMinimal(msg->link_position[i]);
 
+        j->setMotorPositionMinimal(msg->motor_position[i]);
+
         j->setPositionReferenceFeedbackMinimal(msg->position_reference[i]);
 
         j->setJointVelocity(msg->link_velocity[i]);
 
+        j->setMotorVelocity(msg->motor_velocity[i]);
+
+        j->setVelocityReferenceFeedback(msg->velocity_reference[i]);
+
         j->setJointEffort(msg->effort[i]);
+
+        j->setEffortReferenceFeedback(msg->effort_reference[i]);
 
         j->setStiffnessFeedback(msg->stiffness[i]);
 
