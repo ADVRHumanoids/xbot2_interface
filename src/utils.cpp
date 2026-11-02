@@ -3,6 +3,9 @@
 #include <srdfdom/model.h>
 #include <srdfdom/srdf_writer.h>
 #include <sstream>
+#ifdef XBOT2IFC_URDFDOM_NO_EXPORT
+#include "urdf_export_compat.h"
+#endif
 
 
 Eigen::Matrix3d XBot::Utils::rpyToRotationMatrix(Eigen::Ref<const Eigen::Vector3d> rpy)
@@ -55,7 +58,12 @@ std::string XBot::Utils::urdfToString(const urdf::ModelInterface &urdf)
 
     std::string urdf_str;
 
-#ifdef XBOT2IFC_URDFDOM_USES_TINIXML2
+#ifdef XBOT2IFC_URDFDOM_NO_EXPORT
+    auto tiXmlDoc = XBot::detail::exportUrdf(urdf);
+    tinyxml2::XMLPrinter printer;
+    tiXmlDoc->Accept(&printer);
+    urdf_str = printer.CStr();
+#elif defined(XBOT2IFC_URDFDOM_USES_TINIXML2)
     auto tiXmlDoc(urdf::exportURDF(urdf));
     tinyxml2::XMLPrinter printer;
     tiXmlDoc->Accept(&printer);

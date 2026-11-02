@@ -75,6 +75,19 @@ if(urdfdom_VERSION_MAJOR GREATER_EQUAL 4)
     add_definitions(-DXBOT2IFC_URDFDOM_USES_TINIXML2)
 endif()
 
+if(urdfdom_VERSION VERSION_GREATER_EQUAL 5)
+    find_package(tinyxml2 REQUIRED)
+    target_sources(xbot2_interface PRIVATE src/urdf_export_compat.cpp)
+    target_link_libraries(xbot2_interface PRIVATE tinyxml2::tinyxml2)
+    target_compile_definitions(xbot2_interface PRIVATE XBOT2IFC_URDFDOM_NO_EXPORT)
+    if(urdfdom_VERSION VERSION_GREATER_EQUAL 5.1)
+        target_compile_definitions(xbot2_interface PRIVATE XBOT2IFC_URDFDOM_HAS_CAPSULE)
+    endif()
+    if(urdfdom_VERSION VERSION_GREATER_EQUAL 6)
+        target_compile_definitions(xbot2_interface PRIVATE XBOT2IFC_URDFDOM_HAS_EXTENDED_LIMITS)
+    endif()
+endif()
+
 target_compile_options(xbot2_interface
     PUBLIC
     PRIVATE

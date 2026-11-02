@@ -46,6 +46,10 @@ function(add_test_executable name)
 endfunction()
 
 ## test suite
+if(urdfdom_VERSION VERSION_GREATER_EQUAL 6)
+    add_test_executable(test_urdf_export)
+endif()
+
 add_test_executable(test_parser)
 
 add_test_executable(test_parametrization)
