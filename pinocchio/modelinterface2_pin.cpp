@@ -52,7 +52,7 @@ void ModelInterface2Pin::update_impl()
     for(const auto& [unused, ab] : _attached_body_map)
     {
         // restore original inertia
-        _mdl.inertias[ab.frame.parent] = _mdl_orig.inertias[ab.frame.parent];
+        _mdl.inertias[ab.frame.parentJoint] = _mdl_orig.inertias[ab.frame.parentJoint];
 
         // update placement
         _mdl.frames[ab.frame_idx].placement = ab.frame.placement;
@@ -61,8 +61,7 @@ void ModelInterface2Pin::update_impl()
     for(const auto& [unused, ab] : _attached_body_map)
     {
         // update inertia
-        _mdl.inertias[ab.frame.parent] += ab.frame.placement.act(ab.frame.inertia);
-
+        _mdl.inertias[ab.frame.parentJoint] += ab.frame.placement.act(ab.frame.inertia);
     }
 
     // compute fk
@@ -159,18 +158,18 @@ int ModelInterface2Pin::addFixedLink(string_const_ref link_name,
 
     // add frame
     pinocchio::Frame frame;
-    frame.parent = _mdl.getJointId(movable_joint->name);
+    frame.parentJoint = _mdl.getJointId(movable_joint->name);
     frame.placement.translation() = m_pose.translation();
     frame.placement.rotation() = m_pose.linear();
     frame.inertia.mass() = mass;
     frame.inertia.inertia() = pinocchio::Symmetric3(inertia);
     frame.name = link_name;
     frame.type = pinocchio::FrameType::BODY;
-    frame.previousFrame = -1;
+    frame.parentFrame = -1;
 
     AttachedBody ab;
     ab.frame = frame;
-    ab.frame_idx = _mdl.addBodyFrame(link_name, frame.parent, frame.placement);
+    ab.frame_idx = _mdl.addBodyFrame(link_name, frame.parentJoint, frame.placement);
     ab.m_T_p = m_T_p;
 
     _attached_body_map[ab.frame_idx] = ab;
@@ -452,6 +451,3 @@ Eigen::Vector3d ModelInterface2Pin::getCOMJdotTimesV() const
 }
 
 XBOT2_REGISTER_MODEL_PLUGIN(ModelInterface2Pin, pin);
-
-
-
