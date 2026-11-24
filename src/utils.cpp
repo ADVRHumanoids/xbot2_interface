@@ -64,12 +64,12 @@ std::string XBot::Utils::urdfToString(const urdf::ModelInterface &urdf)
     tiXmlDoc->Accept(&printer);
     urdf_str = printer.CStr();
 #elif defined(XBOT2IFC_URDFDOM_USES_TINIXML2)
-    auto tiXmlDoc(urdf::exportURDF(urdf));
+    std::unique_ptr<tinyxml2::XMLDocument> tiXmlDoc(urdf::exportURDF(urdf)); 
     tinyxml2::XMLPrinter printer;
     tiXmlDoc->Accept(&printer);
     urdf_str = printer.CStr();
 #else
-    auto tiXmlDoc(urdf::exportURDF(urdf));
+    std::unique_ptr<TiXmlDocument> tiXmlDoc(urdf::exportURDF(urdf));
     TiXmlPrinter printer;
     tiXmlDoc->Accept(&printer);
     urdf_str = printer.Str();
